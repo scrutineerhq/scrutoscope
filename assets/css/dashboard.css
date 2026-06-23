@@ -307,3 +307,112 @@
 	border: 1px solid #d63638;
 	color: #8a1215;
 }
+
+/* ----- Sortable columns ----- */
+
+.scrutinizer-sortable {
+	cursor: pointer;
+	user-select: none;
+	white-space: nowrap;
+}
+
+.scrutinizer-sortable:hover {
+	color: #2271b1;
+}
+
+.scrutinizer-sortable.sorted {
+	color: #1d2327;
+	font-weight: 600;
+}
+
+/* ----- Clickable route rows ----- */
+
+.scrutinizer-route-row {
+	cursor: pointer;
+}
+
+.scrutinizer-route-row:hover td {
+	background: #f0f6fc;
+}
+
+.scrutinizer-route-cell {
+	font-family: monospace;
+	font-size: 12px;
+}
+
+/* ----- Type badges ----- */
+
+.scrutinizer-badge {
+	display: inline-block;
+	padding: 2px 8px;
+	border-radius: 3px;
+	font-size: 11px;
+	font-weight: 500;
+	line-height: 1.4;
+	margin-right: 4px;
+}
+
+.badge-session {
+	background: #e5f5e5;
+	color: #1e4620;
+}
+
+.badge-background {
+	background: #e8f0fe;
+	color: #174ea6;
+}
+
+/* ----- Background profiling controls ----- */
+
+.scrutinizer-bg-controls {
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-left: 4px solid #72aee6;
+	padding: 12px 16px;
+	margin: 16px 0;
+}
+
+.scrutinizer-bg-controls h3 {
+	margin: 0 0 8px;
+	font-size: 14px;
+}
+
+.scrutinizer-toggle-label {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 13px;
+	cursor: pointer;
+}
+
+.scrutinizer-rate-control {
+	margin-top: 10px;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.scrutinizer-rate-control.hidden {
+	display: none;
+}
+
+.scrutinizer-rate-control label {
+	font-size: 13px;
+	white-space: nowrap;
+}
+
+.scrutinizer-rate-control input[type="range"] {
+	width: 200px;
+}
+
+/* ----- Route detail view ----- */
+
+#scrutinizer-route-detail {
+	margin-top: 16px;
+}
+
+#scrutinizer-route-detail h2 {
+	font-family: monospace;
+	font-size: 16px;
+	margin: 8px 0 12px;
+}

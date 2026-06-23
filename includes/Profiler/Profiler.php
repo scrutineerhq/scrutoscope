@@ -75,16 +75,63 @@ class Profiler {
 	private function __construct() {}
 
 	/**
+	 * Whether this is a background-sampled profile.
+	 *
+	 * @var bool
+	 */
+	private $is_background = false;
+
+	/**
 	 * Initialize the profiler. Called early on `plugins_loaded` priority 0.
 	 *
-	 * Checks for a valid profiling session and starts instrumentation if found.
+	 * Checks for a valid profiling session or background sampling.
 	 */
 	public function init() {
-		if ( ! Session::has_valid_cookie() ) {
+		// Don't profile our own AJAX requests — they'd flood the list.
+		if ( wp_doing_ajax() ) {
+			$action = '';
+			if ( isset( $_REQUEST['action'] ) ) {
+				$action = sanitize_text_field( wp_unslash( $_REQUEST['action'] ) );
+			}
+			if ( 0 === strpos( $action, 'scrutinizer_' ) ) {
+				return;
+			}
+		}
+
+		// Active session takes priority.
+		if ( Session::has_valid_cookie() ) {
+			$this->start();
 			return;
 		}
 
-		$this->start();
+		// Background sampling — probabilistic, no session required.
+		if ( self::should_background_sample() ) {
+			$this->is_background = true;
+			$this->start();
+		}
+	}
+
+	/**
+	 * Check whether this request should be background-sampled.
+	 *
+	 * @return bool
+	 */
+	private static function should_background_sample() {
+		$enabled = get_option( 'scrutinizer_background_profiling', false );
+		if ( ! $enabled ) {
+			return false;
+		}
+
+		// Don't background-profile WP-CLI, cron, or XML-RPC.
+		if ( defined( 'WP_CLI' ) || defined( 'DOING_CRON' ) || defined( 'XMLRPC_REQUEST' ) ) {
+			return false;
+		}
+
+		$rate = (int) get_option( 'scrutinizer_sample_rate', 5 );
+		$rate = max( 1, min( 100, $rate ) ); // Clamp 1-100%.
+
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.rand_mt_rand
+		return mt_rand( 1, 100 ) <= $rate;
 	}
 
 	/**
@@ -112,6 +159,9 @@ class Profiler {
 		// Refine route classification after query parsing.
 		add_action( 'wp', array( $this, 'capture_route_class' ), PHP_INT_MAX );
 
+		// Classify admin routes (the `wp` action doesn't fire in wp-admin).
+		add_action( 'admin_init', array( $this, 'capture_admin_route_class' ), PHP_INT_MAX );
+
 		// Stop and save at shutdown.
 		add_action( 'shutdown', array( $this, 'stop' ), PHP_INT_MAX );
 	}
@@ -129,9 +179,33 @@ class Profiler {
 
 	/**
 	 * Capture the refined route class after WP parses the query.
+	 *
+	 * Only applies to frontend requests — admin pages are classified
+	 * by capture_admin_route_class() instead.
 	 */
 	public function capture_route_class() {
+		if ( is_admin() ) {
+			return;
+		}
 		$this->route_class = Report::classify_frontend_route();
+	}
+
+	/**
+	 * Capture route class for admin requests.
+	 *
+	 * The `wp` action never fires in wp-admin, so admin pages need
+	 * their own classification pass.
+	 */
+	public function capture_admin_route_class() {
+		if ( ! empty( $this->route_class ) ) {
+			return;
+		}
+
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+			$this->route_class = 'admin-ajax';
+		} else {
+			$this->route_class = 'wp-admin';
+		}
 	}
 
 	/**
@@ -152,6 +226,9 @@ class Profiler {
 		}
 
 		$session_id = Session::get_session_id();
+		if ( empty( $session_id ) && $this->is_background ) {
+			$session_id = 'bg_' . wp_generate_password( 12, false );
+		}
 		if ( empty( $session_id ) ) {
 			return;
 		}
@@ -164,6 +241,17 @@ class Profiler {
 		$request_method = 'GET';
 		if ( isset( $_SERVER['REQUEST_METHOD'] ) ) {
 			$request_method = sanitize_text_field( wp_unslash( $_SERVER['REQUEST_METHOD'] ) );
+		}
+
+		// Final route classification fallback.
+		// If no hook-based classifier ran (e.g. REST API, wp-cron, or
+		// edge cases where admin_init didn't fire), classify from context.
+		if ( empty( $this->route_class ) || 'frontend' === $this->route_class ) {
+			if ( is_admin() && ! ( defined( 'DOING_AJAX' ) && DOING_AJAX ) ) {
+				$this->route_class = 'wp-admin';
+			} elseif ( defined( 'REST_REQUEST' ) && REST_REQUEST ) {
+				$this->route_class = 'rest-api';
+			}
 		}
 
 		$metadata = array(
@@ -180,7 +268,8 @@ class Profiler {
 			$trace       = $this->call_stack->get_trace();
 			$report      = Report::compile( $raw_timings, $trace, $metadata );
 
-			Storage::save_profile( $session_id, $report );
+			$profile_type = $this->is_background ? 'background' : 'session';
+			Storage::save_profile( $session_id, $report, $profile_type );
 		} catch ( \Throwable $e ) {
 			// Fail silently — never break the site.
 			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {

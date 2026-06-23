@@ -107,6 +107,16 @@ class Instrumentor {
 			return;
 		}
 
+		// Skip callbacks with by-reference parameters. Our wrapper uses
+		// func_get_args() + call_user_func_array() which strips reference
+		// semantics. Wrapping such callbacks would silently break their
+		// contract (reference modifications wouldn't propagate back) and
+		// trigger PHP warnings that can produce output before headers are
+		// sent, blocking setcookie() and breaking login/auth flows.
+		if ( self::has_reference_params( $original ) ) {
+			return;
+		}
+
 		$label      = Attribution::callback_label( $original );
 		$call_stack = $this->call_stack;
 		$timings    = &$this->timings;
@@ -196,5 +206,44 @@ class Instrumentor {
 	public function reset() {
 		$this->timings      = array();
 		$this->instrumented = array();
+	}
+
+	/**
+	 * Check whether a callback has any pass-by-reference parameters.
+	 *
+	 * Callbacks with reference parameters cannot be safely wrapped because
+	 * func_get_args() + call_user_func_array() strips reference semantics.
+	 * Wrapping them would silently break their contract and trigger PHP
+	 * warnings that produce output before headers, blocking setcookie().
+	 *
+	 * @param callable $callback  WordPress callback.
+	 * @return bool
+	 */
+	private static function has_reference_params( $callback ) {
+		try {
+			if ( $callback instanceof \Closure ) {
+				$ref = new \ReflectionFunction( $callback );
+			} elseif ( is_array( $callback ) && count( $callback ) >= 2 ) {
+				$ref = new \ReflectionMethod( $callback[0], $callback[1] );
+			} elseif ( is_string( $callback ) && function_exists( $callback ) ) {
+				$ref = new \ReflectionFunction( $callback );
+			} elseif ( is_object( $callback ) && method_exists( $callback, '__invoke' ) ) {
+				$ref = new \ReflectionMethod( $callback, '__invoke' );
+			} else {
+				return false;
+			}
+
+			foreach ( $ref->getParameters() as $param ) {
+				if ( $param->isPassedByReference() ) {
+					return true;
+				}
+			}
+		} catch ( \ReflectionException $e ) {
+			// Can't reflect — assume no reference params rather than
+			// skipping instrumentation for an unresolvable callback.
+			return false;
+		}
+
+		return false;
 	}
 }

@@ -1,8 +1,8 @@
 /**
  * Scrutinizer Dashboard JavaScript
  *
- * Handles start/stop profiling, polling for new profiles, and
- * navigating between profile list and detail views.
+ * Three-level drill-down: grouped routes → route profiles → single profile detail.
+ * Sortable column headers, background profiling controls.
  *
  * @package Scrutinizer
  */
@@ -11,55 +11,56 @@
 ( function( $ ) {
 	'use strict';
 
-	var pollingTimer = null;
-	var currentView  = 'list'; // 'list' or 'detail'
+	var pollingTimer  = null;
+	var currentView   = 'grouped'; // 'grouped', 'route', 'detail'
+	var currentRoute  = '';        // route_key for the active drill-down
+	var sortField     = '';
+	var sortDir       = 'desc';    // 'asc' or 'desc'
+	var groupedData   = [];
+	var routeData     = [];
 
-	/**
-	 * Initialize dashboard behavior.
-	 */
+	/* ------------------------------------------------------------------ */
+	/*  Init                                                               */
+	/* ------------------------------------------------------------------ */
+
 	function init() {
 		bindEvents();
+		fetchGrouped();
 
 		if ( scrutinizerAdmin.isActive ) {
 			startPolling();
 			showStopButton();
 		}
+
+		initBackgroundControls();
 	}
 
-	/**
-	 * Bind DOM event handlers.
-	 */
+	/* ------------------------------------------------------------------ */
+	/*  Event binding                                                      */
+	/* ------------------------------------------------------------------ */
+
 	function bindEvents() {
 		// Decision cards — start profiling.
 		$( document ).on( 'click', '.scrutinizer-decision-card', function() {
-			var target = $( this ).data( 'target' ) || '';
-			startProfiling( target );
+			startProfiling( $( this ).data( 'target' ) || '' );
 		} );
 
 		// Stop button.
-		$( document ).on( 'click', '#scrutinizer-stop', function() {
-			stopProfiling();
-		} );
+		$( document ).on( 'click', '#scrutinizer-stop', stopProfiling );
 
 		// Copy activation URL.
-		$( document ).on( 'click', '#scrutinizer-copy-url', function() {
-			var input = document.getElementById( 'scrutinizer-activation-url' );
-			if ( input ) {
-				input.select();
-				if ( navigator.clipboard ) {
-					navigator.clipboard.writeText( input.value );
-				} else {
-					document.execCommand( 'copy' );
-				}
-				showNotice( scrutinizerAdmin.i18n.copied, 'success' );
-			}
+		$( document ).on( 'click', '#scrutinizer-copy-url', copyActivationUrl );
+
+		// Grouped row → drill into route.
+		$( document ).on( 'click', '.scrutinizer-route-row', function() {
+			var key = $( this ).data( 'route-key' );
+			drillIntoRoute( key );
 		} );
 
-		// View profile detail.
+		// Profile row → view detail.
 		$( document ).on( 'click', '.scrutinizer-view-profile', function( e ) {
 			e.preventDefault();
-			var id = $( this ).data( 'profile-id' );
-			loadProfileDetail( id );
+			loadProfileDetail( $( this ).data( 'profile-id' ) );
 		} );
 
 		// Delete profile.
@@ -70,21 +71,94 @@
 				return;
 			}
 			/* eslint-enable no-alert */
-			var id = $( this ).data( 'profile-id' );
-			deleteProfile( id );
+			deleteProfile( $( this ).data( 'profile-id' ) );
 		} );
 
-		// Back to list.
-		$( document ).on( 'click', '#scrutinizer-back-to-list', function() {
-			showListView();
+		// Breadcrumb nav.
+		$( document ).on( 'click', '#scrutinizer-back-to-list', showGroupedView );
+		$( document ).on( 'click', '#scrutinizer-back-to-route', function() {
+			showRouteView();
+		} );
+
+		// Sortable headers.
+		$( document ).on( 'click', '.scrutinizer-sortable', function() {
+			var field = $( this ).data( 'sort' );
+			if ( sortField === field ) {
+				sortDir = ( 'asc' === sortDir ) ? 'desc' : 'asc';
+			} else {
+				sortField = field;
+				sortDir   = 'desc';
+			}
+			if ( 'grouped' === currentView ) {
+				renderGroupedTable( groupedData );
+			} else if ( 'route' === currentView ) {
+				renderRouteTable( routeData );
+			}
+		} );
+
+		// Background profiling toggle.
+		$( document ).on( 'change', '#scrutinizer-bg-toggle', toggleBackground );
+		$( document ).on( 'input', '#scrutinizer-sample-rate', function() {
+			$( '#scrutinizer-rate-value' ).text( $( this ).val() + '%' );
+		} );
+		$( document ).on( 'change', '#scrutinizer-sample-rate', saveBackgroundRate );
+	}
+
+	/* ------------------------------------------------------------------ */
+	/*  Background profiling controls                                      */
+	/* ------------------------------------------------------------------ */
+
+	function initBackgroundControls() {
+		var html = '<div class="scrutinizer-bg-controls">';
+		html += '<h3>Background Profiling</h3>';
+		html += '<label class="scrutinizer-toggle-label">';
+		html += '<input type="checkbox" id="scrutinizer-bg-toggle"' + ( scrutinizerAdmin.backgroundEnabled ? ' checked' : '' ) + '> ';
+		html += 'Enable background sampling</label>';
+		html += '<div class="scrutinizer-rate-control' + ( scrutinizerAdmin.backgroundEnabled ? '' : ' hidden' ) + '" id="scrutinizer-rate-group">';
+		html += '<label>Sample rate: <span id="scrutinizer-rate-value">' + scrutinizerAdmin.backgroundSampleRate + '%</span></label>';
+		html += '<input type="range" id="scrutinizer-sample-rate" min="1" max="100" value="' + scrutinizerAdmin.backgroundSampleRate + '">';
+		html += '</div>';
+		html += '</div>';
+
+		$( '#scrutinizer-controls' ).after( html );
+	}
+
+	function toggleBackground() {
+		var enabled = $( '#scrutinizer-bg-toggle' ).is( ':checked' );
+		var rate    = parseInt( $( '#scrutinizer-sample-rate' ).val(), 10 ) || 5;
+
+		if ( enabled ) {
+			$( '#scrutinizer-rate-group' ).removeClass( 'hidden' );
+		} else {
+			$( '#scrutinizer-rate-group' ).addClass( 'hidden' );
+		}
+
+		$.post( scrutinizerAdmin.ajaxUrl, {
+			action:  'scrutinizer_toggle_background',
+			nonce:   scrutinizerAdmin.nonce,
+			enabled: enabled ? 1 : 0,
+			rate:    rate
+		}, function( response ) {
+			if ( response.success ) {
+				showNotice( response.data.message, 'success' );
+			}
 		} );
 	}
 
-	/**
-	 * Start a profiling session via AJAX.
-	 *
-	 * @param {string} target URL target for activation.
-	 */
+	function saveBackgroundRate() {
+		var rate = parseInt( $( '#scrutinizer-sample-rate' ).val(), 10 ) || 5;
+		$.post( scrutinizerAdmin.ajaxUrl, {
+			action:  'scrutinizer_toggle_background',
+			nonce:   scrutinizerAdmin.nonce,
+			enabled: $( '#scrutinizer-bg-toggle' ).is( ':checked' ) ? 1 : 0,
+			rate:    rate
+		} );
+	}
+
+	/* ------------------------------------------------------------------ */
+	/*  Session start / stop                                               */
+	/* ------------------------------------------------------------------ */
+
 	function startProfiling( target ) {
 		$.post( scrutinizerAdmin.ajaxUrl, {
 			action: 'scrutinizer_start_profiling',
@@ -92,14 +166,9 @@
 			target: target
 		}, function( response ) {
 			if ( response.success ) {
-				var url = response.data.activation_url;
-
-				// Show activation URL.
-				$( '#scrutinizer-activation-url' ).val( url );
+				$( '#scrutinizer-activation-url' ).val( response.data.activation_url );
 				$( '#scrutinizer-activation' ).show();
-
-				// Redirect to the activation URL to set the cookie.
-				window.location.href = url;
+				window.location.href = response.data.activation_url;
 			} else {
 				showNotice( response.data.message || scrutinizerAdmin.i18n.error, 'error' );
 			}
@@ -108,20 +177,14 @@
 		} );
 	}
 
-	/**
-	 * Stop the active profiling session.
-	 */
 	function stopProfiling() {
 		stopPolling();
-
 		$.post( scrutinizerAdmin.ajaxUrl, {
 			action: 'scrutinizer_stop_profiling',
 			nonce:  scrutinizerAdmin.nonce
 		}, function( response ) {
 			if ( response.success ) {
 				showNotice( response.data.message, 'success' );
-
-				// Refresh the page to show updated state.
 				window.location.reload();
 			} else {
 				showNotice( response.data.message || scrutinizerAdmin.i18n.error, 'error' );
@@ -131,9 +194,19 @@
 		} );
 	}
 
-	/**
-	 * Show the stop button and polling indicator.
-	 */
+	function copyActivationUrl() {
+		var input = document.getElementById( 'scrutinizer-activation-url' );
+		if ( input ) {
+			input.select();
+			if ( navigator.clipboard ) {
+				navigator.clipboard.writeText( input.value );
+			} else {
+				document.execCommand( 'copy' );
+			}
+			showNotice( scrutinizerAdmin.i18n.copied, 'success' );
+		}
+	}
+
 	function showStopButton() {
 		var $controls = $( '#scrutinizer-controls' );
 		$controls.html(
@@ -145,26 +218,22 @@
 				scrutinizerAdmin.i18n.stopProfiling +
 			'</button>'
 		);
-
 		$( '.scrutinizer-status-card' ).addClass( 'is-active' );
 		$( '.scrutinizer-dot' ).addClass( 'active' ).removeClass( 'inactive' );
 		$( '#scrutinizer-status-text' ).text( scrutinizerAdmin.i18n.profiling );
 	}
 
-	/**
-	 * Start polling for new profiles every 2 seconds.
-	 */
+	/* ------------------------------------------------------------------ */
+	/*  Polling                                                            */
+	/* ------------------------------------------------------------------ */
+
 	function startPolling() {
 		if ( pollingTimer ) {
 			return;
 		}
-		fetchProfiles();
-		pollingTimer = setInterval( fetchProfiles, 2000 );
+		pollingTimer = setInterval( fetchGrouped, 2000 );
 	}
 
-	/**
-	 * Stop the polling timer.
-	 */
 	function stopPolling() {
 		if ( pollingTimer ) {
 			clearInterval( pollingTimer );
@@ -172,60 +241,153 @@
 		}
 	}
 
-	/**
-	 * Fetch profiles for the active session.
-	 */
-	function fetchProfiles() {
+	/* ------------------------------------------------------------------ */
+	/*  Level 1: Grouped routes                                            */
+	/* ------------------------------------------------------------------ */
+
+	function fetchGrouped() {
 		$.get( scrutinizerAdmin.ajaxUrl, {
-			action:     'scrutinizer_get_profiles',
-			nonce:      scrutinizerAdmin.nonce,
-			session_id: scrutinizerAdmin.sessionId
+			action: 'scrutinizer_get_profiles_grouped',
+			nonce:  scrutinizerAdmin.nonce
 		}, function( response ) {
 			if ( response.success ) {
-				renderProfileList( response.data.profiles );
+				groupedData = response.data.groups || [];
+				if ( 'grouped' === currentView ) {
+					renderGroupedTable( groupedData );
+				}
 			}
 		} );
 	}
 
-	/**
-	 * Render the profile list table.
-	 *
-	 * @param {Array} profiles List of profile summaries.
-	 */
-	function renderProfileList( profiles ) {
+	function renderGroupedTable( groups ) {
 		var $list = $( '#scrutinizer-profile-list' );
 
-		if ( ! profiles || 0 === profiles.length ) {
+		if ( ! groups || 0 === groups.length ) {
 			$list.html( '<p class="scrutinizer-empty">' + scrutinizerAdmin.i18n.noProfiles + '</p>' );
 			return;
 		}
 
+		groups = sortRows( groups );
+
 		var html = '<table class="scrutinizer-profile-table widefat">';
 		html += '<thead><tr>';
-		html += '<th>' + esc( scrutinizerAdmin.i18n.serverDuration ) + '</th>';
-		html += '<th>URL</th>';
-		html += '<th>Method</th>';
-		html += '<th>Route</th>';
-		html += '<th>Captured</th>';
+		html += sortHeader( 'Route', 'route_key' );
+		html += sortHeader( 'Method', 'request_method' );
+		html += sortHeader( 'Requests', 'request_count' );
+		html += sortHeader( 'Avg Duration', 'avg_duration_ns' );
+		html += sortHeader( 'Min', 'min_duration_ns' );
+		html += sortHeader( 'Max', 'max_duration_ns' );
+		html += sortHeader( 'Last Captured', 'last_captured' );
+		html += '<th>Type</th>';
+		html += '</tr></thead><tbody>';
+
+		for ( var i = 0; i < groups.length; i++ ) {
+			var g = groups[ i ];
+			var avgMs = ( parseFloat( g.avg_duration_ns ) / 1e6 ).toFixed( 1 );
+			var minMs = ( parseInt( g.min_duration_ns, 10 ) / 1e6 ).toFixed( 1 );
+			var maxMs = ( parseInt( g.max_duration_ns, 10 ) / 1e6 ).toFixed( 1 );
+			var types = typeBadges( g.profile_types || '' );
+			var route = g.route_key || '(unknown)';
+
+			html += '<tr class="scrutinizer-route-row" data-route-key="' + esc( g.route_key ) + '">';
+			html += '<td class="scrutinizer-route-cell" title="' + esc( route ) + '">' + esc( truncate( route, 50 ) ) + '</td>';
+			html += '<td>' + esc( g.request_method ) + '</td>';
+			html += '<td class="numeric">' + parseInt( g.request_count, 10 ) + '</td>';
+			html += '<td class="scrutinizer-duration numeric">' + esc( avgMs ) + ' ms</td>';
+			html += '<td class="numeric">' + esc( minMs ) + ' ms</td>';
+			html += '<td class="numeric">' + esc( maxMs ) + ' ms</td>';
+			html += '<td>' + esc( g.last_captured ) + '</td>';
+			html += '<td>' + types + '</td>';
+			html += '</tr>';
+		}
+
+		html += '</tbody></table>';
+		$list.html( html );
+	}
+
+	function showGroupedView() {
+		currentView  = 'grouped';
+		currentRoute = '';
+		sortField    = '';
+		sortDir      = 'desc';
+		$( '#scrutinizer-results' ).show();
+		$( '#scrutinizer-route-detail' ).remove();
+		$( '#scrutinizer-detail' ).hide();
+		$( '#scrutinizer-results h2' ).text( 'Routes' );
+		renderGroupedTable( groupedData );
+	}
+
+	/* ------------------------------------------------------------------ */
+	/*  Level 2: Route drill-down                                          */
+	/* ------------------------------------------------------------------ */
+
+	function drillIntoRoute( routeKey ) {
+		currentRoute = routeKey;
+		sortField    = '';
+		sortDir      = 'desc';
+
+		$.get( scrutinizerAdmin.ajaxUrl, {
+			action:    'scrutinizer_get_route_profiles',
+			nonce:     scrutinizerAdmin.nonce,
+			route_key: routeKey
+		}, function( response ) {
+			if ( response.success ) {
+				routeData = response.data.profiles || [];
+				showRouteView();
+			}
+		} );
+	}
+
+	function showRouteView() {
+		currentView = 'route';
+		$( '#scrutinizer-results' ).hide();
+		$( '#scrutinizer-detail' ).hide();
+		$( '#scrutinizer-route-detail' ).remove();
+
+		var html = '<div id="scrutinizer-route-detail">';
+		html += '<button type="button" class="button button-link" id="scrutinizer-back-to-list">← Back to routes</button>';
+		html += '<h2>' + esc( currentRoute ) + '</h2>';
+		html += '<div id="scrutinizer-route-profiles"></div>';
+		html += '</div>';
+
+		$( '#scrutinizer-results' ).after( html );
+		renderRouteTable( routeData );
+	}
+
+	function renderRouteTable( profiles ) {
+		var $container = $( '#scrutinizer-route-profiles' );
+
+		if ( ! profiles || 0 === profiles.length ) {
+			$container.html( '<p class="scrutinizer-empty">No profiles for this route.</p>' );
+			return;
+		}
+
+		profiles = sortRows( profiles );
+
+		var html = '<table class="scrutinizer-profile-table widefat">';
+		html += '<thead><tr>';
+		html += sortHeader( scrutinizerAdmin.i18n.serverDuration, 'duration_ns' );
+		html += sortHeader( 'URL', 'request_url' );
+		html += sortHeader( 'Method', 'request_method' );
+		html += sortHeader( 'Route', 'route_class' );
+		html += sortHeader( 'Captured', 'captured_at' );
+		html += '<th>Type</th>';
 		html += '<th>Actions</th>';
 		html += '</tr></thead><tbody>';
 
 		for ( var i = 0; i < profiles.length; i++ ) {
-			var p       = profiles[ i ];
-			var durMs   = ( parseInt( p.duration_ns, 10 ) / 1e6 ).toFixed( 1 );
-			var urlPath = p.request_url || '—';
-
-			// Truncate long URLs for display.
-			if ( urlPath.length > 60 ) {
-				urlPath = urlPath.substring( 0, 57 ) + '…';
-			}
+			var p     = profiles[ i ];
+			var durMs = ( parseInt( p.duration_ns, 10 ) / 1e6 ).toFixed( 1 );
+			var url   = p.request_url || '—';
+			var badge = typeBadge( p.profile_type || 'session' );
 
 			html += '<tr>';
-			html += '<td class="scrutinizer-duration">' + esc( durMs ) + ' ms</td>';
-			html += '<td title="' + esc( p.request_url ) + '">' + esc( urlPath ) + '</td>';
+			html += '<td class="scrutinizer-duration numeric">' + esc( durMs ) + ' ms</td>';
+			html += '<td title="' + esc( p.request_url ) + '">' + esc( truncate( url, 60 ) ) + '</td>';
 			html += '<td>' + esc( p.request_method ) + '</td>';
 			html += '<td>' + esc( p.route_class || '—' ) + '</td>';
 			html += '<td>' + esc( p.captured_at ) + '</td>';
+			html += '<td>' + badge + '</td>';
 			html += '<td class="scrutinizer-actions">';
 			html += '<a href="#" class="scrutinizer-view-profile" data-profile-id="' + parseInt( p.id, 10 ) + '">View</a>';
 			html += ' | ';
@@ -235,14 +397,13 @@
 		}
 
 		html += '</tbody></table>';
-		$list.html( html );
+		$container.html( html );
 	}
 
-	/**
-	 * Load and display a single profile's detail.
-	 *
-	 * @param {number} profileId Profile row ID.
-	 */
+	/* ------------------------------------------------------------------ */
+	/*  Level 3: Profile detail                                            */
+	/* ------------------------------------------------------------------ */
+
 	function loadProfileDetail( profileId ) {
 		$.get( scrutinizerAdmin.ajaxUrl, {
 			action:     'scrutinizer_get_profile_detail',
@@ -260,18 +421,12 @@
 		} );
 	}
 
-	/**
-	 * Render profile detail HTML.
-	 *
-	 * @param {Object} profile Full profile data.
-	 */
 	function renderProfileDetail( profile ) {
-		var data   = profile.profile_data || {};
+		var data    = profile.profile_data || {};
 		var summary = data.summary || {};
 		var sources = data.sources || [];
 		var request = data.request || {};
-
-		var durMs = ( summary.duration_ms || 0 ).toFixed( 1 );
+		var durMs   = ( summary.duration_ms || 0 ).toFixed( 1 );
 
 		var html = '<div class="scrutinizer-detail-summary">';
 		html += '<h3>' + esc( request.method ) + ' ' + esc( request.url ) + '</h3>';
@@ -356,11 +511,25 @@
 		$( '#scrutinizer-detail-content' ).html( html );
 	}
 
-	/**
-	 * Delete a profile via AJAX.
-	 *
-	 * @param {number} profileId Profile row ID.
-	 */
+	function showDetailView() {
+		currentView = 'detail';
+		$( '#scrutinizer-results' ).hide();
+		$( '#scrutinizer-route-detail' ).hide();
+		$( '#scrutinizer-detail' ).show();
+
+		// Adjust back button based on where we came from.
+		var $back = $( '#scrutinizer-detail .button-link' ).first();
+		if ( currentRoute ) {
+			$back.attr( 'id', 'scrutinizer-back-to-route' ).text( '← Back to ' + truncate( currentRoute, 40 ) );
+		} else {
+			$back.attr( 'id', 'scrutinizer-back-to-list' ).text( '← Back to routes' );
+		}
+	}
+
+	/* ------------------------------------------------------------------ */
+	/*  Delete profile                                                     */
+	/* ------------------------------------------------------------------ */
+
 	function deleteProfile( profileId ) {
 		$.post( scrutinizerAdmin.ajaxUrl, {
 			action:     'scrutinizer_delete_profile',
@@ -368,41 +537,92 @@
 			profile_id: profileId
 		}, function( response ) {
 			if ( response.success ) {
-				fetchProfiles();
+				// Refresh whichever view we're in.
+				if ( 'route' === currentView && currentRoute ) {
+					drillIntoRoute( currentRoute );
+				} else {
+					fetchGrouped();
+				}
 			} else {
 				showNotice( response.data.message || scrutinizerAdmin.i18n.error, 'error' );
 			}
 		} );
 	}
 
-	/**
-	 * Show the list view, hide detail.
-	 */
-	function showListView() {
-		currentView = 'list';
-		$( '#scrutinizer-results' ).show();
-		$( '#scrutinizer-detail' ).hide();
+	/* ------------------------------------------------------------------ */
+	/*  Sorting                                                            */
+	/* ------------------------------------------------------------------ */
+
+	function sortHeader( label, field ) {
+		var cls   = 'scrutinizer-sortable';
+		var arrow = '';
+		if ( sortField === field ) {
+			cls  += ' sorted';
+			arrow = ( 'asc' === sortDir ) ? ' ▲' : ' ▼';
+		}
+		return '<th class="' + cls + '" data-sort="' + esc( field ) + '">' + esc( label ) + arrow + '</th>';
 	}
 
-	/**
-	 * Show the detail view, hide list.
-	 */
-	function showDetailView() {
-		currentView = 'detail';
-		$( '#scrutinizer-results' ).hide();
-		$( '#scrutinizer-detail' ).show();
+	function sortRows( rows ) {
+		if ( ! sortField || 0 === rows.length ) {
+			return rows;
+		}
+
+		var copy = rows.slice();
+		copy.sort( function( a, b ) {
+			var va = a[ sortField ];
+			var vb = b[ sortField ];
+
+			// Numeric comparison for anything that looks like a number.
+			var na = parseFloat( va );
+			var nb = parseFloat( vb );
+			if ( ! isNaN( na ) && ! isNaN( nb ) ) {
+				return ( 'asc' === sortDir ) ? na - nb : nb - na;
+			}
+
+			// String comparison.
+			va = String( va || '' ).toLowerCase();
+			vb = String( vb || '' ).toLowerCase();
+			if ( va < vb ) {
+				return ( 'asc' === sortDir ) ? -1 : 1;
+			}
+			if ( va > vb ) {
+				return ( 'asc' === sortDir ) ? 1 : -1;
+			}
+			return 0;
+		} );
+
+		return copy;
 	}
 
-	/**
-	 * Show a temporary notice.
-	 *
-	 * @param {string} message Notice text.
-	 * @param {string} type    'success' or 'error'.
-	 */
+	/* ------------------------------------------------------------------ */
+	/*  Type badges                                                        */
+	/* ------------------------------------------------------------------ */
+
+	function typeBadge( type ) {
+		var cls = ( 'background' === type ) ? 'badge-background' : 'badge-session';
+		return '<span class="scrutinizer-badge ' + cls + '">' + esc( type ) + '</span>';
+	}
+
+	function typeBadges( typeStr ) {
+		if ( ! typeStr ) {
+			return '';
+		}
+		var types = typeStr.split( ',' );
+		var html  = '';
+		for ( var i = 0; i < types.length; i++ ) {
+			html += typeBadge( types[ i ].trim() );
+		}
+		return html;
+	}
+
+	/* ------------------------------------------------------------------ */
+	/*  Utilities                                                          */
+	/* ------------------------------------------------------------------ */
+
 	function showNotice( message, type ) {
 		var $notice = $( '<div class="scrutinizer-notice ' + type + '">' + esc( message ) + '</div>' );
 		$( '#scrutinizer-dashboard h1' ).after( $notice );
-
 		setTimeout( function() {
 			$notice.fadeOut( 300, function() {
 				$notice.remove();
@@ -410,27 +630,22 @@
 		}, 4000 );
 	}
 
-	/**
-	 * Basic HTML escaping.
-	 *
-	 * @param {*} str Value to escape.
-	 * @return {string}
-	 */
 	function esc( str ) {
 		if ( null === str || undefined === str ) {
 			return '';
 		}
-		var div       = document.createElement( 'div' );
+		var div = document.createElement( 'div' );
 		div.appendChild( document.createTextNode( String( str ) ) );
 		return div.innerHTML;
 	}
 
-	/**
-	 * Format bytes into a human-readable string.
-	 *
-	 * @param {number} bytes Byte count.
-	 * @return {string}
-	 */
+	function truncate( str, max ) {
+		if ( ! str || str.length <= max ) {
+			return str;
+		}
+		return str.substring( 0, max - 1 ) + '…';
+	}
+
 	function formatBytes( bytes ) {
 		if ( 0 === bytes ) {
 			return '0 B';

@@ -98,10 +98,43 @@ function scrutinizer_load_textdomain() {
 add_action( 'init', 'scrutinizer_load_textdomain' );
 
 /**
+ * Show admin bar indicator when profiling is active.
+ *
+ * Works on both admin and frontend pages so the user can always
+ * navigate back to the dashboard.
+ *
+ * @param WP_Admin_Bar $wp_admin_bar  The admin bar instance.
+ */
+function scrutinizer_admin_bar_menu( $wp_admin_bar ) {
+	if ( empty( $_COOKIE['scrutinizer_session'] ) ) {
+		return;
+	}
+
+	if ( ! current_user_can( 'manage_options' ) ) {
+		return;
+	}
+
+	$wp_admin_bar->add_node(
+		array(
+			'id'    => 'scrutinizer-profiling',
+			'title' => '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#00ba37;margin-right:6px;vertical-align:middle;"></span>Scrutinizer',
+			'href'  => admin_url( 'tools.php?page=scrutinizer' ),
+			'meta'  => array(
+				'title' => __( 'Profiling active — click to view dashboard', 'scrutinizer' ),
+			),
+		)
+	);
+}
+add_action( 'admin_bar_menu', 'scrutinizer_admin_bar_menu', 100 );
+
+/**
  * Register admin page and AJAX handlers.
  */
 function scrutinizer_admin_init() {
 	\Scrutinizer\Admin\Dashboard::register();
 	\Scrutinizer\Admin\Ajax::register();
+	\Scrutinizer\Profiler\Storage::maybe_upgrade_table();
 }
 add_action( 'plugins_loaded', 'scrutinizer_admin_init' );
+
+

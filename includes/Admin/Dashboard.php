@@ -8,6 +8,7 @@
 namespace Scrutinizer\Admin;
 
 use Scrutinizer\Profiler\Session;
+use Scrutinizer\Profiler\Storage;
 
 /**
  * Registers the Scrutinizer page under the Tools menu and renders the dashboard.
@@ -20,6 +21,7 @@ class Dashboard {
 	public static function register() {
 		add_action( 'admin_menu', array( __CLASS__, 'add_menu_page' ) );
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_assets' ) );
+		add_action( 'admin_head', array( __CLASS__, 'suppress_admin_notices' ) );
 	}
 
 	/**
@@ -33,6 +35,18 @@ class Dashboard {
 			'scrutinizer',
 			array( __CLASS__, 'render' )
 		);
+	}
+
+	/**
+	 * Suppress third-party admin notices on the Scrutinizer page.
+	 */
+	public static function suppress_admin_notices() {
+		$screen = get_current_screen();
+		if ( null === $screen || 'tools_page_scrutinizer' !== $screen->id ) {
+			return;
+		}
+		remove_all_actions( 'admin_notices' );
+		remove_all_actions( 'all_admin_notices' );
 	}
 
 	/**
@@ -60,16 +74,28 @@ class Dashboard {
 			true
 		);
 
+		// Look up recent profiles so the dashboard always has something to show.
+		$recent          = Storage::get_recent_profiles( 50 );
+		$recent_count    = count( $recent );
+		$last_session_id = '';
+		if ( $recent_count > 0 && isset( $recent[0]['session_id'] ) ) {
+			$last_session_id = $recent[0]['session_id'];
+		}
+
 		wp_localize_script(
 			'scrutinizer-dashboard',
 			'scrutinizerAdmin',
 			array(
-				'ajaxUrl'   => admin_url( 'admin-ajax.php' ),
-				'nonce'     => wp_create_nonce( 'scrutinizer_nonce' ),
-				'isActive'  => Session::has_valid_cookie(),
-				'sessionId' => Session::get_session_id(),
-				'siteUrl'   => home_url( '/' ),
-				'i18n'      => array(
+				'ajaxUrl'              => admin_url( 'admin-ajax.php' ),
+				'nonce'                => wp_create_nonce( 'scrutinizer_nonce' ),
+				'isActive'             => Session::has_valid_cookie(),
+				'sessionId'            => Session::get_session_id(),
+				'lastSessionId'        => $last_session_id,
+				'profileCount'         => $recent_count,
+				'siteUrl'              => home_url( '/' ),
+				'backgroundEnabled'    => (bool) get_option( 'scrutinizer_background_profiling', false ),
+				'backgroundSampleRate' => (int) get_option( 'scrutinizer_sample_rate', 5 ),
+				'i18n'          => array(
 					'startProfiling' => __( 'Start Profiling', 'scrutinizer' ),
 					'stopProfiling'  => __( 'Stop Profiling', 'scrutinizer' ),
 					'profiling'      => __( 'Profiling active…', 'scrutinizer' ),
@@ -172,7 +198,7 @@ class Dashboard {
 
 			<!-- Results -->
 			<div class="scrutinizer-results" id="scrutinizer-results">
-				<h2><?php echo esc_html__( 'Captured Profiles', 'scrutinizer' ); ?></h2>
+				<h2><?php echo esc_html__( 'Routes', 'scrutinizer' ); ?></h2>
 				<div id="scrutinizer-profile-list">
 					<p class="scrutinizer-empty"><?php echo esc_html__( 'No profiles captured yet.', 'scrutinizer' ); ?></p>
 				</div>

@@ -96,7 +96,7 @@ class Report {
 		$unattributed_ns = max( 0, $duration_ns - $total_excl_ns );
 
 		// Route classification.
-		$route_class = isset( $request_metadata['route_class'] )
+		$route_class = ! empty( $request_metadata['route_class'] )
 			? $request_metadata['route_class']
 			: self::classify_route( $request_metadata );
 
