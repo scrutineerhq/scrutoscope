@@ -136,4 +136,3 @@ function scrutinizer_admin_init() {
 	\Scrutinizer\Profiler\Storage::maybe_upgrade_table();
 }
 add_action( 'plugins_loaded', 'scrutinizer_admin_init' );
-
