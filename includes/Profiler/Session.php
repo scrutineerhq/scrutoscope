@@ -56,7 +56,7 @@ class Session {
 	 */
 	public static function create_activation_url( $target_url = '' ) {
 		if ( empty( $target_url ) ) {
-			$target_url = admin_url( 'tools.php?page=scrutinizer' );
+			$target_url = home_url( '/' );
 		}
 
 		$session_id = wp_generate_uuid4();
@@ -86,10 +86,6 @@ class Session {
 	public static function handle_activation() {
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended
 		if ( empty( $_GET['scrutinizer_activate'] ) ) {
-			return;
-		}
-
-		if ( ! current_user_can( 'manage_options' ) ) {
 			return;
 		}
 
