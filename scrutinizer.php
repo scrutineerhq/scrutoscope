@@ -30,15 +30,15 @@ define( 'SCRUTINIZER_URL', plugin_dir_url( __FILE__ ) );
  * Autoloader.
  */
 spl_autoload_register(
-	function ( $class ) {
+	function ( $class_name ) {
 		$prefix = 'Scrutinizer\\';
 		$len    = strlen( $prefix );
 
-		if ( strncmp( $prefix, $class, $len ) !== 0 ) {
+		if ( strncmp( $prefix, $class_name, $len ) !== 0 ) {
 			return;
 		}
 
-		$relative = substr( $class, $len );
+		$relative = substr( $class_name, $len );
 		$file     = SCRUTINIZER_DIR . 'includes/' . str_replace( '\\', '/', $relative ) . '.php';
 
 		if ( file_exists( $file ) ) {
