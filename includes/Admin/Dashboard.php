@@ -95,7 +95,7 @@ class Dashboard {
 				'siteUrl'              => home_url( '/' ),
 				'backgroundEnabled'    => (bool) get_option( 'scrutinizer_background_profiling', false ),
 				'backgroundSampleRate' => (int) get_option( 'scrutinizer_sample_rate', 5 ),
-				'i18n'          => array(
+				'i18n'                 => array(
 					'startProfiling' => __( 'Start Profiling', 'scrutinizer' ),
 					'stopProfiling'  => __( 'Stop Profiling', 'scrutinizer' ),
 					'profiling'      => __( 'Profiling active…', 'scrutinizer' ),

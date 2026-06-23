@@ -137,4 +137,3 @@ function scrutinizer_admin_init() {
 }
 add_action( 'plugins_loaded', 'scrutinizer_admin_init' );
 
-
