@@ -58,6 +58,15 @@ class Profiler {
 	private $route_class = '';
 
 	/**
+	 * WordPress lifecycle phase timestamps (nanoseconds).
+	 *
+	 * Each key is a lifecycle hook name, value is hrtime(true) when it fired.
+	 *
+	 * @var array<string, int>
+	 */
+	private $phase_markers = array();
+
+	/**
 	 * Get the singleton instance.
 	 *
 	 * @return Profiler
@@ -146,11 +155,30 @@ class Profiler {
 		// produces garbage durations.
 		$this->request_start_ns = hrtime( true );
 
+		// Record the start as the first phase marker.
+		$this->phase_markers['profiler_start'] = $this->request_start_ns;
+
 		$this->call_stack   = new CallStack();
 		$this->instrumentor = new Instrumentor( $this->call_stack );
 
 		// Instrument all currently registered hooks.
 		$this->instrumentor->instrument_all();
+
+		// Register lifecycle phase markers at priority 0 to capture timing
+		// as early as possible within each phase.
+		$lifecycle_hooks = array(
+			'muplugins_loaded',
+			'plugins_loaded',
+			'setup_theme',
+			'after_setup_theme',
+			'init',
+			'wp_loaded',
+			'template_redirect',
+			'wp',
+		);
+		foreach ( $lifecycle_hooks as $hook ) {
+			add_action( $hook, array( $this, 'record_phase_marker' ), 0 );
+		}
 
 		// Catch late-registered hooks at key lifecycle points.
 		add_action( 'wp_loaded', array( $this, 'reinstrument' ), PHP_INT_MAX );
@@ -164,6 +192,18 @@ class Profiler {
 
 		// Stop and save at shutdown.
 		add_action( 'shutdown', array( $this, 'stop' ), PHP_INT_MAX );
+	}
+
+	/**
+	 * Record a lifecycle phase marker timestamp.
+	 *
+	 * Hooked at priority 0 on key WordPress lifecycle actions.
+	 */
+	public function record_phase_marker() {
+		$hook = current_filter();
+		if ( ! isset( $this->phase_markers[ $hook ] ) ) {
+			$this->phase_markers[ $hook ] = hrtime( true );
+		}
 	}
 
 	/**
@@ -255,12 +295,16 @@ class Profiler {
 		}
 
 		$metadata = array(
-			'url'         => $request_url,
-			'method'      => $request_method,
-			'duration_ns' => $duration_ns,
-			'route_class' => $this->route_class,
-			'wp_version'  => get_bloginfo( 'version' ),
-			'timestamp'   => time(),
+			'url'           => $request_url,
+			'method'        => $request_method,
+			'duration_ns'   => $duration_ns,
+			'route_class'   => $this->route_class,
+			'wp_version'    => get_bloginfo( 'version' ),
+			'timestamp'     => time(),
+			'phase_markers' => $this->build_phase_offsets(),
+			'user_role'     => self::get_current_role(),
+			'query_count'   => self::get_query_count(),
+			'queries'       => self::get_query_log(),
 		);
 
 		try {
@@ -286,5 +330,95 @@ class Profiler {
 	 */
 	public function is_profiling() {
 		return $this->active;
+	}
+
+	/**
+	 * Build phase marker offsets relative to request start.
+	 *
+	 * Returns an array of {name, offset_ns} entries for the timeline.
+	 *
+	 * @return array<int, array{name: string, offset_ns: int}>
+	 */
+	private function build_phase_offsets() {
+		$offsets = array();
+		foreach ( $this->phase_markers as $hook => $ts ) {
+			if ( 'profiler_start' === $hook ) {
+				continue; // Skip the start marker itself.
+			}
+			$offsets[] = array(
+				'name'      => $hook,
+				'offset_ns' => max( 0, $ts - $this->request_start_ns ),
+			);
+		}
+		// Sort by offset ascending.
+		usort(
+			$offsets,
+			function ( $a, $b ) {
+				return $a['offset_ns'] <=> $b['offset_ns'];
+			}
+		);
+		return $offsets;
+	}
+
+	/**
+	 * Get the current user's role for the role pill.
+	 *
+	 * @return string  Role slug ('administrator', 'editor', etc.) or 'anonymous'.
+	 */
+	private static function get_current_role() {
+		if ( ! function_exists( 'is_user_logged_in' ) || ! is_user_logged_in() ) {
+			return 'anonymous';
+		}
+		$user = wp_get_current_user();
+		if ( ! empty( $user->roles ) ) {
+			return reset( $user->roles ); // First role.
+		}
+		return 'authenticated';
+	}
+
+	/**
+	 * Get total database query count.
+	 *
+	 * @return int
+	 */
+	private static function get_query_count() {
+		global $wpdb;
+		return isset( $wpdb->num_queries ) ? (int) $wpdb->num_queries : 0;
+	}
+
+	/**
+	 * Get individual query log if SAVEQUERIES is enabled.
+	 *
+	 * @return array  Array of {sql, time_ms, caller} or empty array.
+	 */
+	private static function get_query_log() {
+		global $wpdb;
+
+		if ( ! defined( 'SAVEQUERIES' ) || ! SAVEQUERIES ) {
+			return array();
+		}
+
+		if ( empty( $wpdb->queries ) || ! is_array( $wpdb->queries ) ) {
+			return array();
+		}
+
+		$log = array();
+		foreach ( $wpdb->queries as $q ) {
+			$log[] = array(
+				'sql'     => isset( $q[0] ) ? $q[0] : '',
+				'time_ms' => isset( $q[1] ) ? round( (float) $q[1] * 1000, 2 ) : 0,
+				'caller'  => isset( $q[2] ) ? $q[2] : '',
+			);
+		}
+
+		// Sort by time descending for the dashboard.
+		usort(
+			$log,
+			function ( $a, $b ) {
+				return $b['time_ms'] <=> $a['time_ms'];
+			}
+		);
+
+		return $log;
 	}
 }

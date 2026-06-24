@@ -81,6 +81,7 @@ class Storage {
 		$method = isset( $profile_data['request']['method'] ) ? $profile_data['request']['method'] : 'GET';
 		$route  = isset( $profile_data['request']['route_class'] ) ? $profile_data['request']['route_class'] : '';
 		$dur_ns = isset( $profile_data['summary']['duration_ns'] ) ? $profile_data['summary']['duration_ns'] : 0;
+		$role   = isset( $profile_data['request']['user_role'] ) ? $profile_data['request']['user_role'] : 'anonymous';
 
 		// Normalize URL to a grouping key: method + path (no query string, no host).
 		$route_key = self::normalize_route_key( $method, $url );
@@ -95,10 +96,11 @@ class Storage {
 				'route_class'    => $route,
 				'route_key'      => $route_key,
 				'duration_ns'    => $dur_ns,
+				'user_role'      => $role,
 				'profile_data'   => wp_json_encode( $profile_data ),
 				'captured_at'    => current_time( 'mysql' ),
 			),
-			array( '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s' )
+			array( '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s', '%s' )
 		);
 
 		if ( false === $result ) {
@@ -145,7 +147,7 @@ class Storage {
 		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is safe from self::table_name().
 		return $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT id, session_id, request_url, request_method, route_class, duration_ns, captured_at, is_baseline, baseline_name FROM {$table} WHERE session_id = %s ORDER BY captured_at DESC",
+				"SELECT id, session_id, request_url, request_method, route_class, duration_ns, user_role, captured_at, is_baseline, baseline_name FROM {$table} WHERE session_id = %s ORDER BY captured_at DESC",
 				$session_id
 			),
 			ARRAY_A
@@ -239,7 +241,7 @@ class Storage {
 		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is safe from self::table_name().
 		return $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT id, session_id, request_url, request_method, route_class, duration_ns, captured_at, is_baseline, baseline_name FROM {$table} ORDER BY captured_at DESC LIMIT %d",
+				"SELECT id, session_id, request_url, request_method, route_class, duration_ns, user_role, captured_at, is_baseline, baseline_name FROM {$table} ORDER BY captured_at DESC LIMIT %d",
 				$limit
 			),
 			ARRAY_A
@@ -336,7 +338,7 @@ class Storage {
 		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		return $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT id, session_id, profile_type, request_url, request_method, route_class, route_key, duration_ns, captured_at, is_baseline, baseline_name FROM {$table} WHERE route_key = %s ORDER BY captured_at DESC LIMIT %d",
+				"SELECT id, session_id, profile_type, request_url, request_method, route_class, route_key, duration_ns, user_role, captured_at, is_baseline, baseline_name FROM {$table} WHERE route_key = %s ORDER BY captured_at DESC LIMIT %d",
 				$route_key,
 				$limit
 			),
@@ -367,6 +369,11 @@ class Storage {
 		if ( ! in_array( 'route_key', $columns, true ) ) {
 			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			$wpdb->query( "ALTER TABLE {$table} ADD COLUMN route_key varchar(255) NOT NULL DEFAULT '' AFTER route_class, ADD KEY route_key (route_key)" );
+		}
+
+		if ( ! in_array( 'user_role', $columns, true ) ) {
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->query( "ALTER TABLE {$table} ADD COLUMN user_role varchar(50) NOT NULL DEFAULT 'anonymous' AFTER duration_ns" );
 		}
 	}
 }

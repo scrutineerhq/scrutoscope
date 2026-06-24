@@ -109,6 +109,7 @@ class Report {
 				'breakdown'          => $breakdown,
 				'callback_count'     => count( $raw_timings ),
 				'source_count'       => count( $by_source ),
+				'query_count'        => isset( $request_metadata['query_count'] ) ? (int) $request_metadata['query_count'] : 0,
 			),
 			'sources' => array_values( $by_source ),
 			'trace'   => $call_stack_trace,
@@ -120,7 +121,11 @@ class Report {
 				'wp_version'  => isset( $request_metadata['wp_version'] ) ? $request_metadata['wp_version'] : '',
 				'timestamp'   => isset( $request_metadata['timestamp'] ) ? $request_metadata['timestamp'] : time(),
 				'memory_peak' => memory_get_peak_usage(),
+				'user_role'   => isset( $request_metadata['user_role'] ) ? $request_metadata['user_role'] : 'anonymous',
 			),
+			'phase_markers' => isset( $request_metadata['phase_markers'] ) ? $request_metadata['phase_markers'] : array(),
+			'queries'       => isset( $request_metadata['queries'] ) ? $request_metadata['queries'] : array(),
+			'timeline'      => self::build_timeline( $raw_timings, $duration_ns ),
 		);
 	}
 
@@ -263,5 +268,60 @@ class Report {
 		}
 
 		return 'frontend';
+	}
+
+	/**
+	 * Build a timeline of callback executions for the horizontal bar visualization.
+	 *
+	 * Each entry is a simplified representation of a timing event with its offset
+	 * from request start, suitable for rendering as a horizontal bar chart.
+	 *
+	 * @param array $raw_timings  Raw timing entries from Instrumentor.
+	 * @param int   $duration_ns  Total request duration.
+	 * @return array<int, array>
+	 */
+	private static function build_timeline( $raw_timings, $duration_ns ) {
+		if ( empty( $raw_timings ) || $duration_ns <= 0 ) {
+			return array();
+		}
+
+		// Find the earliest start_ns to calculate offsets.
+		$earliest_ns = PHP_INT_MAX;
+		foreach ( $raw_timings as $t ) {
+			if ( isset( $t['start_ns'] ) && $t['start_ns'] < $earliest_ns ) {
+				$earliest_ns = $t['start_ns'];
+			}
+		}
+
+		// Sort by start time.
+		$sorted = $raw_timings;
+		usort(
+			$sorted,
+			function ( $a, $b ) {
+				return ( $a['start_ns'] ?? 0 ) <=> ( $b['start_ns'] ?? 0 );
+			}
+		);
+
+		$timeline = array();
+		foreach ( $sorted as $t ) {
+			$offset_ns = max( 0, ( $t['start_ns'] ?? 0 ) - $earliest_ns );
+			$wall_ns   = max( 0, ( $t['end_ns'] ?? 0 ) - ( $t['start_ns'] ?? 0 ) );
+			$pct_start = ( $duration_ns > 0 ) ? round( ( $offset_ns / $duration_ns ) * 100, 3 ) : 0;
+			$pct_width = ( $duration_ns > 0 ) ? round( ( $wall_ns / $duration_ns ) * 100, 3 ) : 0;
+
+			$timeline[] = array(
+				'callback'   => $t['callback'] ?? '',
+				'tag'        => $t['tag'] ?? '',
+				'source'     => ( $t['attribution']['slug'] ?? '' ),
+				'type'       => ( $t['attribution']['type'] ?? '' ),
+				'offset_ns'  => $offset_ns,
+				'wall_ns'    => $wall_ns,
+				'excl_ns'    => $t['exclusive_ns'] ?? 0,
+				'pct_start'  => $pct_start,
+				'pct_width'  => $pct_width,
+			);
+		}
+
+		return $timeline;
 	}
 }
