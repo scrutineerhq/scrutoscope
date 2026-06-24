@@ -47,6 +47,9 @@
 		if ( 'unattributed' === type ) {
 			return sourceColors.unattributed;
 		}
+		if ( 'unknown' === type || 'unknown' === slug ) {
+			return sourceColors.unknown;
+		}
 		var key = type + ':' + slug;
 		if ( ! pluginColorMap[ key ] ) {
 			pluginColorMap[ key ] = pluginPalette[ colorIndex % pluginPalette.length ];
@@ -590,16 +593,40 @@
 
 		var html = '<div class="scrutinizer-timeline-container">';
 
-		// Phase marker labels at top.
+		// Phase marker labels at top — stack upward to prevent collisions.
 		html += '<div class="scrutinizer-phase-labels">';
+		var labelPositions = [];
 		for ( var m = 0; m < phaseMarkers.length; m++ ) {
 			var marker   = phaseMarkers[ m ];
 			var markerPct = ( marker.offset_ns / durationNs ) * 100;
 			if ( markerPct > 100 ) {
 				markerPct = 100;
 			}
-			html += '<div class="phase-label" style="left:' + markerPct.toFixed( 2 ) + '%">';
-			html += '<span class="phase-label-text">' + esc( formatPhaseName( marker.name ) ) + '</span>';
+			labelPositions.push( { pct: markerPct, name: marker.name } );
+		}
+		// Assign tiers: each label goes one tier higher if it's within 8% of
+		// any label already placed at the same or lower tier.
+		var labelTiers = [];
+		for ( var li = 0; li < labelPositions.length; li++ ) {
+			var tier = 0;
+			for ( var lj = 0; lj < li; lj++ ) {
+				if ( Math.abs( labelPositions[ li ].pct - labelPositions[ lj ].pct ) < 8 && labelTiers[ lj ] >= tier ) {
+					tier = labelTiers[ lj ] + 1;
+				}
+			}
+			labelTiers.push( tier );
+		}
+		var maxTier = 0;
+		for ( var lt = 0; lt < labelTiers.length; lt++ ) {
+			if ( labelTiers[ lt ] > maxTier ) {
+				maxTier = labelTiers[ lt ];
+			}
+		}
+		for ( var lk = 0; lk < labelPositions.length; lk++ ) {
+			// Bottom tier = closest to bar. Higher tiers go up.
+			var bottomPx = labelTiers[ lk ] * 18;
+			html += '<div class="phase-label" style="left:' + labelPositions[ lk ].pct.toFixed( 2 ) + '%;bottom:' + bottomPx + 'px">';
+			html += '<span class="phase-label-text">' + esc( formatPhaseName( labelPositions[ lk ].name ) ) + '</span>';
 			html += '</div>';
 		}
 		html += '</div>';

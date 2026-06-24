@@ -260,7 +260,7 @@
 
 .scrutinizer-phase-labels {
 	position: relative;
-	height: 24px;
+	min-height: 18px;
 	margin-bottom: 4px;
 }
 
@@ -287,7 +287,7 @@
 
 .phase-marker-line {
 	position: absolute;
-	top: -4px;
+	top: -48px;
 	bottom: -4px;
 	width: 1px;
 	border-left: 1px dashed #999;
