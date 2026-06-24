@@ -889,6 +889,98 @@
 	margin-top: 16px;
 }
 
+/* ----- HTTP Call Lollipops (below timeline) ----- */
+
+.scrutinizer-http-lollipops {
+	position: relative;
+	margin-top: 4px;
+}
+
+.http-lollipop {
+	position: absolute;
+	top: 0;
+	transform: translateX(-50%);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+.http-stem {
+	width: 1px;
+	background: #c3c4c7;
+	flex-grow: 1;
+	min-height: 4px;
+	order: 1;
+}
+
+.http-dot {
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	flex-shrink: 0;
+	order: 2;
+}
+
+.http-dot.http-fast {
+	background: #00a32a;
+}
+
+.http-dot.http-medium {
+	background: #dba617;
+}
+
+.http-dot.http-slow {
+	background: #d63638;
+}
+
+.http-lollipop.http-error .http-dot {
+	background: #d63638;
+	box-shadow: 0 0 4px rgba(214, 54, 56, 0.4);
+}
+
+.http-label {
+	font-size: 10px;
+	color: #50575e;
+	white-space: nowrap;
+	line-height: 1;
+	margin-top: 4px;
+	order: 3;
+}
+
+.http-label em {
+	font-style: normal;
+	color: #787c82;
+	font-variant-numeric: tabular-nums;
+}
+
+/* ----- HTTP Calls table ----- */
+
+.scrutinizer-http-table .scrutinizer-sql-cell {
+	max-width: 300px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.scrutinizer-http-table .scrutinizer-sql-cell code {
+	font-size: 11px;
+	color: #1d2327;
+	word-break: break-all;
+	white-space: pre-wrap;
+}
+
+/* ----- Options tab warnings ----- */
+
+.scrutinizer-options-warning {
+	color: #d63638;
+	font-weight: 600;
+}
+
+.scrutinizer-options-caution {
+	color: #dba617;
+	font-weight: 500;
+}
+
 #scrutinizer-compare-view h2 {
 	margin: 8px 0 16px;
 }

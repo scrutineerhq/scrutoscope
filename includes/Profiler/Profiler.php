@@ -67,6 +67,20 @@ class Profiler {
 	private $phase_markers = array();
 
 	/**
+	 * Completed external HTTP call records.
+	 *
+	 * @var array<int, array>
+	 */
+	private $http_calls = array();
+
+	/**
+	 * Stack of in-flight HTTP calls (for matching pre/response pairs).
+	 *
+	 * @var array<int, array>
+	 */
+	private $http_pending = array();
+
+	/**
 	 * Get the singleton instance.
 	 *
 	 * @return Profiler
@@ -204,6 +218,10 @@ class Profiler {
 			add_action( $hook, array( $this, 'record_phase_marker' ), 0 );
 		}
 
+		// Track external HTTP calls via WP HTTP API.
+		add_filter( 'pre_http_request', array( $this, 'track_http_start' ), 1, 3 );
+		add_filter( 'http_response', array( $this, 'track_http_end' ), PHP_INT_MAX, 3 );
+
 		// Catch late-registered hooks at key lifecycle points.
 		add_action( 'wp_loaded', array( $this, 'reinstrument' ), PHP_INT_MAX );
 		add_action( 'admin_init', array( $this, 'reinstrument' ), PHP_INT_MAX );
@@ -319,16 +337,18 @@ class Profiler {
 		}
 
 		$metadata = array(
-			'url'           => $request_url,
-			'method'        => $request_method,
-			'duration_ns'   => $duration_ns,
-			'route_class'   => $this->route_class,
-			'wp_version'    => get_bloginfo( 'version' ),
-			'timestamp'     => time(),
-			'phase_markers' => $this->build_phase_offsets(),
-			'user_role'     => self::get_current_role(),
-			'query_count'   => self::get_query_count(),
-			'queries'       => self::get_query_log(),
+			'url'                => $request_url,
+			'method'             => $request_method,
+			'duration_ns'        => $duration_ns,
+			'route_class'        => $this->route_class,
+			'wp_version'         => get_bloginfo( 'version' ),
+			'timestamp'          => time(),
+			'phase_markers'      => $this->build_phase_offsets(),
+			'user_role'          => self::get_current_role(),
+			'query_count'        => self::get_query_count(),
+			'queries'            => self::get_query_log(),
+			'http_calls'         => $this->build_http_calls(),
+			'autoloaded_options' => self::get_autoloaded_options(),
 		);
 
 		try {
@@ -354,6 +374,194 @@ class Profiler {
 	 */
 	public function is_profiling() {
 		return $this->active;
+	}
+
+	/**
+	 * Record the start of an external HTTP call.
+	 *
+	 * Hooked on `pre_http_request` filter at priority 1.
+	 *
+	 * @param false|array|\WP_Error $preempt     Short-circuit value.
+	 * @param array                 $parsed_args Parsed request arguments.
+	 * @param string                $url         The request URL.
+	 * @return false|array|\WP_Error  Unchanged preempt value.
+	 */
+	public function track_http_start( $preempt, $parsed_args, $url ) {
+		$this->http_pending[] = array(
+			'url'      => $url,
+			'method'   => isset( $parsed_args['method'] ) ? strtoupper( $parsed_args['method'] ) : 'GET',
+			'start_ns' => hrtime( true ),
+			'caller'   => self::get_http_caller(),
+		);
+		return $preempt; // Never interfere with the request.
+	}
+
+	/**
+	 * Record the completion of an external HTTP call.
+	 *
+	 * Hooked on `http_response` filter at PHP_INT_MAX priority.
+	 *
+	 * @param array|\WP_Error $response    HTTP response or error.
+	 * @param array           $parsed_args Parsed request arguments.
+	 * @param string          $url         The request URL.
+	 * @return array|\WP_Error  Unchanged response.
+	 */
+	public function track_http_end( $response, $parsed_args, $url ) {
+		if ( empty( $this->http_pending ) ) {
+			return $response;
+		}
+
+		$pending = array_pop( $this->http_pending );
+		$end_ns  = hrtime( true );
+
+		$status   = 0;
+		$is_error = is_wp_error( $response );
+		if ( ! $is_error && isset( $response['response']['code'] ) ) {
+			$status = (int) $response['response']['code'];
+		}
+
+		$this->http_calls[] = array(
+			'url'         => $pending['url'],
+			'method'      => $pending['method'],
+			'status'      => $status,
+			'start_ns'    => $pending['start_ns'],
+			'end_ns'      => $end_ns,
+			'duration_ns' => max( 0, $end_ns - $pending['start_ns'] ),
+			'caller'      => $pending['caller'],
+			'is_error'    => $is_error,
+		);
+
+		return $response;
+	}
+
+	/**
+	 * Build HTTP call data with offsets relative to request start.
+	 *
+	 * @return array
+	 */
+	private function build_http_calls() {
+		$calls = array();
+		foreach ( $this->http_calls as $call ) {
+			$offset_ns = max( 0, $call['start_ns'] - $this->request_start_ns );
+			$calls[]   = array(
+				'url'         => $call['url'],
+				'method'      => $call['method'],
+				'status'      => $call['status'],
+				'duration_ns' => $call['duration_ns'],
+				'duration_ms' => round( $call['duration_ns'] / 1e6, 2 ),
+				'offset_ns'   => $offset_ns,
+				'caller'      => $call['caller'],
+				'is_error'    => $call['is_error'],
+			);
+		}
+
+		// Sort by offset ascending.
+		usort(
+			$calls,
+			function ( $a, $b ) {
+				return $a['offset_ns'] <=> $b['offset_ns'];
+			}
+		);
+
+		return $calls;
+	}
+
+	/**
+	 * Walk the debug backtrace to attribute an HTTP call to its source.
+	 *
+	 * Returns a short caller chain string and an attribution array
+	 * compatible with the source classification system.
+	 *
+	 * @return array{caller: string, attribution: array}
+	 */
+	private static function get_http_caller() {
+		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_debug_backtrace
+		$trace        = debug_backtrace( DEBUG_BACKTRACE_IGNORE_ARGS, 20 );
+		$caller_parts = array();
+		$source_file  = '';
+
+		foreach ( $trace as $frame ) {
+			// Skip frames without a file.
+			if ( empty( $frame['file'] ) ) {
+				continue;
+			}
+
+			$file = $frame['file'];
+
+			// Skip WP HTTP internals and this profiler.
+			if ( false !== strpos( $file, 'class-http.php' )
+				|| false !== strpos( $file, 'class-wp-http' )
+				|| false !== strpos( $file, 'Profiler.php' )
+				|| false !== strpos( $file, 'http.php' )
+			) {
+				continue;
+			}
+
+			// Build a short caller label.
+			$fn = '';
+			if ( ! empty( $frame['class'] ) ) {
+				$fn = $frame['class'] . '::' . $frame['function'];
+			} elseif ( ! empty( $frame['function'] ) ) {
+				$fn = $frame['function'];
+			}
+
+			if ( $fn && count( $caller_parts ) < 3 ) {
+				$caller_parts[] = $fn;
+			}
+
+			// Use the first non-internal file for attribution.
+			if ( empty( $source_file ) ) {
+				$source_file = $file;
+			}
+		}
+
+		$attribution = Attribution::classify( $source_file );
+
+		return array(
+			'caller'      => implode( ', ', $caller_parts ),
+			'attribution' => $attribution,
+		);
+	}
+
+	/**
+	 * Capture autoloaded options from wp_options.
+	 *
+	 * @return array{total_size: int, count: int, options: array}
+	 */
+	private static function get_autoloaded_options() {
+		global $wpdb;
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$results = $wpdb->get_results(
+			"SELECT option_name, LENGTH(option_value) AS size_bytes FROM {$wpdb->options} WHERE autoload = 'yes' ORDER BY LENGTH(option_value) DESC",
+			ARRAY_A
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+
+		if ( empty( $results ) || ! is_array( $results ) ) {
+			return array(
+				'total_size' => 0,
+				'count'      => 0,
+				'options'    => array(),
+			);
+		}
+
+		$total   = 0;
+		$options = array();
+		foreach ( $results as $row ) {
+			$size    = (int) $row['size_bytes'];
+			$total  += $size;
+			$options[] = array(
+				'name' => $row['option_name'],
+				'size' => $size,
+			);
+		}
+
+		return array(
+			'total_size' => $total,
+			'count'      => count( $options ),
+			'options'    => $options,
+		);
 	}
 
 	/**
