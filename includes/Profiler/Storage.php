@@ -214,27 +214,297 @@ class Storage {
 	}
 
 	/**
-	 * Mark a profile as a baseline.
+	 * Pin a profile and optionally set a note and tags.
 	 *
 	 * @param int    $profile_id  Profile row ID.
-	 * @param string $name        Baseline name.
+	 * @param string $note        Optional annotation.
+	 * @param string $tags        Optional comma-separated tags.
 	 * @return bool
 	 */
-	public static function save_baseline( $profile_id, $name ) {
+	public static function pin_profile( $profile_id, $note = '', $tags = '' ) {
+		global $wpdb;
+
+		$data   = array( 'is_pinned' => 1 );
+		$format = array( '%d' );
+
+		if ( '' !== $note ) {
+			$data['note'] = $note;
+			$format[]     = '%s';
+		}
+		if ( '' !== $tags ) {
+			$data['tags'] = $tags;
+			$format[]     = '%s';
+		}
+
+		$result = $wpdb->update(
+			self::table_name(),
+			$data,
+			array( 'id' => $profile_id ),
+			$format,
+			array( '%d' )
+		);
+
+		return ( false !== $result );
+	}
+
+	/**
+	 * Unpin a profile.
+	 *
+	 * @param int $profile_id  Profile row ID.
+	 * @return bool
+	 */
+	public static function unpin_profile( $profile_id ) {
+		global $wpdb;
+
+		$result = $wpdb->update(
+			self::table_name(),
+			array( 'is_pinned' => 0 ),
+			array( 'id' => $profile_id ),
+			array( '%d' ),
+			array( '%d' )
+		);
+
+		return ( false !== $result );
+	}
+
+	/**
+	 * Update the note and tags on a profile.
+	 *
+	 * @param int    $profile_id  Profile row ID.
+	 * @param string $note        Annotation text.
+	 * @param string $tags        Comma-separated tags.
+	 * @return bool
+	 */
+	public static function update_annotation( $profile_id, $note, $tags ) {
 		global $wpdb;
 
 		$result = $wpdb->update(
 			self::table_name(),
 			array(
-				'is_baseline'   => 1,
-				'baseline_name' => $name,
+				'note' => $note,
+				'tags' => $tags,
 			),
 			array( 'id' => $profile_id ),
-			array( '%d', '%s' ),
+			array( '%s', '%s' ),
 			array( '%d' )
 		);
 
 		return ( false !== $result );
+	}
+
+	/**
+	 * Auto-prune unpinned profiles for a route, keeping the most recent N.
+	 *
+	 * @param string $route_key  Normalized route key.
+	 * @param int    $keep       Number of unpinned profiles to keep per route.
+	 * @return int  Number of profiles deleted.
+	 */
+	public static function auto_prune( $route_key, $keep = 50 ) {
+		global $wpdb;
+
+		$table = self::table_name();
+
+		// Count unpinned profiles for this route.
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$count = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM {$table} WHERE route_key = %s AND is_pinned = 0",
+				$route_key
+			)
+		);
+
+		if ( $count <= $keep ) {
+			return 0;
+		}
+
+		// Find the ID threshold: keep the most recent $keep unpinned rows.
+		$cutoff_id = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT id FROM {$table} WHERE route_key = %s AND is_pinned = 0 ORDER BY captured_at DESC, id DESC LIMIT 1 OFFSET %d",
+				$route_key,
+				$keep
+			)
+		);
+
+		if ( ! $cutoff_id ) {
+			return 0;
+		}
+
+		$deleted = (int) $wpdb->query(
+			$wpdb->prepare(
+				"DELETE FROM {$table} WHERE route_key = %s AND is_pinned = 0 AND id <= %d",
+				$route_key,
+				$cutoff_id
+			)
+		);
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		return $deleted;
+	}
+
+	/**
+	 * Get pinned profiles.
+	 *
+	 * @param int $limit  Maximum number of profiles to return.
+	 * @return array
+	 */
+	public static function get_pinned_profiles( $limit = 50 ) {
+		global $wpdb;
+
+		$table = self::table_name();
+
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		return $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT id, session_id, profile_type, request_url, request_method, route_class, route_key, duration_ns, user_role, captured_at, is_pinned, note, tags FROM {$table} WHERE is_pinned = 1 ORDER BY captured_at DESC LIMIT %d",
+				$limit
+			),
+			ARRAY_A
+		);
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+	}
+
+	/**
+	 * Search profiles with flexible filtering.
+	 *
+	 * @param array $args {
+	 *     Optional. Search arguments.
+	 *     @type string $route_key    Filter by route key.
+	 *     @type string $tag          Filter by tag (partial match within comma-separated tags).
+	 *     @type bool   $pinned_only  Only return pinned profiles.
+	 *     @type string $date_from    Filter from date (Y-m-d).
+	 *     @type string $date_to      Filter to date (Y-m-d).
+	 *     @type int    $limit        Maximum results.
+	 * }
+	 * @return array
+	 */
+	public static function search_profiles( $args = array() ) {
+		global $wpdb;
+
+		$table = self::table_name();
+		$where = array( '1=1' );
+		$vals  = array();
+
+		if ( ! empty( $args['route_key'] ) ) {
+			$where[] = 'route_key = %s';
+			$vals[]  = $args['route_key'];
+		}
+
+		if ( ! empty( $args['tag'] ) ) {
+			$where[] = 'tags LIKE %s';
+			$vals[]  = '%' . $wpdb->esc_like( $args['tag'] ) . '%';
+		}
+
+		if ( ! empty( $args['pinned_only'] ) ) {
+			$where[] = 'is_pinned = 1';
+		}
+
+		if ( ! empty( $args['date_from'] ) ) {
+			$where[] = 'captured_at >= %s';
+			$vals[]  = $args['date_from'] . ' 00:00:00';
+		}
+
+		if ( ! empty( $args['date_to'] ) ) {
+			$where[] = 'captured_at <= %s';
+			$vals[]  = $args['date_to'] . ' 23:59:59';
+		}
+
+		$limit     = isset( $args['limit'] ) ? absint( $args['limit'] ) : 100;
+		$where_sql = implode( ' AND ', $where );
+		$vals[]    = $limit;
+
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+		$sql = "SELECT id, session_id, profile_type, request_url, request_method, route_class, route_key, duration_ns, user_role, captured_at, is_pinned, note, tags
+			FROM {$table}
+			WHERE {$where_sql}
+			ORDER BY captured_at DESC
+			LIMIT %d";
+
+		if ( ! empty( $vals ) ) {
+			$sql = $wpdb->prepare( $sql, $vals );
+		}
+
+		return $wpdb->get_results( $sql, ARRAY_A );
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+	}
+
+	/**
+	 * Load two profiles and compute comparison deltas.
+	 *
+	 * @param int $id_a  First profile ID.
+	 * @param int $id_b  Second profile ID.
+	 * @return array|null  Comparison data or null if either profile not found.
+	 */
+	public static function get_comparison( $id_a, $id_b ) {
+		$a = self::get_profile( $id_a );
+		$b = self::get_profile( $id_b );
+
+		if ( null === $a || null === $b ) {
+			return null;
+		}
+
+		$sum_a = isset( $a['profile_data']['summary'] ) ? $a['profile_data']['summary'] : array();
+		$sum_b = isset( $b['profile_data']['summary'] ) ? $b['profile_data']['summary'] : array();
+
+		$dur_a = isset( $sum_a['duration_ns'] ) ? (int) $sum_a['duration_ns'] : 0;
+		$dur_b = isset( $sum_b['duration_ns'] ) ? (int) $sum_b['duration_ns'] : 0;
+
+		$qc_a = isset( $sum_a['query_count'] ) ? (int) $sum_a['query_count'] : 0;
+		$qc_b = isset( $sum_b['query_count'] ) ? (int) $sum_b['query_count'] : 0;
+
+		// Build per-source breakdown comparison.
+		$sources_a = self::index_sources( isset( $a['profile_data']['sources'] ) ? $a['profile_data']['sources'] : array() );
+		$sources_b = self::index_sources( isset( $b['profile_data']['sources'] ) ? $b['profile_data']['sources'] : array() );
+
+		$all_keys      = array_unique( array_merge( array_keys( $sources_a ), array_keys( $sources_b ) ) );
+		$source_deltas = array();
+		foreach ( $all_keys as $key ) {
+			$ea = isset( $sources_a[ $key ] ) ? (int) $sources_a[ $key ]['exclusive_ns'] : 0;
+			$eb = isset( $sources_b[ $key ] ) ? (int) $sources_b[ $key ]['exclusive_ns'] : 0;
+			$source_deltas[ $key ] = array(
+				'a_ns'    => $ea,
+				'b_ns'    => $eb,
+				'delta_ns' => $eb - $ea,
+			);
+		}
+
+		// Compute unattributed time.
+		$total_excl_a = isset( $sum_a['total_exclusive_ns'] ) ? (int) $sum_a['total_exclusive_ns'] : 0;
+		$total_excl_b = isset( $sum_b['total_exclusive_ns'] ) ? (int) $sum_b['total_exclusive_ns'] : 0;
+		$unattr_a     = $dur_a - $total_excl_a;
+		$unattr_b     = $dur_b - $total_excl_b;
+
+		return array(
+			'a'     => $a,
+			'b'     => $b,
+			'delta' => array(
+				'duration_ns'      => $dur_b - $dur_a,
+				'duration_a_ns'    => $dur_a,
+				'duration_b_ns'    => $dur_b,
+				'query_count_a'    => $qc_a,
+				'query_count_b'    => $qc_b,
+				'query_count_delta' => $qc_b - $qc_a,
+				'unattributed_a_ns' => $unattr_a,
+				'unattributed_b_ns' => $unattr_b,
+				'unattributed_delta_ns' => $unattr_b - $unattr_a,
+				'sources'          => $source_deltas,
+			),
+		);
+	}
+
+	/**
+	 * Index sources array by slug for comparison.
+	 *
+	 * @param array $sources  Sources array from profile data.
+	 * @return array  Keyed by "type:slug".
+	 */
+	private static function index_sources( $sources ) {
+		$indexed = array();
+		foreach ( $sources as $src ) {
+			$key = ( isset( $src['type'] ) ? $src['type'] : 'unknown' ) . ':' . ( isset( $src['slug'] ) ? $src['slug'] : '' );
+			$indexed[ $key ] = $src;
+		}
+		return $indexed;
 	}
 
 	/**
@@ -254,24 +524,6 @@ class Storage {
 				"SELECT id, session_id, request_url, request_method, route_class, duration_ns, user_role, captured_at, is_pinned, note, tags FROM {$table} ORDER BY captured_at DESC LIMIT %d",
 				$limit
 			),
-			ARRAY_A
-		);
-		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-	}
-
-	/**
-	 * Get all baselines.
-	 *
-	 * @return array
-	 */
-	public static function get_baselines() {
-		global $wpdb;
-
-		$table = self::table_name();
-
-		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is safe from self::table_name().
-		return $wpdb->get_results(
-			"SELECT id, session_id, request_url, request_method, route_class, duration_ns, captured_at, baseline_name FROM {$table} WHERE is_baseline = 1 ORDER BY captured_at DESC",
 			ARRAY_A
 		);
 		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -348,7 +600,7 @@ class Storage {
 		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		return $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT id, session_id, profile_type, request_url, request_method, route_class, route_key, duration_ns, user_role, captured_at, is_baseline, baseline_name FROM {$table} WHERE route_key = %s ORDER BY captured_at DESC LIMIT %d",
+				"SELECT id, session_id, profile_type, request_url, request_method, route_class, route_key, duration_ns, user_role, captured_at, is_pinned, note, tags FROM {$table} WHERE route_key = %s ORDER BY captured_at DESC LIMIT %d",
 				$route_key,
 				$limit
 			),
@@ -384,6 +636,21 @@ class Storage {
 		if ( ! in_array( 'user_role', $columns, true ) ) {
 			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			$wpdb->query( "ALTER TABLE {$table} ADD COLUMN user_role varchar(50) NOT NULL DEFAULT 'anonymous' AFTER duration_ns" );
+		}
+
+		if ( ! in_array( 'is_pinned', $columns, true ) ) {
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->query( "ALTER TABLE {$table} ADD COLUMN is_pinned tinyint(1) NOT NULL DEFAULT 0 AFTER captured_at, ADD KEY is_pinned (is_pinned)" );
+		}
+
+		if ( ! in_array( 'note', $columns, true ) ) {
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->query( "ALTER TABLE {$table} ADD COLUMN note text NOT NULL AFTER is_pinned" );
+		}
+
+		if ( ! in_array( 'tags', $columns, true ) ) {
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->query( "ALTER TABLE {$table} ADD COLUMN tags varchar(255) NOT NULL DEFAULT '' AFTER note" );
 		}
 	}
 }

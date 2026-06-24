@@ -27,6 +27,11 @@ class Ajax {
 		add_action( 'wp_ajax_scrutinizer_get_profile_detail', array( __CLASS__, 'get_profile_detail' ) );
 		add_action( 'wp_ajax_scrutinizer_delete_profile', array( __CLASS__, 'delete_profile' ) );
 		add_action( 'wp_ajax_scrutinizer_toggle_background', array( __CLASS__, 'toggle_background' ) );
+		add_action( 'wp_ajax_scrutinizer_pin_profile', array( __CLASS__, 'pin_profile' ) );
+		add_action( 'wp_ajax_scrutinizer_unpin_profile', array( __CLASS__, 'unpin_profile' ) );
+		add_action( 'wp_ajax_scrutinizer_update_annotation', array( __CLASS__, 'update_annotation' ) );
+		add_action( 'wp_ajax_scrutinizer_compare_profiles', array( __CLASS__, 'compare_profiles' ) );
+		add_action( 'wp_ajax_scrutinizer_get_history', array( __CLASS__, 'get_history' ) );
 	}
 
 	/**
@@ -286,5 +291,219 @@ class Ajax {
 		wp_send_json_success(
 			array( 'message' => __( 'Profile deleted.', 'scrutinizer' ) )
 		);
+	}
+
+	/**
+	 * Pin a profile.
+	 */
+	public static function pin_profile() {
+		check_ajax_referer( 'scrutinizer_nonce', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error(
+				array( 'message' => __( 'Permission denied.', 'scrutinizer' ) ),
+				403
+			);
+		}
+
+		$profile_id = 0;
+		if ( isset( $_POST['profile_id'] ) ) {
+			$profile_id = absint( $_POST['profile_id'] );
+		}
+
+		if ( empty( $profile_id ) ) {
+			wp_send_json_error(
+				array( 'message' => __( 'No profile ID specified.', 'scrutinizer' ) ),
+				400
+			);
+		}
+
+		$note = '';
+		if ( isset( $_POST['note'] ) ) {
+			$note = sanitize_textarea_field( wp_unslash( $_POST['note'] ) );
+		}
+
+		$tags = '';
+		if ( isset( $_POST['tags'] ) ) {
+			$tags = sanitize_text_field( wp_unslash( $_POST['tags'] ) );
+		}
+
+		$result = Storage::pin_profile( $profile_id, $note, $tags );
+
+		if ( ! $result ) {
+			wp_send_json_error(
+				array( 'message' => __( 'Failed to pin profile.', 'scrutinizer' ) ),
+				500
+			);
+		}
+
+		wp_send_json_success(
+			array( 'message' => __( 'Profile pinned.', 'scrutinizer' ) )
+		);
+	}
+
+	/**
+	 * Unpin a profile.
+	 */
+	public static function unpin_profile() {
+		check_ajax_referer( 'scrutinizer_nonce', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error(
+				array( 'message' => __( 'Permission denied.', 'scrutinizer' ) ),
+				403
+			);
+		}
+
+		$profile_id = 0;
+		if ( isset( $_POST['profile_id'] ) ) {
+			$profile_id = absint( $_POST['profile_id'] );
+		}
+
+		if ( empty( $profile_id ) ) {
+			wp_send_json_error(
+				array( 'message' => __( 'No profile ID specified.', 'scrutinizer' ) ),
+				400
+			);
+		}
+
+		$result = Storage::unpin_profile( $profile_id );
+
+		if ( ! $result ) {
+			wp_send_json_error(
+				array( 'message' => __( 'Failed to unpin profile.', 'scrutinizer' ) ),
+				500
+			);
+		}
+
+		wp_send_json_success(
+			array( 'message' => __( 'Profile unpinned.', 'scrutinizer' ) )
+		);
+	}
+
+	/**
+	 * Update profile annotation (note + tags).
+	 */
+	public static function update_annotation() {
+		check_ajax_referer( 'scrutinizer_nonce', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error(
+				array( 'message' => __( 'Permission denied.', 'scrutinizer' ) ),
+				403
+			);
+		}
+
+		$profile_id = 0;
+		if ( isset( $_POST['profile_id'] ) ) {
+			$profile_id = absint( $_POST['profile_id'] );
+		}
+
+		if ( empty( $profile_id ) ) {
+			wp_send_json_error(
+				array( 'message' => __( 'No profile ID specified.', 'scrutinizer' ) ),
+				400
+			);
+		}
+
+		$note = '';
+		if ( isset( $_POST['note'] ) ) {
+			$note = sanitize_textarea_field( wp_unslash( $_POST['note'] ) );
+		}
+
+		$tags = '';
+		if ( isset( $_POST['tags'] ) ) {
+			$tags = sanitize_text_field( wp_unslash( $_POST['tags'] ) );
+		}
+
+		$result = Storage::update_annotation( $profile_id, $note, $tags );
+
+		if ( ! $result ) {
+			wp_send_json_error(
+				array( 'message' => __( 'Failed to update annotation.', 'scrutinizer' ) ),
+				500
+			);
+		}
+
+		wp_send_json_success(
+			array( 'message' => __( 'Annotation updated.', 'scrutinizer' ) )
+		);
+	}
+
+	/**
+	 * Compare two profiles.
+	 */
+	public static function compare_profiles() {
+		check_ajax_referer( 'scrutinizer_nonce', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error(
+				array( 'message' => __( 'Permission denied.', 'scrutinizer' ) ),
+				403
+			);
+		}
+
+		$id_a = 0;
+		$id_b = 0;
+		if ( isset( $_GET['profile_a'] ) ) {
+			$id_a = absint( $_GET['profile_a'] );
+		}
+		if ( isset( $_GET['profile_b'] ) ) {
+			$id_b = absint( $_GET['profile_b'] );
+		}
+
+		if ( empty( $id_a ) || empty( $id_b ) ) {
+			wp_send_json_error(
+				array( 'message' => __( 'Two profile IDs required.', 'scrutinizer' ) ),
+				400
+			);
+		}
+
+		$comparison = Storage::get_comparison( $id_a, $id_b );
+
+		if ( null === $comparison ) {
+			wp_send_json_error(
+				array( 'message' => __( 'One or both profiles not found.', 'scrutinizer' ) ),
+				404
+			);
+		}
+
+		wp_send_json_success( array( 'comparison' => $comparison ) );
+	}
+
+	/**
+	 * Get profile history with filtering.
+	 */
+	public static function get_history() {
+		check_ajax_referer( 'scrutinizer_nonce', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error(
+				array( 'message' => __( 'Permission denied.', 'scrutinizer' ) ),
+				403
+			);
+		}
+
+		$args = array();
+
+		if ( ! empty( $_GET['route_key'] ) ) {
+			$args['route_key'] = sanitize_text_field( wp_unslash( $_GET['route_key'] ) );
+		}
+		if ( ! empty( $_GET['tag'] ) ) {
+			$args['tag'] = sanitize_text_field( wp_unslash( $_GET['tag'] ) );
+		}
+		if ( ! empty( $_GET['pinned_only'] ) ) {
+			$args['pinned_only'] = true;
+		}
+		if ( ! empty( $_GET['date_from'] ) ) {
+			$args['date_from'] = sanitize_text_field( wp_unslash( $_GET['date_from'] ) );
+		}
+		if ( ! empty( $_GET['date_to'] ) ) {
+			$args['date_to'] = sanitize_text_field( wp_unslash( $_GET['date_to'] ) );
+		}
+
+		$profiles = Storage::search_profiles( $args );
+
+		wp_send_json_success( array( 'profiles' => $profiles ) );
 	}
 }

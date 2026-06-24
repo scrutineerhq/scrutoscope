@@ -702,3 +702,208 @@
 	font-size: 16px;
 	margin: 8px 0 12px;
 }
+
+/* ----- Top-level tab switcher ----- */
+
+.scrutinizer-top-tabs {
+	display: flex;
+	gap: 0;
+	border-bottom: 2px solid #c3c4c7;
+	margin: 0 0 16px;
+}
+
+.scrutinizer-top-tab {
+	padding: 10px 20px;
+	border: none;
+	background: transparent;
+	cursor: pointer;
+	font-size: 14px;
+	font-weight: 500;
+	color: #50575e;
+	border-bottom: 2px solid transparent;
+	margin-bottom: -2px;
+	transition: color 0.15s;
+}
+
+.scrutinizer-top-tab:hover {
+	color: #2271b1;
+}
+
+.scrutinizer-top-tab.active {
+	color: #1d2327;
+	border-bottom-color: #2271b1;
+	font-weight: 600;
+}
+
+/* ----- Pin / Annotate toolbar ----- */
+
+.scrutinizer-pin-toolbar {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 10px 16px;
+	background: #f6f7f7;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+	margin: 0 0 16px;
+	flex-wrap: wrap;
+}
+
+.scrutinizer-pin-toolbar #scrutinizer-pin-toggle {
+	white-space: nowrap;
+	min-width: 80px;
+}
+
+.scrutinizer-pin-field {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	flex: 1;
+	min-width: 150px;
+}
+
+.scrutinizer-pin-field span {
+	font-size: 12px;
+	color: #50575e;
+	font-weight: 500;
+	white-space: nowrap;
+}
+
+.scrutinizer-pin-field input {
+	flex: 1;
+	padding: 4px 8px;
+	border: 1px solid #c3c4c7;
+	border-radius: 3px;
+	font-size: 12px;
+}
+
+.scrutinizer-pin-field input:focus {
+	border-color: #2271b1;
+	box-shadow: 0 0 0 1px #2271b1;
+	outline: none;
+}
+
+/* ----- History filters ----- */
+
+.scrutinizer-history-filters {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+	padding: 10px 0;
+	flex-wrap: wrap;
+	margin-bottom: 12px;
+}
+
+.scrutinizer-history-filters select,
+.scrutinizer-history-filters input[type="text"],
+.scrutinizer-history-filters input[type="date"] {
+	padding: 4px 8px;
+	border: 1px solid #c3c4c7;
+	border-radius: 3px;
+	font-size: 12px;
+}
+
+.scrutinizer-history-filters select {
+	max-width: 240px;
+}
+
+.scrutinizer-history-filters input[type="text"] {
+	width: 150px;
+}
+
+.scrutinizer-history-filters input[type="date"] {
+	width: 130px;
+}
+
+.scrutinizer-history-check-label {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	font-size: 12px;
+	white-space: nowrap;
+	cursor: pointer;
+}
+
+.scrutinizer-history-dash {
+	color: #787c82;
+}
+
+/* ----- History table ----- */
+
+.scrutinizer-history-table .scrutinizer-check-col {
+	width: 30px;
+	text-align: center;
+}
+
+/* ----- Tag pills ----- */
+
+.scrutinizer-tag-pill {
+	display: inline-block;
+	padding: 1px 8px;
+	border-radius: 10px;
+	font-size: 10px;
+	font-weight: 500;
+	background: #e8f0fe;
+	color: #174ea6;
+	margin-right: 4px;
+	white-space: nowrap;
+}
+
+/* ----- Compare view ----- */
+
+#scrutinizer-compare-view {
+	margin-top: 16px;
+}
+
+#scrutinizer-compare-view h2 {
+	margin: 8px 0 16px;
+}
+
+#scrutinizer-compare-view h3 {
+	margin: 20px 0 8px;
+	font-size: 14px;
+}
+
+.scrutinizer-compare-header {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	padding: 12px 16px;
+	background: #f6f7f7;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+	margin-bottom: 16px;
+}
+
+.compare-profile-label {
+	flex: 1;
+	font-size: 13px;
+	font-family: monospace;
+}
+
+.compare-profile-label small {
+	color: #787c82;
+	font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.compare-vs {
+	font-size: 14px;
+	font-weight: 600;
+	color: #787c82;
+}
+
+.scrutinizer-compare-table .numeric {
+	text-align: right;
+	font-family: -apple-system, BlinkMacSystemFont, monospace;
+	font-variant-numeric: tabular-nums;
+}
+
+.scrutinizer-delta-negative {
+	color: #00a32a !important;
+	font-weight: 600;
+}
+
+.scrutinizer-delta-positive {
+	color: #d63638 !important;
+	font-weight: 600;
+}

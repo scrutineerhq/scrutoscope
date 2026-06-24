@@ -13,12 +13,16 @@
 	'use strict';
 
 	var pollingTimer  = null;
-	var currentView   = 'grouped'; // 'grouped', 'route', 'detail'
+	var currentView   = 'grouped'; // 'grouped', 'route', 'detail', 'history', 'compare'
 	var currentRoute  = '';        // route_key for the active drill-down
+	var activeTopTab  = 'routes';  // 'routes' or 'history'
 	var sortField     = '';
 	var sortDir       = 'desc';    // 'asc' or 'desc'
 	var groupedData   = [];
 	var routeData     = [];
+	var historyData   = [];
+	var compareChecked = {};       // { profileId: true }
+	var currentProfileId = 0;     // currently viewed profile detail
 
 	/* ------------------------------------------------------------------ */
 	/*  Color palette                                                      */
@@ -87,6 +91,7 @@
 
 	function init() {
 		bindEvents();
+		renderTopTabs();
 		fetchGrouped();
 
 		if ( scrutinizerAdmin.isActive ) {
@@ -173,6 +178,69 @@
 			$( '#scrutinizer-rate-value' ).text( $( this ).val() + '%' );
 		} );
 		$( document ).on( 'change', '#scrutinizer-sample-rate', saveBackgroundRate );
+
+		// Top-level tab switcher (Routes | History).
+		$( document ).on( 'click', '.scrutinizer-top-tab', function() {
+			var tab = $( this ).data( 'top-tab' );
+			$( '.scrutinizer-top-tab' ).removeClass( 'active' );
+			$( this ).addClass( 'active' );
+			activeTopTab = tab;
+			if ( 'routes' === tab ) {
+				showGroupedView();
+			} else if ( 'history' === tab ) {
+				showHistoryView();
+			}
+		} );
+
+		// Pin toggle on detail view.
+		$( document ).on( 'click', '#scrutinizer-pin-toggle', function() {
+			var pinned = $( this ).data( 'pinned' );
+			if ( pinned ) {
+				unpinProfile( currentProfileId );
+			} else {
+				pinProfile( currentProfileId );
+			}
+		} );
+
+		// Save annotation on blur.
+		$( document ).on( 'blur', '#scrutinizer-note-input', saveAnnotation );
+		$( document ).on( 'blur', '#scrutinizer-tags-input', saveAnnotation );
+		$( document ).on( 'keydown', '#scrutinizer-note-input, #scrutinizer-tags-input', function( e ) {
+			if ( 13 === e.keyCode ) {
+				e.preventDefault();
+				$( this ).trigger( 'blur' );
+			}
+		} );
+
+		// History filters.
+		$( document ).on( 'change', '#scrutinizer-history-route', fetchHistory );
+		$( document ).on( 'input', '#scrutinizer-history-tag', debounceHistory );
+		$( document ).on( 'change', '#scrutinizer-history-pinned', fetchHistory );
+		$( document ).on( 'change', '#scrutinizer-history-from, #scrutinizer-history-to', fetchHistory );
+
+		// Compare checkboxes.
+		$( document ).on( 'change', '.scrutinizer-compare-check', function() {
+			var id = $( this ).data( 'profile-id' );
+			if ( $( this ).is( ':checked' ) ) {
+				compareChecked[ id ] = true;
+			} else {
+				delete compareChecked[ id ];
+			}
+			updateCompareButton();
+		} );
+
+		// Compare button.
+		$( document ).on( 'click', '#scrutinizer-compare-btn', function() {
+			var ids = Object.keys( compareChecked );
+			if ( 2 === ids.length ) {
+				loadComparison( parseInt( ids[0], 10 ), parseInt( ids[1], 10 ) );
+			}
+		} );
+
+		// Back from compare.
+		$( document ).on( 'click', '#scrutinizer-back-to-history', function() {
+			showHistoryView();
+		} );
 	}
 
 	/* ------------------------------------------------------------------ */
@@ -313,6 +381,18 @@
 	}
 
 	/* ------------------------------------------------------------------ */
+	/*  Top-level tabs (Routes | History)                                  */
+	/* ------------------------------------------------------------------ */
+
+	function renderTopTabs() {
+		var html = '<div class="scrutinizer-top-tabs">';
+		html += '<button class="scrutinizer-top-tab active" data-top-tab="routes">' + esc( scrutinizerAdmin.i18n.routes || 'Routes' ) + '</button>';
+		html += '<button class="scrutinizer-top-tab" data-top-tab="history">' + esc( scrutinizerAdmin.i18n.history || 'History' ) + '</button>';
+		html += '</div>';
+		$( '#scrutinizer-results h2' ).replaceWith( html );
+	}
+
+	/* ------------------------------------------------------------------ */
 	/*  Level 1: Grouped routes                                            */
 	/* ------------------------------------------------------------------ */
 
@@ -384,7 +464,10 @@
 		$( '#scrutinizer-results' ).show();
 		$( '#scrutinizer-route-detail' ).remove();
 		$( '#scrutinizer-detail' ).hide();
-		$( '#scrutinizer-results h2' ).text( 'Routes' );
+		$( '#scrutinizer-history-view' ).remove();
+		$( '#scrutinizer-compare-view' ).remove();
+		$( '.scrutinizer-top-tab' ).removeClass( 'active' );
+		$( '.scrutinizer-top-tab[data-top-tab="routes"]' ).addClass( 'active' );
 		renderGroupedTable( groupedData );
 	}
 
@@ -507,8 +590,24 @@
 		var timeline     = data.timeline || [];
 		var durMs        = ( summary.duration_ms || 0 ).toFixed( 1 );
 		var queryCount   = summary.query_count || 0;
+		var isPinned     = parseInt( profile.is_pinned, 10 ) === 1;
+		var profileNote  = profile.note || '';
+		var profileTags  = profile.tags || '';
+
+		currentProfileId = parseInt( profile.id, 10 );
 
 		var html = '';
+
+		// Pin/annotate toolbar.
+		html += '<div class="scrutinizer-pin-toolbar">';
+		html += '<button type="button" class="button ' + ( isPinned ? 'button-primary' : '' ) + '" id="scrutinizer-pin-toggle" data-pinned="' + ( isPinned ? '1' : '' ) + '">';
+		html += isPinned ? '📌 ' + esc( scrutinizerAdmin.i18n.unpin || 'Unpin' ) : '📌 ' + esc( scrutinizerAdmin.i18n.pin || 'Pin' );
+		html += '</button>';
+		html += '<label class="scrutinizer-pin-field"><span>' + esc( scrutinizerAdmin.i18n.note || 'Note' ) + ':</span>';
+		html += '<input type="text" id="scrutinizer-note-input" value="' + esc( profileNote ) + '" placeholder="Why did you take this measurement?" /></label>';
+		html += '<label class="scrutinizer-pin-field"><span>' + esc( scrutinizerAdmin.i18n.tags || 'Tags' ) + ':</span>';
+		html += '<input type="text" id="scrutinizer-tags-input" value="' + esc( profileTags ) + '" placeholder="before-update, opcache, v2.1" /></label>';
+		html += '</div>';
 
 		// Header with role pill.
 		html += '<div class="scrutinizer-detail-header">';
@@ -884,11 +983,15 @@
 		currentView = 'detail';
 		$( '#scrutinizer-results' ).hide();
 		$( '#scrutinizer-route-detail' ).hide();
+		$( '#scrutinizer-history-view' ).hide();
+		$( '#scrutinizer-compare-view' ).remove();
 		$( '#scrutinizer-detail' ).show();
 
 		// Adjust back button based on where we came from.
 		var $back = $( '#scrutinizer-detail .button-link' ).first();
-		if ( currentRoute ) {
+		if ( 'history' === activeTopTab ) {
+			$back.attr( 'id', 'scrutinizer-back-to-history' ).text( scrutinizerAdmin.i18n.backToHistory || '← Back to history' );
+		} else if ( currentRoute ) {
 			$back.attr( 'id', 'scrutinizer-back-to-route' ).text( '← Back to ' + truncate( currentRoute, 40 ) );
 		} else {
 			$back.attr( 'id', 'scrutinizer-back-to-list' ).text( '← Back to routes' );
@@ -982,6 +1085,364 @@
 		for ( var i = 0; i < types.length; i++ ) {
 			html += typeBadge( types[ i ].trim() );
 		}
+		return html;
+	}
+
+	/* ------------------------------------------------------------------ */
+	/*  Pin / Annotate                                                     */
+	/* ------------------------------------------------------------------ */
+
+	function pinProfile( profileId ) {
+		$.post( scrutinizerAdmin.ajaxUrl, {
+			action:     'scrutinizer_pin_profile',
+			nonce:      scrutinizerAdmin.nonce,
+			profile_id: profileId
+		}, function( response ) {
+			if ( response.success ) {
+				$( '#scrutinizer-pin-toggle' )
+					.addClass( 'button-primary' )
+					.data( 'pinned', '1' )
+					.html( '📌 ' + esc( scrutinizerAdmin.i18n.unpin || 'Unpin' ) );
+				showNotice( response.data.message, 'success' );
+			}
+		} );
+	}
+
+	function unpinProfile( profileId ) {
+		$.post( scrutinizerAdmin.ajaxUrl, {
+			action:     'scrutinizer_unpin_profile',
+			nonce:      scrutinizerAdmin.nonce,
+			profile_id: profileId
+		}, function( response ) {
+			if ( response.success ) {
+				$( '#scrutinizer-pin-toggle' )
+					.removeClass( 'button-primary' )
+					.data( 'pinned', '' )
+					.html( '📌 ' + esc( scrutinizerAdmin.i18n.pin || 'Pin' ) );
+				showNotice( response.data.message, 'success' );
+			}
+		} );
+	}
+
+	function saveAnnotation() {
+		var note = $( '#scrutinizer-note-input' ).val() || '';
+		var tags = $( '#scrutinizer-tags-input' ).val() || '';
+
+		if ( ! currentProfileId ) {
+			return;
+		}
+
+		$.post( scrutinizerAdmin.ajaxUrl, {
+			action:     'scrutinizer_update_annotation',
+			nonce:      scrutinizerAdmin.nonce,
+			profile_id: currentProfileId,
+			note:       note,
+			tags:       tags
+		} );
+	}
+
+	/* ------------------------------------------------------------------ */
+	/*  History view                                                       */
+	/* ------------------------------------------------------------------ */
+
+	var historyDebounce = null;
+	function debounceHistory() {
+		clearTimeout( historyDebounce );
+		historyDebounce = setTimeout( fetchHistory, 400 );
+	}
+
+	function showHistoryView() {
+		currentView = 'history';
+		compareChecked = {};
+		$( '#scrutinizer-results' ).hide();
+		$( '#scrutinizer-route-detail' ).remove();
+		$( '#scrutinizer-detail' ).hide();
+		$( '#scrutinizer-compare-view' ).remove();
+		$( '.scrutinizer-top-tab' ).removeClass( 'active' );
+		$( '.scrutinizer-top-tab[data-top-tab="history"]' ).addClass( 'active' );
+
+		var $existing = $( '#scrutinizer-history-view' );
+		if ( 0 === $existing.length ) {
+			var html = '<div id="scrutinizer-history-view">';
+			html += renderHistoryFilters();
+			html += '<div id="scrutinizer-history-results"></div>';
+			html += '</div>';
+			$( '#scrutinizer-results' ).after( html );
+		} else {
+			$existing.show();
+		}
+
+		fetchHistory();
+	}
+
+	function renderHistoryFilters() {
+		var html = '<div class="scrutinizer-history-filters">';
+
+		// Route dropdown — populated from grouped data.
+		html += '<select id="scrutinizer-history-route">';
+		html += '<option value="">' + esc( scrutinizerAdmin.i18n.filterByRoute || 'All routes' ) + '</option>';
+		for ( var i = 0; i < groupedData.length; i++ ) {
+			html += '<option value="' + esc( groupedData[ i ].route_key ) + '">' + esc( truncate( groupedData[ i ].route_key, 60 ) ) + '</option>';
+		}
+		html += '</select>';
+
+		// Tag filter.
+		html += '<input type="text" id="scrutinizer-history-tag" placeholder="' + esc( scrutinizerAdmin.i18n.filterByTag || 'Filter by tag…' ) + '" />';
+
+		// Pinned only.
+		html += '<label class="scrutinizer-history-check-label">';
+		html += '<input type="checkbox" id="scrutinizer-history-pinned" /> ';
+		html += '📌 ' + esc( scrutinizerAdmin.i18n.pinned || 'Pinned' );
+		html += '</label>';
+
+		// Date range.
+		html += '<input type="date" id="scrutinizer-history-from" title="From date" />';
+		html += '<span class="scrutinizer-history-dash">–</span>';
+		html += '<input type="date" id="scrutinizer-history-to" title="To date" />';
+
+		// Compare button (hidden until 2 selected).
+		html += '<button type="button" class="button" id="scrutinizer-compare-btn" style="display:none">' + esc( scrutinizerAdmin.i18n.compareSelected || 'Compare Selected' ) + '</button>';
+
+		html += '</div>';
+		return html;
+	}
+
+	function fetchHistory() {
+		var params = {
+			action: 'scrutinizer_get_history',
+			nonce:  scrutinizerAdmin.nonce
+		};
+
+		var route = $( '#scrutinizer-history-route' ).val();
+		var tag   = $( '#scrutinizer-history-tag' ).val();
+		var pinned = $( '#scrutinizer-history-pinned' ).is( ':checked' );
+		var from  = $( '#scrutinizer-history-from' ).val();
+		var to    = $( '#scrutinizer-history-to' ).val();
+
+		if ( route ) {
+			params.route_key = route;
+		}
+		if ( tag ) {
+			params.tag = tag;
+		}
+		if ( pinned ) {
+			params.pinned_only = 1;
+		}
+		if ( from ) {
+			params.date_from = from;
+		}
+		if ( to ) {
+			params.date_to = to;
+		}
+
+		$.get( scrutinizerAdmin.ajaxUrl, params, function( response ) {
+			if ( response.success ) {
+				historyData = response.data.profiles || [];
+				renderHistoryTable( historyData );
+			}
+		} );
+	}
+
+	function renderHistoryTable( profiles ) {
+		var $container = $( '#scrutinizer-history-results' );
+
+		if ( ! profiles || 0 === profiles.length ) {
+			$container.html( '<p class="scrutinizer-empty">' + esc( scrutinizerAdmin.i18n.noResults || 'No profiles match the current filters.' ) + '</p>' );
+			return;
+		}
+
+		var html = '<table class="scrutinizer-profile-table scrutinizer-history-table widefat">';
+		html += '<thead><tr>';
+		html += '<th class="scrutinizer-check-col"></th>';
+		html += '<th>Captured</th>';
+		html += '<th>Route</th>';
+		html += '<th class="numeric">Duration</th>';
+		html += '<th>📌</th>';
+		html += '<th>Note</th>';
+		html += '<th>Tags</th>';
+		html += '<th>Actions</th>';
+		html += '</tr></thead><tbody>';
+
+		for ( var i = 0; i < profiles.length; i++ ) {
+			var p     = profiles[ i ];
+			var durMs = ( parseInt( p.duration_ns, 10 ) / 1e6 ).toFixed( 1 );
+			var pinIcon = parseInt( p.is_pinned, 10 ) === 1 ? '📌' : '';
+			var notePrev = truncate( p.note || '', 40 );
+			var tagPills = renderTagPills( p.tags || '' );
+			var checked  = compareChecked[ p.id ] ? ' checked' : '';
+
+			html += '<tr>';
+			html += '<td><input type="checkbox" class="scrutinizer-compare-check" data-profile-id="' + parseInt( p.id, 10 ) + '"' + checked + ' /></td>';
+			html += '<td>' + esc( p.captured_at ) + '</td>';
+			html += '<td class="scrutinizer-route-cell" title="' + esc( p.route_key ) + '">' + esc( truncate( p.route_key || '', 40 ) ) + '</td>';
+			html += '<td class="scrutinizer-duration numeric">' + esc( durMs ) + ' ms</td>';
+			html += '<td>' + pinIcon + '</td>';
+			html += '<td title="' + esc( p.note || '' ) + '">' + esc( notePrev ) + '</td>';
+			html += '<td>' + tagPills + '</td>';
+			html += '<td class="scrutinizer-actions">';
+			html += '<a href="#" class="scrutinizer-view-profile" data-profile-id="' + parseInt( p.id, 10 ) + '">View</a>';
+			html += '</td>';
+			html += '</tr>';
+		}
+
+		html += '</tbody></table>';
+		$container.html( html );
+	}
+
+	function renderTagPills( tagStr ) {
+		if ( ! tagStr ) {
+			return '';
+		}
+		var tags = tagStr.split( ',' );
+		var html = '';
+		for ( var i = 0; i < tags.length; i++ ) {
+			var t = tags[ i ].trim();
+			if ( t ) {
+				html += '<span class="scrutinizer-tag-pill">' + esc( t ) + '</span>';
+			}
+		}
+		return html;
+	}
+
+	function updateCompareButton() {
+		var count = Object.keys( compareChecked ).length;
+		if ( 2 === count ) {
+			$( '#scrutinizer-compare-btn' ).show();
+		} else {
+			$( '#scrutinizer-compare-btn' ).hide();
+		}
+	}
+
+	/* ------------------------------------------------------------------ */
+	/*  Compare view                                                       */
+	/* ------------------------------------------------------------------ */
+
+	function loadComparison( idA, idB ) {
+		$.get( scrutinizerAdmin.ajaxUrl, {
+			action:    'scrutinizer_compare_profiles',
+			nonce:     scrutinizerAdmin.nonce,
+			profile_a: idA,
+			profile_b: idB
+		}, function( response ) {
+			if ( response.success ) {
+				renderCompareView( response.data.comparison );
+			} else {
+				showNotice( response.data.message || scrutinizerAdmin.i18n.error, 'error' );
+			}
+		} );
+	}
+
+	function renderCompareView( comparison ) {
+		currentView = 'compare';
+		$( '#scrutinizer-results' ).hide();
+		$( '#scrutinizer-history-view' ).hide();
+		$( '#scrutinizer-detail' ).hide();
+		$( '#scrutinizer-compare-view' ).remove();
+
+		var delta  = comparison.delta;
+		var a      = comparison.a;
+		var b      = comparison.b;
+		var reqA   = ( a.profile_data && a.profile_data.request ) ? a.profile_data.request : {};
+		var reqB   = ( b.profile_data && b.profile_data.request ) ? b.profile_data.request : {};
+
+		var html = '<div id="scrutinizer-compare-view">';
+		html += '<button type="button" class="button button-link" id="scrutinizer-back-to-history">' + esc( scrutinizerAdmin.i18n.backToHistory || '← Back to history' ) + '</button>';
+		html += '<h2>' + esc( scrutinizerAdmin.i18n.compare || 'Compare' ) + '</h2>';
+
+		// Header: Profile A vs Profile B.
+		html += '<div class="scrutinizer-compare-header">';
+		html += '<div class="compare-profile-label"><strong>A:</strong> ' + esc( reqA.method || '' ) + ' ' + esc( truncate( reqA.url || a.request_url || '', 60 ) ) + '<br><small>' + esc( a.captured_at ) + '</small></div>';
+		html += '<div class="compare-vs">vs</div>';
+		html += '<div class="compare-profile-label"><strong>B:</strong> ' + esc( reqB.method || '' ) + ' ' + esc( truncate( reqB.url || b.request_url || '', 60 ) ) + '<br><small>' + esc( b.captured_at ) + '</small></div>';
+		html += '</div>';
+
+		// Summary comparison.
+		html += '<table class="scrutinizer-source-table scrutinizer-compare-table widefat">';
+		html += '<thead><tr><th>Metric</th><th class="numeric">Profile A</th><th class="numeric">Profile B</th><th class="numeric">Delta</th></tr></thead>';
+		html += '<tbody>';
+
+		// Duration.
+		html += compareRow( 'Total Duration',
+			( delta.duration_a_ns / 1e6 ).toFixed( 1 ) + ' ms',
+			( delta.duration_b_ns / 1e6 ).toFixed( 1 ) + ' ms',
+			delta.duration_ns,
+			delta.duration_a_ns
+		);
+
+		// Unattributed.
+		html += compareRow( 'Unattributed',
+			( delta.unattributed_a_ns / 1e6 ).toFixed( 1 ) + ' ms',
+			( delta.unattributed_b_ns / 1e6 ).toFixed( 1 ) + ' ms',
+			delta.unattributed_delta_ns,
+			delta.unattributed_a_ns
+		);
+
+		// Query count.
+		html += compareRow( 'DB Queries',
+			String( delta.query_count_a ),
+			String( delta.query_count_b ),
+			delta.query_count_delta * 1e6, // Scale to ns-like for delta display.
+			delta.query_count_a || 1
+		);
+
+		html += '</tbody></table>';
+
+		// Per-source breakdown.
+		var sources = delta.sources || {};
+		var sourceKeys = Object.keys( sources );
+		if ( sourceKeys.length > 0 ) {
+			html += '<h3>Per-Source Breakdown</h3>';
+			html += '<table class="scrutinizer-source-table scrutinizer-compare-table widefat">';
+			html += '<thead><tr><th>Source</th><th class="numeric">Profile A</th><th class="numeric">Profile B</th><th class="numeric">Delta</th></tr></thead>';
+			html += '<tbody>';
+
+			// Sort by absolute delta descending.
+			sourceKeys.sort( function( a, b ) {
+				return Math.abs( sources[ b ].delta_ns ) - Math.abs( sources[ a ].delta_ns );
+			} );
+
+			for ( var si = 0; si < sourceKeys.length; si++ ) {
+				var sk  = sourceKeys[ si ];
+				var sd  = sources[ sk ];
+				html += compareRow( sk,
+					( sd.a_ns / 1e6 ).toFixed( 2 ) + ' ms',
+					( sd.b_ns / 1e6 ).toFixed( 2 ) + ' ms',
+					sd.delta_ns,
+					sd.a_ns || 1
+				);
+			}
+
+			html += '</tbody></table>';
+		}
+
+		html += '</div>';
+
+		$( '#scrutinizer-results' ).after( html );
+	}
+
+	function compareRow( label, valA, valB, deltaNs, baseNs ) {
+		var deltaMs  = ( deltaNs / 1e6 ).toFixed( 1 );
+		var pctChange = baseNs ? ( ( deltaNs / baseNs ) * 100 ).toFixed( 1 ) : '0.0';
+		var cls = '';
+		var suffix = '';
+		if ( deltaNs < 0 ) {
+			cls = 'scrutinizer-delta-negative'; // Green — faster.
+			suffix = ' ' + esc( scrutinizerAdmin.i18n.faster || 'faster' );
+		} else if ( deltaNs > 0 ) {
+			cls = 'scrutinizer-delta-positive'; // Red — slower.
+			suffix = ' ' + esc( scrutinizerAdmin.i18n.slower || 'slower' );
+		} else {
+			suffix = ' ' + esc( scrutinizerAdmin.i18n.noChange || 'no change' );
+		}
+
+		var deltaStr = ( deltaNs >= 0 ? '+' : '' ) + deltaMs + ' ms (' + ( deltaNs >= 0 ? '+' : '' ) + pctChange + '%)' + suffix;
+
+		var html = '<tr>';
+		html += '<td>' + esc( label ) + '</td>';
+		html += '<td class="numeric">' + esc( valA ) + '</td>';
+		html += '<td class="numeric">' + esc( valB ) + '</td>';
+		html += '<td class="numeric ' + cls + '">' + deltaStr + '</td>';
+		html += '</tr>';
 		return html;
 	}
 
