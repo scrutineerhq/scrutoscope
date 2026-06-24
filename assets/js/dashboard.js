@@ -596,9 +596,12 @@
 		var request      = data.request || {};
 		var phaseMarkers = data.phase_markers || [];
 		var queries      = data.queries || [];
+		var httpCalls    = data.http_calls || [];
+		var autoloadOpts = data.autoloaded_options || {};
 		var timeline     = data.timeline || [];
 		var durMs        = ( summary.duration_ms || 0 ).toFixed( 1 );
 		var queryCount   = summary.query_count || 0;
+		var httpCount    = summary.http_call_count || 0;
 		var isPinned     = parseInt( profile.is_pinned, 10 ) === 1;
 		var profileNote  = profile.note || '';
 		var profileTags  = profile.tags || '';
@@ -628,6 +631,7 @@
 		html += renderMetricCard( durMs + ' ms', scrutinizerAdmin.i18n.serverDuration, 'primary' );
 		html += renderMetricCard( formatBytes( request.memory_peak || 0 ), 'Peak Memory', 'default' );
 		html += renderMetricCard( String( queryCount ), 'DB Queries', queryCount > 100 ? 'warning' : 'default' );
+		html += renderMetricCard( String( httpCount ), 'HTTP Calls', httpCount > 0 ? 'warning' : 'default' );
 		html += renderMetricCard( String( summary.callback_count || 0 ), 'Callbacks', 'default' );
 		html += '</div>';
 
@@ -639,12 +643,18 @@
 		if ( queries.length > 0 ) {
 			html += '<button class="scrutinizer-tab" data-tab="queries">Queries (' + queries.length + ')</button>';
 		}
+		if ( httpCalls.length > 0 ) {
+			html += '<button class="scrutinizer-tab" data-tab="http">HTTP Calls (' + httpCalls.length + ')</button>';
+		}
+		if ( autoloadOpts.count > 0 ) {
+			html += '<button class="scrutinizer-tab" data-tab="options">Options (' + autoloadOpts.count + ')</button>';
+		}
 		html += '<button class="scrutinizer-tab" data-tab="metadata">Metadata</button>';
 		html += '</div>';
 
 		// Tab: Timeline.
 		html += '<div class="scrutinizer-tab-content" id="scrutinizer-tab-timeline">';
-		html += renderTimeline( timeline, phaseMarkers, summary, sources );
+		html += renderTimeline( timeline, phaseMarkers, summary, sources, httpCalls );
 		html += '</div>';
 
 		// Tab: Breakdown.
@@ -661,6 +671,20 @@
 		if ( queries.length > 0 ) {
 			html += '<div class="scrutinizer-tab-content" id="scrutinizer-tab-queries" style="display:none">';
 			html += renderQueriesTable( queries );
+			html += '</div>';
+		}
+
+		// Tab: HTTP Calls.
+		if ( httpCalls.length > 0 ) {
+			html += '<div class="scrutinizer-tab-content" id="scrutinizer-tab-http" style="display:none">';
+			html += renderHttpCallsTable( httpCalls );
+			html += '</div>';
+		}
+
+		// Tab: Options.
+		if ( autoloadOpts.count > 0 ) {
+			html += '<div class="scrutinizer-tab-content" id="scrutinizer-tab-options" style="display:none">';
+			html += renderOptionsTab( autoloadOpts );
 			html += '</div>';
 		}
 
@@ -693,7 +717,7 @@
 	/*  Timeline visualization                                             */
 	/* ------------------------------------------------------------------ */
 
-	function renderTimeline( timeline, phaseMarkers, summary, sources ) {
+	function renderTimeline( timeline, phaseMarkers, summary, sources, httpCalls ) {
 		var durationNs = summary.duration_ns || 0;
 		if ( 0 === durationNs ) {
 			return '<p class="scrutinizer-empty">No timeline data available.</p>';
@@ -786,7 +810,77 @@
 			var tickPct = ( k / tickCount ) * 100;
 			html += '<span class="axis-tick" style="left:' + tickPct + '%">' + tickMs + ' ms</span>';
 		}
-		html += '</div>';
+		html += '</div>'; // timeline-axis
+
+		// HTTP call lollipops — below the bar (inverted stems).
+		if ( httpCalls && httpCalls.length > 0 ) {
+			// Assign tiers to prevent horizontal overlap.
+			var httpPositions = [];
+			for ( var hi = 0; hi < httpCalls.length; hi++ ) {
+				var hc = httpCalls[ hi ];
+				var hPct = ( hc.offset_ns / durationNs ) * 100;
+				if ( hPct > 100 ) {
+					hPct = 100;
+				}
+				httpPositions.push( { pct: hPct, call: hc } );
+			}
+			var httpTiers = [];
+			for ( var hti = 0; hti < httpPositions.length; hti++ ) {
+				var hTier = 0;
+				for ( var htj = 0; htj < hti; htj++ ) {
+					if ( Math.abs( httpPositions[ hti ].pct - httpPositions[ htj ].pct ) < 8 && httpTiers[ htj ] >= hTier ) {
+						hTier = httpTiers[ htj ] + 1;
+					}
+				}
+				httpTiers.push( hTier );
+			}
+			var httpMaxTier = 0;
+			for ( var hmt = 0; hmt < httpTiers.length; hmt++ ) {
+				if ( httpTiers[ hmt ] > httpMaxTier ) {
+					httpMaxTier = httpTiers[ hmt ];
+				}
+			}
+			var httpTierPx = 32;
+			var httpBaseOffset = 20;
+			var httpHeight = ( httpMaxTier + 1 ) * httpTierPx + httpBaseOffset + 16;
+			html += '<div class="scrutinizer-http-lollipops" style="height:' + httpHeight + 'px">';
+			for ( var hlk = 0; hlk < httpPositions.length; hlk++ ) {
+				var hStemHeight = ( httpTiers[ hlk ] + 1 ) * httpTierPx + httpBaseOffset;
+				var hLeftPct    = httpPositions[ hlk ].pct.toFixed( 2 );
+				var hCall       = httpPositions[ hlk ].call;
+				var hDurMs      = ( hCall.duration_ms || 0 ).toFixed( 0 );
+				var hHost       = '';
+				try { hHost = new URL( hCall.url ).hostname; } catch( e ) { hHost = hCall.url; }
+				var hStatusCls = '';
+				if ( hCall.is_error ) {
+					hStatusCls = ' http-error';
+				} else if ( hCall.status >= 400 ) {
+					hStatusCls = ' http-error';
+				} else if ( hCall.status >= 300 ) {
+					hStatusCls = ' http-redirect';
+				}
+				// Duration-based dot color: fast (<100ms) = green, medium (<500ms) = orange, slow = red.
+				var hDotCls = 'http-fast';
+				if ( hCall.duration_ms >= 500 ) {
+					hDotCls = 'http-slow';
+				} else if ( hCall.duration_ms >= 100 ) {
+					hDotCls = 'http-medium';
+				}
+				var hTitle = hCall.method + ' ' + hCall.url + '\n' + hDurMs + ' ms';
+				if ( hCall.status ) {
+					hTitle += ' — HTTP ' + hCall.status;
+				}
+				if ( hCall.caller && hCall.caller.caller ) {
+					hTitle += '\n' + hCall.caller.caller;
+				}
+				html += '<div class="http-lollipop' + hStatusCls + '" style="left:' + hLeftPct + '%;height:' + hStemHeight + 'px" title="' + esc( hTitle ) + '">';
+				html += '<span class="http-stem"></span>';
+				html += '<span class="http-dot ' + hDotCls + '"></span>';
+				html += '<span class="http-label">' + esc( truncate( hHost, 24 ) ) + ' <em>' + hDurMs + 'ms</em></span>';
+				html += '</div>';
+			}
+			html += '</div>';
+		}
 
 		// Source legend for timeline.
 		html += '<div class="scrutinizer-timeline-legend">';
@@ -975,6 +1069,117 @@
 	}
 
 	/* ------------------------------------------------------------------ */
+	/*  HTTP Calls table                                                   */
+	/* ------------------------------------------------------------------ */
+
+	function renderHttpCallsTable( httpCalls ) {
+		if ( ! httpCalls || 0 === httpCalls.length ) {
+			return '<p class="scrutinizer-empty">No external HTTP calls detected.</p>';
+		}
+
+		// Compute total HTTP time.
+		var totalHttpMs = 0;
+		for ( var h = 0; h < httpCalls.length; h++ ) {
+			totalHttpMs += httpCalls[ h ].duration_ms || 0;
+		}
+
+		var html = '<div class="scrutinizer-queries-summary">';
+		html += '<strong>' + httpCalls.length + ' external HTTP call' + ( httpCalls.length !== 1 ? 's' : '' ) + '</strong>';
+		html += ' totaling <strong>' + totalHttpMs.toFixed( 1 ) + ' ms</strong>';
+		html += '</div>';
+
+		html += '<table class="scrutinizer-source-table scrutinizer-http-table widefat">';
+		html += '<thead><tr>';
+		html += '<th class="numeric">#</th>';
+		html += '<th>Method</th>';
+		html += '<th>URL</th>';
+		html += '<th class="numeric">Status</th>';
+		html += '<th class="numeric">Duration</th>';
+		html += '<th>Source</th>';
+		html += '<th>Caller</th>';
+		html += '</tr></thead><tbody>';
+
+		for ( var i = 0; i < httpCalls.length; i++ ) {
+			var hc   = httpCalls[ i ];
+			var hMs  = ( hc.duration_ms || 0 ).toFixed( 1 );
+			var slow = hc.duration_ms > 500 ? ' class="scrutinizer-slow-query"' : '';
+			var statusLabel = hc.is_error ? 'Error' : String( hc.status || '—' );
+			var sourceName  = '';
+			if ( hc.caller && hc.caller.attribution ) {
+				sourceName = hc.caller.attribution.name || hc.caller.attribution.slug || hc.caller.attribution.type || '';
+			}
+			var callerStr = ( hc.caller && hc.caller.caller ) ? hc.caller.caller : '';
+
+			html += '<tr' + slow + '>';
+			html += '<td class="numeric">' + ( i + 1 ) + '</td>';
+			html += '<td>' + esc( hc.method || 'GET' ) + '</td>';
+			html += '<td class="scrutinizer-sql-cell" title="' + esc( hc.url ) + '"><code>' + esc( truncate( hc.url || '', 80 ) ) + '</code></td>';
+			html += '<td class="numeric">' + esc( statusLabel ) + '</td>';
+			html += '<td class="numeric">' + hMs + ' ms</td>';
+			html += '<td>' + esc( sourceName ) + '</td>';
+			html += '<td class="scrutinizer-caller-cell" title="' + esc( callerStr ) + '">' + esc( truncate( callerStr, 60 ) ) + '</td>';
+			html += '</tr>';
+		}
+
+		html += '</tbody></table>';
+		return html;
+	}
+
+	/* ------------------------------------------------------------------ */
+	/*  Options (autoloaded) tab                                           */
+	/* ------------------------------------------------------------------ */
+
+	function renderOptionsTab( autoloadOpts ) {
+		var options   = autoloadOpts.options || [];
+		var totalSize = autoloadOpts.total_size || 0;
+		var count     = autoloadOpts.count || 0;
+
+		if ( 0 === count ) {
+			return '<p class="scrutinizer-empty">No autoloaded options data.</p>';
+		}
+
+		var html = '<div class="scrutinizer-queries-summary">';
+		html += '<strong>' + count + ' autoloaded option' + ( count !== 1 ? 's' : '' ) + '</strong>';
+		html += ' totaling <strong>' + formatBytes( totalSize ) + '</strong>';
+		if ( totalSize > 1048576 ) { // > 1 MB.
+			html += ' <span class="scrutinizer-options-warning">⚠ Over 1 MB — this adds latency to every request</span>';
+		} else if ( totalSize > 524288 ) { // > 512 KB.
+			html += ' <span class="scrutinizer-options-caution">⚡ Over 512 KB — worth reviewing</span>';
+		}
+		html += '</div>';
+
+		html += '<table class="scrutinizer-source-table scrutinizer-options-table widefat">';
+		html += '<thead><tr>';
+		html += '<th class="numeric">#</th>';
+		html += '<th>Option Name</th>';
+		html += '<th class="numeric">Size</th>';
+		html += '<th class="numeric">% of Total</th>';
+		html += '</tr></thead><tbody>';
+
+		for ( var i = 0; i < options.length; i++ ) {
+			var opt = options[ i ];
+			var pct = totalSize > 0 ? ( ( opt.size / totalSize ) * 100 ).toFixed( 1 ) : '0.0';
+			var sizeStr = formatBytes( opt.size );
+			var large = opt.size > 102400 ? ' class="scrutinizer-slow-query"' : ''; // > 100 KB highlight.
+
+			html += '<tr' + large + '>';
+			html += '<td class="numeric">' + ( i + 1 ) + '</td>';
+			html += '<td><code>' + esc( opt.name ) + '</code></td>';
+			html += '<td class="numeric">' + esc( sizeStr ) + '</td>';
+			html += '<td class="scrutinizer-weight-cell">';
+			html += '<div class="scrutinizer-weight-bar-wrap">';
+			html += '<span class="scrutinizer-weight-pct">' + pct + '%</span>';
+			html += '<div class="scrutinizer-weight-bar" style="width:' + pct + '%;background:#e67e22"></div>';
+			html += '</div>';
+			html += '</td>';
+			html += '</tr>';
+		}
+
+		html += '</tbody></table>';
+		return html;
+	}
+
+	/* ------------------------------------------------------------------ */
 	/*  Metadata table                                                     */
 	/* ------------------------------------------------------------------ */
 
@@ -987,6 +1192,7 @@
 		html += '<tr><td>WordPress</td><td>' + esc( request.wp_version || '—' ) + '</td></tr>';
 		html += '<tr><td>Peak Memory</td><td>' + formatBytes( request.memory_peak || 0 ) + '</td></tr>';
 		html += '<tr><td>DB Queries</td><td>' + ( summary.query_count || 0 ) + '</td></tr>';
+		html += '<tr><td>HTTP Calls</td><td>' + ( summary.http_call_count || 0 ) + ( summary.http_total_ms > 0 ? ' (' + summary.http_total_ms + ' ms total)' : '' ) + '</td></tr>';
 		html += '<tr><td>Callbacks Observed</td><td>' + ( summary.callback_count || 0 ) + '</td></tr>';
 		html += '<tr><td>Sources Identified</td><td>' + ( summary.source_count || 0 ) + '</td></tr>';
 		html += '</tbody></table>';

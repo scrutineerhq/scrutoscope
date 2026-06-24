@@ -95,6 +95,13 @@ class Report {
 
 		$unattributed_ns = max( 0, $duration_ns - $total_excl_ns );
 
+		// HTTP call summary.
+		$http_calls = isset( $request_metadata['http_calls'] ) ? $request_metadata['http_calls'] : array();
+		$http_total_ms = 0;
+		foreach ( $http_calls as $hc ) {
+			$http_total_ms += isset( $hc['duration_ms'] ) ? (float) $hc['duration_ms'] : 0;
+		}
+
 		// Route classification.
 		$route_class = ! empty( $request_metadata['route_class'] )
 			? $request_metadata['route_class']
@@ -110,6 +117,8 @@ class Report {
 				'callback_count'     => count( $raw_timings ),
 				'source_count'       => count( $by_source ),
 				'query_count'        => isset( $request_metadata['query_count'] ) ? (int) $request_metadata['query_count'] : 0,
+				'http_call_count'    => count( $http_calls ),
+				'http_total_ms'      => round( $http_total_ms, 2 ),
 			),
 			'sources'       => array_values( $by_source ),
 			'trace'         => $call_stack_trace,
@@ -125,6 +134,8 @@ class Report {
 			),
 			'phase_markers' => isset( $request_metadata['phase_markers'] ) ? $request_metadata['phase_markers'] : array(),
 			'queries'       => isset( $request_metadata['queries'] ) ? $request_metadata['queries'] : array(),
+			'http_calls'    => $http_calls,
+			'autoloaded_options' => isset( $request_metadata['autoloaded_options'] ) ? $request_metadata['autoloaded_options'] : array(),
 			'timeline'      => self::build_timeline( $raw_timings, $duration_ns ),
 		);
 	}
