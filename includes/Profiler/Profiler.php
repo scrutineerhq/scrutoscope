@@ -44,11 +44,21 @@ class Profiler {
 	private $call_stack = null;
 
 	/**
-	 * Request start time in nanoseconds.
+	 * Request start time in nanoseconds (monotonic).
 	 *
 	 * @var int
 	 */
 	private $request_start_ns = 0;
+
+	/**
+	 * Request start time as microtime(true).
+	 *
+	 * Bridges wall-clock timestamps (e.g. $wpdb->queries start_time)
+	 * to our monotonic hrtime-based timeline.
+	 *
+	 * @var float
+	 */
+	private $request_start_microtime = 0.0;
 
 	/**
 	 * Route class, refined after WP query is parsed.
@@ -167,7 +177,8 @@ class Profiler {
 		// We lose the few ms between SAPI start and plugin load, but
 		// mixing REQUEST_TIME_FLOAT (wall clock) with hrtime (monotonic)
 		// produces garbage durations.
-		$this->request_start_ns = hrtime( true );
+		$this->request_start_ns        = hrtime( true );
+		$this->request_start_microtime = microtime( true );
 
 		// Record the start as the first phase marker.
 		$this->phase_markers['profiler_start'] = $this->request_start_ns;
@@ -346,7 +357,7 @@ class Profiler {
 			'phase_markers'      => $this->build_phase_offsets(),
 			'user_role'          => self::get_current_role(),
 			'query_count'        => self::get_query_count(),
-			'queries'            => self::get_query_log(),
+			'queries'            => $this->get_query_log(),
 			'http_calls'         => $this->build_http_calls(),
 			'autoloaded_options' => self::get_autoloaded_options(),
 			'enqueued_assets'    => self::get_enqueued_assets(),
@@ -626,9 +637,13 @@ class Profiler {
 	/**
 	 * Get individual query log if SAVEQUERIES is enabled.
 	 *
-	 * @return array  Array of {sql, time_ms, caller} or empty array.
+	 * When $wpdb->queries includes a start_time (index 3, available
+	 * since WP 5.1), each entry also gets offset_ns and duration_ns
+	 * for timeline placement.
+	 *
+	 * @return array  Array of {sql, time_ms, caller, offset_ns?, duration_ns?} or empty array.
 	 */
-	private static function get_query_log() {
+	private function get_query_log() {
 		global $wpdb;
 
 		if ( ! defined( 'SAVEQUERIES' ) || ! SAVEQUERIES ) {
@@ -639,13 +654,26 @@ class Profiler {
 			return array();
 		}
 
+		$has_offsets = $this->request_start_microtime > 0;
+
 		$log = array();
 		foreach ( $wpdb->queries as $q ) {
-			$log[] = array(
+			$time_ms = isset( $q[1] ) ? round( (float) $q[1] * 1000, 2 ) : 0;
+
+			$entry = array(
 				'sql'     => isset( $q[0] ) ? self::sanitize_query( $q[0] ) : '',
-				'time_ms' => isset( $q[1] ) ? round( (float) $q[1] * 1000, 2 ) : 0,
+				'time_ms' => $time_ms,
 				'caller'  => isset( $q[2] ) ? $q[2] : '',
 			);
+
+			// $wpdb->queries[3] = microtime(true) when the query started.
+			if ( $has_offsets && isset( $q[3] ) ) {
+				$offset_s             = (float) $q[3] - $this->request_start_microtime;
+				$entry['offset_ns']   = max( 0, (int) round( $offset_s * 1e9 ) );
+				$entry['duration_ns'] = (int) round( $time_ms * 1e6 );
+			}
+
+			$log[] = $entry;
 		}
 
 		// Sort by time descending for the dashboard.

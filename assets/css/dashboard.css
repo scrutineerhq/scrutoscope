@@ -953,6 +953,51 @@
 	font-variant-numeric: tabular-nums;
 }
 
+/* ----- Query density strip (below timeline bar) ----- */
+
+.scrutinizer-query-density {
+	display: flex;
+	align-items: flex-end;
+	height: 16px;
+	margin-top: 4px;
+	gap: 1px;
+	border-radius: 2px;
+	overflow: hidden;
+}
+
+.density-bar {
+	flex: 1;
+	min-height: 0;
+	border-radius: 1px;
+	transition: opacity 0.15s;
+}
+
+.density-bar.density-none {
+	background: transparent;
+}
+
+.density-bar.density-normal {
+	background: #c3c4c7;
+}
+
+.density-bar.density-medium {
+	background: #dba617;
+}
+
+.density-bar.density-slow {
+	background: #d63638;
+}
+
+/* ----- I/O summary counts ----- */
+
+.scrutinizer-io-summary {
+	font-size: 11px;
+	color: #787c82;
+	margin-top: 4px;
+	text-align: right;
+	font-variant-numeric: tabular-nums;
+}
+
 /* ----- HTTP Calls table ----- */
 
 .scrutinizer-http-table .scrutinizer-sql-cell {

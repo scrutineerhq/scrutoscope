@@ -732,7 +732,7 @@
 
 		// Tab: Timeline.
 		html += '<div class="scrutinizer-tab-content" id="scrutinizer-tab-timeline">';
-		html += renderTimeline( timeline, phaseMarkers, summary, sources, httpCalls );
+		html += renderTimeline( timeline, phaseMarkers, summary, sources, httpCalls, queries );
 		html += '</div>';
 
 		// Tab: Breakdown.
@@ -809,7 +809,7 @@
 	/*  Timeline visualization                                             */
 	/* ------------------------------------------------------------------ */
 
-	function renderTimeline( timeline, phaseMarkers, summary, sources, httpCalls ) {
+	function renderTimeline( timeline, phaseMarkers, summary, sources, httpCalls, queries ) {
 		var durationNs = summary.duration_ns || 0;
 		if ( 0 === durationNs ) {
 			return '<p class="scrutinizer-empty">No timeline data available.</p>';
@@ -972,6 +972,60 @@
 				html += '</div>';
 			}
 			html += '</div>';
+		}
+
+		// Query density strip — thin heatmap showing where queries cluster.
+		var timelineQueries = [];
+		if ( queries && queries.length > 0 ) {
+			for ( var qi = 0; qi < queries.length; qi++ ) {
+				if ( typeof queries[ qi ].offset_ns !== 'undefined' ) {
+					timelineQueries.push( queries[ qi ] );
+				}
+			}
+		}
+		if ( timelineQueries.length > 0 ) {
+			var bucketCount = 60;
+			var buckets = [];
+			var bucketMaxMs = [];
+			for ( var bi = 0; bi < bucketCount; bi++ ) {
+				buckets.push( 0 );
+				bucketMaxMs.push( 0 );
+			}
+			for ( var tqi = 0; tqi < timelineQueries.length; tqi++ ) {
+				var bIdx = Math.floor( ( timelineQueries[ tqi ].offset_ns / durationNs ) * bucketCount );
+				if ( bIdx >= bucketCount ) { bIdx = bucketCount - 1; }
+				if ( bIdx < 0 ) { bIdx = 0; }
+				buckets[ bIdx ]++;
+				var tqMs = timelineQueries[ tqi ].time_ms || 0;
+				if ( tqMs > bucketMaxMs[ bIdx ] ) { bucketMaxMs[ bIdx ] = tqMs; }
+			}
+			var maxCount = 1;
+			for ( var mc = 0; mc < buckets.length; mc++ ) {
+				if ( buckets[ mc ] > maxCount ) { maxCount = buckets[ mc ]; }
+			}
+			html += '<div class="scrutinizer-query-density">';
+			for ( var db = 0; db < bucketCount; db++ ) {
+				var fillPct = ( buckets[ db ] / maxCount ) * 100;
+				var barCls = 'density-none';
+				if ( buckets[ db ] > 0 ) {
+					barCls = 'density-normal';
+					if ( bucketMaxMs[ db ] >= 5 ) { barCls = 'density-slow'; }
+					else if ( bucketMaxMs[ db ] >= 1 ) { barCls = 'density-medium'; }
+				}
+				var dTitle = buckets[ db ] > 0 ? buckets[ db ] + ' quer' + ( buckets[ db ] === 1 ? 'y' : 'ies' ) + ', slowest ' + bucketMaxMs[ db ].toFixed( 1 ) + ' ms' : '';
+				html += '<div class="density-bar ' + barCls + '" style="height:' + Math.max( fillPct, buckets[ db ] > 0 ? 20 : 0 ) + '%" title="' + esc( dTitle ) + '"></div>';
+			}
+			html += '</div>';
+		}
+
+		// I/O summary counts below timeline.
+		var queryCount = summary.query_count || 0;
+		var httpCount  = ( httpCalls && httpCalls.length ) || 0;
+		if ( queryCount > 0 || httpCount > 0 ) {
+			var parts = [];
+			if ( queryCount > 0 ) { parts.push( queryCount + ' quer' + ( queryCount === 1 ? 'y' : 'ies' ) ); }
+			if ( httpCount > 0 )  { parts.push( httpCount + ' HTTP call' + ( httpCount === 1 ? '' : 's' ) ); }
+			html += '<div class="scrutinizer-io-summary">' + parts.join( ' \u00b7 ' ) + '</div>';
 		}
 
 		// Source legend for timeline.
