@@ -30,7 +30,7 @@
 		core:         '#50575e',
 		'mu-plugin':  '#e67e22',
 		'drop-in':    '#27ae60',
-		unknown:      '#95a5a6',
+		unknown:      '#d4a017',
 		unattributed: '#dcdcde'
 	};
 
