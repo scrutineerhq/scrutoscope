@@ -41,7 +41,7 @@
 - [x] Enqueued assets inventory — script/style handles, sizes, dependencies, inline detection, handle-based attribution
 - [x] Cron inventory — scheduled events, overdue/duplicate indicators
 - [x] Hook Execution Trace — nested callback visualization with collapsible tree, filter, timing bars
-- [ ] Network call lollipops — lower-tier timeline markers for HTTP calls (`wp_remote_*`), DB queries, and filesystem network ops (FTP/SSH/SFTP via `WP_Filesystem` abstraction) showing duration + target
+- [x] Network call timeline — HTTP call lollipops (individual markers), query density heatmap strip (60-bucket clustering), I/O summary counts
 
 ## M2.5 — AI Agent API & Secure Sharing (NEW — designed June 23, 2026)
 
