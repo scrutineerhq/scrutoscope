@@ -23,8 +23,10 @@ Comparison uses coarse fingerprints (route class + frontend/admin + anon/auth + 
 ## D7: Likely Regression thresholds
 ≥5 matched requests per set, ≥20% + 100ms median increase, consistent direction in ≥3/5 comparisons. Below that: "Difference observed" or "Possible change."
 
-## D8: Share model is capability-link, NOT zero-knowledge
-Standard sharing is unlisted capability URLs with 128-bit random IDs. Not encrypted, not discoverable. Zero-knowledge is Phase 2 (Secure DX) only. Don't conflate them.
+## D8: ~~Share model is capability-link, NOT zero-knowledge~~ SUPERSEDED
+~~Standard sharing is unlisted capability URLs with 128-bit random IDs. Not encrypted, not discoverable. Zero-knowledge is Phase 2 (Secure DX) only. Don't conflate them.~~
+
+**Superseded June 23, 2026:** Zero-knowledge sharing pulled into Phase 1. Share model is now capability URLs with client-side AES-256-GCM encryption, key in URL fragment. The relay (scrutinizer.dev) stores only ciphertext and cannot read reports. See scrutineer-api-spec.md §7. R2 replaced by CF KV (ciphertext blobs with TTL). The old D8 distinction between "capability-link Phase 1" and "zero-knowledge Phase 2" is dissolved — Scrutinizer ships with zero-knowledge from day one.
 
 ## D9: Expiry defaults
 Share links: 1-30 days, default 7. User-chosen at share time. R2 lifecycle removes expired artifacts.
@@ -67,3 +69,26 @@ Phase markers hook at priority 0 (not PHP_INT_MIN) to avoid conflicts with WordP
 
 ## D21: Deep mode queries always sorted by time descending
 Individual query log is always sorted slowest-first in the dashboard. The raw data could be stored in execution order, but the UI presentation is opinionated: you care about slow queries first. Queries over 10ms are highlighted with a red background.
+## D22: API prompt IS the API contract
+`/v1/prompt` returns a self-bootstrapping prompt tied to the API version. New API version = new prompt. No separate API docs to drift. The prompt teaches the consuming agent measurement terminology, available endpoints, tone guidance, and interpretation context.
+
+## D23: Two share paths, one data pipeline
+"Send to Agent" (clipboard copy of one-liner prompt + scoped 24h Application Password) and "Send to Support" (encrypted report via scrutinizer.dev relay) use the same user-controlled diagnostics checkbox panel. Same data selection, different destinations.
+
+## D24: Zero-knowledge relay for report sharing
+scrutinizer.dev stores only ciphertext. Encryption/decryption is client-side (AES-256-GCM via Web Crypto API). Decryption key lives in URL fragment (#key) — never sent to server. Scrutineer (the org) cannot view shared reports. Supersedes D8.
+
+## D25: Scoped auto-created Application Passwords
+"Send to Agent" auto-creates a WP Application Password scoped to `/scrutinizer/v1/*` only, with 24h TTL. User never touches the Application Passwords UI. Plugin hooks `rest_authentication_errors` to restrict scope and enforce expiry.
+
+## D26: Hard sanitization before any output
+All output paths (API responses AND shared reports) run a hard sanitization pass that strips filesystem paths, DB credentials, IPs, auth keys/salts, wp-config constants, and user PII — regardless of checkbox settings. Reports are safe by construction, protecting against social engineering attacks that trick users into sharing.
+
+## D27: Expire after reading
+Reports can be set to auto-delete after first successful decryption. Viewer POSTs read confirmation, relay deletes ciphertext. Combinable with time-based expiry (whichever first). Recommended default ON for passphrase-protected reports.
+
+## D28: Security model is key strength, not rate limiting
+Client-side decryption means brute-force happens offline — server rate limiting is irrelevant. 256-bit fragment keys are uncrackable. Passphrase layer (if offered) needs high PBKDF2 iterations + minimum strength. The real attack vector is URL leakage, mitigated by Referrer-Policy, short TTL, expire-after-reading, and revocation.
+
+## D29: Report viewer is human-only — no AI analysis
+The Studio viewer at scrutinizer.dev is for humans (support, consultants, site owners' helpers). No AI analysis in the viewer. "Send to Agent" IS the AI analysis path. Don't duplicate it.
