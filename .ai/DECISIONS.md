@@ -55,3 +55,15 @@ Plugin slug comes from wp.org at final submission time. Not pre-reserved.
 
 ## D17: Remediations removed, not deferred
 Removed entirely from spec scope. The word "remediation" in Scrutinizer context means "someone else's job." This was an explicit, considered decision — not a deferral.
+
+## D18: Background profiling restored to V1
+Kurt reversed D4 (no background sampling in V1). Background profiling is back in scope with a configurable sample rate (1-100%). This replaces the deliberate-only model — users can now get passive profiling data without explicit sessions. D4 is superseded.
+
+## D19: Tabbed detail view over single-page scroll
+Profile detail uses horizontal tabs (Timeline, Breakdown, Sources, Queries, Metadata) instead of a single scrolling page. This keeps each section focused and avoids overwhelming the user with all data at once. The Timeline tab is the default/first tab shown.
+
+## D20: Lifecycle phase markers at priority 0
+Phase markers hook at priority 0 (not PHP_INT_MIN) to avoid conflicts with WordPress internals. We accept missing a few microseconds at each phase boundary. The profiler itself starts at `plugins_loaded` priority 0, so hooks that fired before that (e.g., `muplugins_loaded`) may not be captured — the timeline starts from profiler boot, not SAPI boot.
+
+## D21: Deep mode queries always sorted by time descending
+Individual query log is always sorted slowest-first in the dashboard. The raw data could be stored in execution order, but the UI presentation is opinionated: you care about slow queries first. Queries over 10ms are highlighted with a red background.

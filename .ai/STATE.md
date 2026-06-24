@@ -8,20 +8,50 @@
 
 - Plugin: `0.1.0-dev`
 - Phase: 1 (Scrutinizer — profiler only)
-- Milestone: M1 (Core Instrumentation Engine) — in progress
+- Milestone: M2 (Deep Mode & Timeline) — in progress
 
 ## Codebase
 
 | Component | Status |
 |-----------|--------|
 | Plugin bootstrap (`scrutinizer.php`) | ✅ Functional — autoloader, activation/deactivation hooks, admin bar indicator |
-| Profiler engine (`includes/Profiler/`) | ✅ Scaffolded — Profiler, Session, CallStack, Attribution, Instrumentor, Report, Storage |
-| Admin UI (`includes/Admin/`) | ✅ Scaffolded — Dashboard page, AJAX handlers |
-| CSS/JS (`assets/`) | ✅ Scaffolded — dashboard.css, dashboard.js |
+| Profiler engine (`includes/Profiler/`) | ✅ Complete — Profiler, Session, CallStack, Attribution, Instrumentor, Report, Storage |
+| Admin UI (`includes/Admin/`) | ✅ Functional — Dashboard page, AJAX handlers, tabbed detail view |
+| CSS/JS (`assets/`) | ✅ Functional — dashboard.css, dashboard.js with timeline, metric cards, query table |
 | WP-CLI (`includes/CLI/`) | ⬜ Empty — M5 scope |
 | Report sharing (`includes/Share/`) | ⬜ Empty — M4 scope |
 | Tests (`tests/`) | ⬜ Empty |
 | Languages (`languages/`) | ⬜ Empty — i18n scaffolded but no .pot yet |
+
+## Current Features
+
+### Profiling Engine
+- Hook callback instrumentation via `Instrumentor` with exclusive/inclusive time tracking
+- `CallStack` for nested callback depth and exclusive time calculation
+- `Attribution` for callback → plugin/theme/core/mu-plugin classification
+- Background sampling with configurable rate (1-100%)
+- By-reference parameter detection to skip unsafe callback wrapping
+- **Lifecycle phase markers** — `hrtime(true)` snapshots at 8 key WP hooks (muplugins_loaded through wp)
+- **Deep mode query logging** — captures `$wpdb->queries` when `SAVEQUERIES` is enabled (sql, time_ms, caller)
+- **Query count** — always captured via `$wpdb->num_queries`
+- **User role capture** — `wp_get_current_user()->roles` per request (administrator/editor/subscriber/anonymous)
+- **Timeline data** — per-callback position/width computed in `Report::build_timeline()`
+
+### Dashboard UI
+- Three-level drill-down: grouped routes → route profiles → single profile detail
+- **Tabbed detail view**: Timeline, Breakdown, Sources, Queries, Metadata
+- **Timeline visualization** — horizontal bar with callback segments, lifecycle phase marker lines, time axis, source legend
+- **Metric cards** — Server Request Duration, Peak Memory, DB Queries, Callbacks
+- **Role pills** — color-coded badges (🔒 admin red, editor blue, subscriber gray, 👤 anonymous outline)
+- **Weight glyphs** — thin inline progress bars on source table rows, proportional to % of total execution time
+- **Unattributed time tooltip** — ⓘ icon explaining bootstrap/autoloader/core init overhead
+- **Query table** — sortable by time, slow query highlighting (>10ms), caller trace
+- Background profiling toggle with sample rate slider
+- Sortable column headers, route grouping, profile deletion
+
+### Storage
+- Custom DB table with auto-upgrade (`maybe_upgrade_table`)
+- Columns: session_id, profile_type, request_url, request_method, route_class, route_key, duration_ns, user_role, profile_data (JSON), captured_at, is_baseline, baseline_name
 
 ## Requirements
 
@@ -36,6 +66,7 @@
 | Domain | scrutineer.dev (registered) |
 | GitHub | scrutineerhq/scrutinizer (public, GPL) |
 | Dev server | Linode VPS — SSH port 80 via CONNECT proxy |
+| POC site | poc.scrutineer.dev — WP 7.0, PHP 8.3, 9 plugins (WooCommerce, Wordfence, Yoast, CF7, WP Super Cache, ACF, Jetpack, Akismet, Scrutinizer) |
 | CI | GitHub Actions (phpcs + phpunit across PHP 7.4–8.3) |
 | Hosted relay | Not yet deployed — M4/M6 scope |
 
@@ -56,8 +87,8 @@
 | Milestone | Scope | Status |
 |-----------|-------|--------|
 | M0 — Foundation | Scaffold, CI, accounts, dev env | ✅ Complete |
-| M1 — Core Instrumentation | Profiler engine, Standard mode, basic dashboard | 🔨 In progress |
-| M2 — Deep Mode & Timeline | Deep mode, request timeline visualization, full diagnostics | ⬜ Not started |
+| M1 — Core Instrumentation | Profiler engine, Standard mode, basic dashboard | ✅ Complete |
+| M2 — Deep Mode & Timeline | Deep mode, request timeline visualization, full diagnostics | 🔨 In progress |
 | M3 — Baselines & Regression | Named baselines, route-matched comparison, regression language | ⬜ Not started |
 | M4 — Report Sharing | Capability links, R2 upload, hosted viewer, revocation | ⬜ Not started |
 | M5 — External Diagnostics & CLI | Yoke integration, 11 WP-CLI commands | ⬜ Not started |
