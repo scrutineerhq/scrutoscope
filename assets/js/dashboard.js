@@ -16,8 +16,10 @@
 	var currentView   = 'grouped'; // 'grouped', 'route', 'detail', 'history', 'compare'
 	var currentRoute  = '';        // route_key for the active drill-down
 	var activeTopTab  = 'routes';  // 'routes', 'history', or 'cron'
-	var sortField     = '';
+	var sortField     = 'avg_duration_ns';
 	var sortDir       = 'desc';    // 'asc' or 'desc'
+	var routeFilter   = '2xx';     // '2xx', '4xx', or '' (all)
+	var routeSearch   = '';
 	var groupedData   = [];
 	var routeData     = [];
 	var historyData   = [];
@@ -113,6 +115,12 @@
 			startProfiling( $( this ).data( 'target' ) || '' );
 		} );
 
+		// Settings gear toggle.
+		$( document ).on( 'click', '.scrutinizer-gear-toggle', function() {
+			$( '#scrutinizer-settings-panel' ).slideToggle( 200 );
+			$( this ).toggleClass( 'is-active' );
+		} );
+
 		// Stop button.
 		$( document ).on( 'click', '#scrutinizer-stop', stopProfiling );
 
@@ -184,10 +192,40 @@
 
 		// Background profiling toggle.
 		$( document ).on( 'change', '#scrutinizer-bg-toggle', toggleBackground );
-		$( document ).on( 'input', '#scrutinizer-sample-rate', function() {
-			$( '#scrutinizer-rate-value' ).text( $( this ).val() + '%' );
+
+		// Sample rate snap buttons.
+		$( document ).on( 'click', '.scrutinizer-rate-snap', function() {
+			var rate = parseFloat( $( this ).data( 'rate' ) );
+			$( '.scrutinizer-rate-snap' ).removeClass( 'is-active' );
+			$( this ).addClass( 'is-active' );
+			$( '#scrutinizer-custom-rate' ).val( rate );
+			saveBackgroundRate( rate );
 		} );
-		$( document ).on( 'change', '#scrutinizer-sample-rate', saveBackgroundRate );
+
+		// Custom rate input.
+		$( document ).on( 'change', '#scrutinizer-custom-rate', function() {
+			var rate = parseFloat( $( this ).val() );
+			if ( isNaN( rate ) || rate < 0 || rate > 100 ) {
+				return;
+			}
+			rate = Math.round( rate * 10 ) / 10;
+			$( this ).val( rate );
+			$( '.scrutinizer-rate-snap' ).removeClass( 'is-active' );
+			$( '.scrutinizer-rate-snap[data-rate="' + rate + '"]' ).addClass( 'is-active' );
+			saveBackgroundRate( rate );
+		} );
+
+		// Route filter dropdown.
+		$( document ).on( 'change', '#scrutinizer-route-filter', function() {
+			routeFilter = $( this ).val();
+			renderGroupedTable( groupedData );
+		} );
+
+		// Route search input.
+		$( document ).on( 'input', '#scrutinizer-route-search', function() {
+			routeSearch = $( this ).val().toLowerCase();
+			renderGroupedTable( groupedData );
+		} );
 
 		// Query profiling toggle.
 		$( document ).on( 'change', '#scrutinizer-qp-toggle', toggleQueryProfiling );
@@ -270,51 +308,74 @@
 			showHistoryView();
 		} );
 
-		// Trace: toggle expand/collapse.
-		$( document ).on( 'click', '.scrutinizer-trace-toggle', function() {
-			var $node = $( this ).closest( '.scrutinizer-trace-node' );
-			var $children = $node.children( '.scrutinizer-trace-children' );
-			if ( $children.is( ':visible' ) ) {
-				$children.hide();
-				$( this ).text( '▶' );
-			} else {
-				$children.show();
-				$( this ).text( '▼' );
-			}
-		} );
-
-		// Trace: expand all.
+		// Trace: expand all phases.
 		$( document ).on( 'click', '#scrutinizer-trace-expand-all', function() {
-			$( '.scrutinizer-trace-children' ).show();
-			$( '.scrutinizer-trace-toggle' ).text( '▼' );
+			$( '.scrutinizer-trace-phase, .scrutinizer-trace-hook' ).attr( 'open', '' );
 		} );
 
-		// Trace: collapse all.
+		// Trace: collapse all phases.
 		$( document ).on( 'click', '#scrutinizer-trace-collapse-all', function() {
-			$( '.scrutinizer-trace-node:not(.root-node) > .scrutinizer-trace-children' ).hide();
-			$( '.scrutinizer-trace-node:not(.root-node) > .scrutinizer-trace-row .scrutinizer-trace-toggle' ).text( '▶' );
+			$( '.scrutinizer-trace-phase, .scrutinizer-trace-hook' ).removeAttr( 'open' );
 		} );
 
 		// Trace: filter callbacks.
 		$( document ).on( 'input', '#scrutinizer-trace-filter', function() {
 			var q = $( this ).val().toLowerCase();
 			if ( ! q ) {
-				$( '.scrutinizer-trace-node' ).show();
+				// Reset: close all phases, show everything.
+				$( '.scrutinizer-trace-phase, .scrutinizer-trace-hook, .scrutinizer-trace-leaf' ).show();
+				$( '.scrutinizer-trace-phase, .scrutinizer-trace-hook' ).removeAttr( 'open' );
 				return;
 			}
-			$( '.scrutinizer-trace-node' ).each( function() {
-				var text = $( this ).children( '.scrutinizer-trace-row' ).text().toLowerCase();
-				if ( text.indexOf( q ) >= 0 ) {
-					$( this ).show();
-					// Show all ancestors.
-					$( this ).parents( '.scrutinizer-trace-node' ).show();
-					$( this ).parents( '.scrutinizer-trace-children' ).show();
-				} else if ( $( this ).find( '.scrutinizer-trace-row' ).filter( function() {
-					return $( this ).text().toLowerCase().indexOf( q ) >= 0;
-				} ).length > 0 ) {
-					$( this ).show();
+			// Search through all leaf callbacks and hook names.
+			$( '.scrutinizer-trace-phase' ).each( function() {
+				var $phase = $( this );
+				var phaseMatch = false;
+
+				$phase.find( '.scrutinizer-trace-hook' ).each( function() {
+					var $hook = $( this );
+					var hookMatch = false;
+
+					$hook.find( '.scrutinizer-trace-leaf' ).each( function() {
+						var text = $( this ).text().toLowerCase();
+						if ( text.indexOf( q ) >= 0 ) {
+							$( this ).show();
+							hookMatch = true;
+						} else {
+							$( this ).hide();
+						}
+					} );
+
+					// Also check hook summary text.
+					var hookText = $hook.children( 'summary' ).text().toLowerCase();
+					if ( hookText.indexOf( q ) >= 0 ) {
+						hookMatch = true;
+						$hook.find( '.scrutinizer-trace-leaf' ).show();
+					}
+
+					if ( hookMatch ) {
+						$hook.show().attr( 'open', '' );
+						phaseMatch = true;
+					} else {
+						$hook.hide();
+					}
+				} );
+
+				// Also check standalone leaves (single-callback hooks rendered without <details>).
+				$phase.find( '.scrutinizer-trace-phase-children > .scrutinizer-trace-leaf' ).each( function() {
+					var text = $( this ).text().toLowerCase();
+					if ( text.indexOf( q ) >= 0 ) {
+						$( this ).show();
+						phaseMatch = true;
+					} else {
+						$( this ).hide();
+					}
+				} );
+
+				if ( phaseMatch ) {
+					$phase.show().attr( 'open', '' );
 				} else {
-					$( this ).hide();
+					$phase.hide();
 				}
 			} );
 		} );
@@ -325,14 +386,30 @@
 	/* ------------------------------------------------------------------ */
 
 	function initBackgroundControls() {
+		var currentRate = parseFloat( scrutinizerAdmin.backgroundSampleRate ) || 10;
+		var snaps = [
+			{ value: 0.1, label: 'light' },
+			{ value: 1, label: 'moderate' },
+			{ value: 10, label: 'detailed' },
+			{ value: 100, label: 'every request' }
+		];
+
 		var html = '<div class="scrutinizer-bg-controls">';
-		html += '<h3>Background Profiling</h3>';
+		html += '<h3>Background Measurement</h3>';
 		html += '<label class="scrutinizer-toggle-label">';
 		html += '<input type="checkbox" id="scrutinizer-bg-toggle"' + ( scrutinizerAdmin.backgroundEnabled ? ' checked' : '' ) + '> ';
-		html += 'Enable background sampling</label>';
+		html += 'Automatically measure requests in the background</label>';
 		html += '<div class="scrutinizer-rate-control' + ( scrutinizerAdmin.backgroundEnabled ? '' : ' hidden' ) + '" id="scrutinizer-rate-group">';
-		html += '<label>Sample rate: <span id="scrutinizer-rate-value">' + scrutinizerAdmin.backgroundSampleRate + '%</span></label>';
-		html += '<input type="range" id="scrutinizer-sample-rate" min="1" max="100" value="' + scrutinizerAdmin.backgroundSampleRate + '">';
+		html += '<label>Capture rate</label>';
+		html += '<div class="scrutinizer-rate-snaps">';
+		for ( var i = 0; i < snaps.length; i++ ) {
+			var snap = snaps[ i ];
+			var active = ( currentRate === snap.value ) ? ' is-active' : '';
+			html += '<button type="button" class="scrutinizer-rate-snap' + active + '" data-rate="' + snap.value + '">';
+			html += snap.value + '%<span class="scrutinizer-rate-snap-label">' + esc( snap.label ) + '</span></button>';
+		}
+		html += '<span class="scrutinizer-rate-custom">or <input type="number" id="scrutinizer-custom-rate" min="0" max="100" step="0.1" value="' + currentRate + '">%</span>';
+		html += '</div>';
 		html += '</div>';
 		html += '</div>';
 
@@ -341,7 +418,7 @@
 
 	function toggleBackground() {
 		var enabled = $( '#scrutinizer-bg-toggle' ).is( ':checked' );
-		var rate    = parseInt( $( '#scrutinizer-sample-rate' ).val(), 10 ) || 5;
+		var rate    = parseFloat( $( '#scrutinizer-custom-rate' ).val() ) || 10;
 
 		if ( enabled ) {
 			$( '#scrutinizer-rate-group' ).removeClass( 'hidden' );
@@ -361,8 +438,8 @@
 		} );
 	}
 
-	function saveBackgroundRate() {
-		var rate = parseInt( $( '#scrutinizer-sample-rate' ).val(), 10 ) || 5;
+	function saveBackgroundRate( rate ) {
+		rate = parseFloat( rate ) || 10;
 		$.post( scrutinizerAdmin.ajaxUrl, {
 			action:  'scrutinizer_toggle_background',
 			nonce:   scrutinizerAdmin.nonce,
@@ -575,13 +652,65 @@
 		var $list = $( '#scrutinizer-profile-list' );
 
 		if ( ! groups || 0 === groups.length ) {
-			$list.html( '<p class="scrutinizer-empty">' + scrutinizerAdmin.i18n.noProfiles + '</p>' );
+			$list.html(
+				'<div class="scrutinizer-empty-state">' +
+				'<h3>No measurements yet</h3>' +
+				'<p>Start a profiling session to see where your server time goes, or turn on background measurement to capture requests automatically.</p>' +
+				'<div class="scrutinizer-empty-actions">' +
+				'<button type="button" class="button button-primary scrutinizer-decision-card" data-target="admin">Admin Dashboard</button> ' +
+				'<button type="button" class="button scrutinizer-decision-card" data-target="frontend">Logged-in Frontend</button> ' +
+				'<button type="button" class="button scrutinizer-decision-card" data-target="visitor">Visitor View</button>' +
+				'</div>' +
+				'</div>'
+			);
 			return;
 		}
 
-		groups = sortRows( groups );
+		// Client-side filtering by response status.
+		var filtered = [];
+		for ( var f = 0; f < groups.length; f++ ) {
+			var g = groups[ f ];
+			var count2xx = parseInt( g.count_2xx, 10 ) || 0;
+			var count4xx = parseInt( g.count_4xx, 10 ) || 0;
 
-		var html = '<table class="scrutinizer-profile-table widefat">';
+			if ( '2xx' === routeFilter && 0 === count2xx ) {
+				continue;
+			}
+			if ( '4xx' === routeFilter && ( count2xx > 0 || 0 === count4xx ) ) {
+				continue;
+			}
+
+			// Text search filter.
+			if ( routeSearch ) {
+				var searchText = ( g.route_key || '' ).toLowerCase();
+				var labelText  = ( g.route_label || '' ).toLowerCase();
+				if ( searchText.indexOf( routeSearch ) < 0 && labelText.indexOf( routeSearch ) < 0 ) {
+					continue;
+				}
+			}
+
+			filtered.push( g );
+		}
+
+		filtered = sortRows( filtered );
+
+		// Filter bar.
+		var html = '<div class="scrutinizer-filter-bar">';
+		html += '<label>Showing: <select id="scrutinizer-route-filter">';
+		html += '<option value="2xx"' + ( '2xx' === routeFilter ? ' selected' : '' ) + '>Pages that loaded</option>';
+		html += '<option value="4xx"' + ( '4xx' === routeFilter ? ' selected' : '' ) + '>Not found responses</option>';
+		html += '<option value=""' + ( '' === routeFilter ? ' selected' : '' ) + '>All requests</option>';
+		html += '</select></label>';
+		html += '<input type="search" id="scrutinizer-route-search" placeholder="Search routes\u2026" value="' + esc( routeSearch ) + '" />';
+		html += '</div>';
+
+		if ( 0 === filtered.length ) {
+			html += '<p class="scrutinizer-empty">No routes match the current filter.</p>';
+			$list.html( html );
+			return;
+		}
+
+		html += '<table class="scrutinizer-profile-table widefat">';
 		html += '<thead><tr>';
 		html += sortHeader( 'Route', 'route_key' );
 		html += sortHeader( 'Method', 'request_method' );
@@ -593,22 +722,33 @@
 		html += '<th>Type</th>';
 		html += '</tr></thead><tbody>';
 
-		for ( var i = 0; i < groups.length; i++ ) {
-			var g = groups[ i ];
-			var avgMs = ( parseFloat( g.avg_duration_ns ) / 1e6 ).toFixed( 1 );
-			var minMs = ( parseInt( g.min_duration_ns, 10 ) / 1e6 ).toFixed( 1 );
-			var maxMs = ( parseInt( g.max_duration_ns, 10 ) / 1e6 ).toFixed( 1 );
-			var types = typeBadges( g.profile_types || '' );
-			var route = g.route_key || '(unknown)';
+		for ( var i = 0; i < filtered.length; i++ ) {
+			var r = filtered[ i ];
+			var avgMs = ( parseFloat( r.avg_duration_ns ) / 1e6 ).toFixed( 1 );
+			var minMs = ( parseInt( r.min_duration_ns, 10 ) / 1e6 ).toFixed( 1 );
+			var maxMs = ( parseInt( r.max_duration_ns, 10 ) / 1e6 ).toFixed( 1 );
+			var types = typeBadges( r.profile_types || '' );
+			var route = r.route_key || '(unknown)';
 
-			html += '<tr class="scrutinizer-route-row" data-route-key="' + esc( g.route_key ) + '">';
-			html += '<td class="scrutinizer-route-cell" title="' + esc( route ) + '">' + esc( truncate( route, 50 ) ) + '</td>';
-			html += '<td>' + esc( g.request_method ) + '</td>';
-			html += '<td class="numeric">' + parseInt( g.request_count, 10 ) + '</td>';
+			// Two-line route label (F9).
+			var routeCell = '';
+			if ( r.route_label ) {
+				routeCell = '<div class="scrutinizer-route-name">' +
+					'<span class="scrutinizer-route-label">' + esc( r.route_label ) + '</span>' +
+					'<span class="scrutinizer-route-key">' + esc( route ) + '</span>' +
+					'</div>';
+			} else {
+				routeCell = '<span class="scrutinizer-route-key">' + esc( truncate( route, 50 ) ) + '</span>';
+			}
+
+			html += '<tr class="scrutinizer-route-row" data-route-key="' + esc( r.route_key ) + '">';
+			html += '<td class="scrutinizer-route-cell">' + routeCell + '</td>';
+			html += '<td>' + esc( r.request_method ) + '</td>';
+			html += '<td class="numeric">' + parseInt( r.request_count, 10 ) + '</td>';
 			html += '<td class="scrutinizer-duration numeric">' + esc( avgMs ) + ' ms</td>';
 			html += '<td class="numeric">' + esc( minMs ) + ' ms</td>';
 			html += '<td class="numeric">' + esc( maxMs ) + ' ms</td>';
-			html += '<td>' + esc( g.last_captured ) + '</td>';
+			html += '<td>' + esc( r.last_captured ) + '</td>';
 			html += '<td>' + types + '</td>';
 			html += '</tr>';
 		}
@@ -620,7 +760,7 @@
 	function showGroupedView() {
 		currentView  = 'grouped';
 		currentRoute = '';
-		sortField    = '';
+		sortField    = 'avg_duration_ns';
 		sortDir      = 'desc';
 		$( '#scrutinizer-results' ).show();
 		$( '#scrutinizer-route-detail' ).remove();
@@ -1183,6 +1323,7 @@
 	function renderBreakdown( summary ) {
 		var breakdown = summary.breakdown || {};
 		var html = '<div class="scrutinizer-breakdown">';
+		html += '<p class="scrutinizer-tab-subtitle">How request time splits across code types \u2014 plugins, theme, core, and time not mapped to any callback.</p>';
 		html += '<div class="scrutinizer-breakdown-bar">';
 
 		var barTypes = [ 'plugin', 'theme', 'core', 'mu-plugin', 'unknown', 'unattributed' ];
@@ -1228,7 +1369,8 @@
 
 		var totalExclNs = summary.total_exclusive_ns || 1;
 
-		var html = '<table class="scrutinizer-source-table widefat">';
+		var html = '<p class="scrutinizer-tab-subtitle">Time in each individual plugin and theme, ranked by exclusive callback time.</p>';
+		html += '<table class="scrutinizer-source-table widefat">';
 		html += '<thead><tr>';
 		html += '<th>Source</th>';
 		html += '<th>Type</th>';
@@ -1247,8 +1389,32 @@
 			var memDelta = src.memory_delta || 0;
 			var memClass = memDelta > 1048576 ? ' scrutinizer-mem-high' : ( memDelta < 0 ? ' scrutinizer-mem-freed' : '' );
 
-			html += '<tr>';
-			html += '<td>' + esc( src.name || src.slug ) + '</td>';
+			// Expandable Unknown source row (F5).
+			if ( 'unknown' === src.type && src.callbacks && src.callbacks.length > 0 ) {
+				html += '<tr class="scrutinizer-unknown-row">';
+				html += '<td>';
+				html += '<details class="scrutinizer-unknown-expand">';
+				html += '<summary>' + esc( src.name || src.slug ) + '</summary>';
+				html += '<div class="scrutinizer-unknown-detail">';
+				for ( var u = 0; u < src.callbacks.length; u++ ) {
+					var cb = src.callbacks[ u ];
+					var cbMs = cb.exclusive_ns ? ( cb.exclusive_ns / 1e6 ).toFixed( 2 ) + ' ms' : '';
+					var cbCalls = cb.call_count ? cb.call_count + ' call' + ( cb.call_count !== 1 ? 's' : '' ) : '';
+					html += '<div class="scrutinizer-unknown-callback">';
+					html += '<code>' + esc( cb.callback || cb.id || 'anonymous' ) + '</code>';
+					if ( cbMs || cbCalls ) {
+						html += ' <span class="scrutinizer-muted">' + cbMs + ( cbMs && cbCalls ? ', ' : '' ) + cbCalls + '</span>';
+					}
+					html += '</div>';
+				}
+				html += '</div>';
+				html += '</details>';
+				html += '</td>';
+			} else {
+				html += '<tr>';
+				html += '<td>' + esc( src.name || src.slug ) + '</td>';
+			}
+
 			html += '<td>' + esc( src.type ) + '</td>';
 			html += '<td class="numeric">' + exclMs + ' ms</td>';
 			html += '<td class="scrutinizer-weight-cell">';
@@ -1298,6 +1464,7 @@
 		html += '<table class="scrutinizer-source-table scrutinizer-queries-table widefat">';
 		html += '<thead><tr>';
 		html += '<th class="numeric">#</th>';
+		html += '<th>Source</th>';
 		html += '<th>SQL</th>';
 		html += '<th class="numeric">Time</th>';
 		html += '<th>Caller</th>';
@@ -1308,8 +1475,24 @@
 			var qTime = ( qr.time_ms || 0 ).toFixed( 2 );
 			var slow  = qr.time_ms > 10 ? ' class="scrutinizer-slow-query"' : '';
 
+			// Source badge from caller attribution (F14).
+			var qSource = '';
+			if ( qr.attribution ) {
+				var qAttr = qr.attribution;
+				var qColor = sourceColors[ qAttr.type ] || '#888';
+				qSource = '<span class="scrutinizer-asset-source-pill" style="background:' + qColor + '">' + esc( qAttr.name || qAttr.slug || qAttr.type ) + '</span>';
+			} else if ( qr.caller ) {
+				// Try to infer source from caller string.
+				var callerSource = inferSourceFromCaller( qr.caller );
+				if ( callerSource ) {
+					var csColor = sourceColors[ callerSource.type ] || '#888';
+					qSource = '<span class="scrutinizer-asset-source-pill" style="background:' + csColor + '">' + esc( callerSource.name ) + '</span>';
+				}
+			}
+
 			html += '<tr' + slow + '>';
 			html += '<td class="numeric">' + ( i + 1 ) + '</td>';
+			html += '<td>' + ( qSource || '<span class="scrutinizer-muted">\u2014</span>' ) + '</td>';
 			html += '<td class="scrutinizer-sql-cell"><code>' + esc( truncate( qr.sql || '', 200 ) ) + '</code></td>';
 			html += '<td class="numeric">' + qTime + ' ms</td>';
 			html += '<td class="scrutinizer-caller-cell" title="' + esc( qr.caller || '' ) + '">' + esc( truncate( qr.caller || '', 80 ) ) + '</td>';
@@ -1612,119 +1795,186 @@
 	}
 
 	function renderTraceTab( traceData, sources ) {
+		if ( ! traceData || 0 === traceData.length ) {
+			return '<p class="scrutinizer-empty">No trace data captured.</p>';
+		}
+
 		var tree = buildTraceTree( traceData );
-		var totalNs = 0;
-		for ( var t = 0; t < traceData.length; t++ ) {
-			if ( traceData[t].exclusive_ns > totalNs ) {
-				// Use the request duration from trace range instead.
-			}
-		}
-		// Total request window for bar scaling.
-		var minNs = Infinity, maxNs = 0;
-		for ( var m = 0; m < traceData.length; m++ ) {
-			if ( traceData[m].start_ns < minNs ) { minNs = traceData[m].start_ns; }
-			if ( traceData[m].end_ns > maxNs ) { maxNs = traceData[m].end_ns; }
-		}
-		var spanNs = maxNs - minNs || 1;
+
+		// Group root nodes into lifecycle phases.
+		var phases = groupByPhase( tree );
 
 		var html = '';
 
-		// Summary.
+		// Summary + search.
 		html += '<div class="scrutinizer-trace-summary">';
-		html += '<span>' + traceData.length + ' callbacks traced</span>';
-		html += ' · <span>' + tree.length + ' root hooks</span>';
-		html += ' · <button class="button button-small" id="scrutinizer-trace-expand-all">Expand All</button>';
-		html += ' <button class="button button-small" id="scrutinizer-trace-collapse-all">Collapse All</button>';
-		html += ' · <input type="text" id="scrutinizer-trace-filter" placeholder="Filter callbacks…" class="scrutinizer-trace-filter" />';
+		html += '<span>' + traceData.length.toLocaleString() + ' callbacks traced</span>';
+		html += ' \u00b7 <span>' + phases.length + ' phases</span>';
+		html += ' \u00b7 <input type="search" id="scrutinizer-trace-filter" placeholder="Filter hooks\u2026" class="scrutinizer-trace-filter" />';
 		html += '</div>';
 
-		// Tree.
+		// Collapsed phase tree.
 		html += '<div class="scrutinizer-trace-tree">';
-		html += renderTraceNodes( tree, 0, minNs, spanNs, sources );
-		html += '</div>';
+		for ( var p = 0; p < phases.length; p++ ) {
+			var phase = phases[ p ];
+			html += '<details class="scrutinizer-trace-phase">';
+			html += '<summary class="scrutinizer-trace-phase-summary">';
+			html += '<strong>' + esc( formatPhaseName( phase.name ) ) + '</strong>';
+			html += ' <span class="scrutinizer-muted">(' + phase.callbackCount.toLocaleString() + ' callback' + ( phase.callbackCount !== 1 ? 's' : '' ) + ', ';
+			html += ( phase.totalNs / 1e6 ).toFixed( 1 ) + ' ms)</span>';
+			html += '</summary>';
+			html += '<div class="scrutinizer-trace-phase-children">';
 
-		return html;
-	}
-
-	function renderTraceNodes( nodes, depth, minNs, spanNs, sources ) {
-		var html = '';
-		for ( var i = 0; i < nodes.length; i++ ) {
-			html += renderTraceNode( nodes[i], depth, minNs, spanNs, sources );
-		}
-		return html;
-	}
-
-	function renderTraceNode( node, depth, minNs, spanNs, sources ) {
-		var hasChildren = node.children && node.children.length > 0;
-		var inclusiveMs = ( node.inclusive_ns / 1e6 ).toFixed( 2 );
-		var exclusiveMs = ( node.exclusive_ns / 1e6 ).toFixed( 2 );
-		var barWidth    = Math.max( 1, ( node.inclusive_ns / spanNs ) * 100 );
-		var barOffset   = ( ( node.start_ns - minNs ) / spanNs ) * 100;
-
-		// Color from source lookup.
-		var color = '#888';
-		if ( sources ) {
-			for ( var s = 0; s < sources.length; s++ ) {
-				var src = sources[s];
-				// Match callback to source by checking if the hook is associated.
-				if ( src.type ) {
-					color = sourceColors[ src.type ] || '#888';
+			// Group children by hook within this phase.
+			var hooks = groupChildrenByHook( phase.nodes );
+			for ( var h = 0; h < hooks.length; h++ ) {
+				var hook = hooks[ h ];
+				if ( hook.callbacks.length > 1 ) {
+					html += '<details class="scrutinizer-trace-hook">';
+					html += '<summary class="scrutinizer-trace-hook-summary">';
+					html += '<code>' + esc( hook.name ) + '</code>';
+					html += ' <span class="scrutinizer-muted">(' + hook.callbacks.length + ' callback' + ( hook.callbacks.length !== 1 ? 's' : '' ) + ', ';
+					html += ( hook.totalNs / 1e6 ).toFixed( 1 ) + ' ms)</span>';
+					html += '</summary>';
+					html += '<div class="scrutinizer-trace-hook-children">';
+					for ( var c = 0; c < hook.callbacks.length; c++ ) {
+						html += renderTraceLeaf( hook.callbacks[ c ] );
+					}
+					html += '</div>';
+					html += '</details>';
+				} else if ( hook.callbacks.length === 1 ) {
+					html += renderTraceLeaf( hook.callbacks[ 0 ] );
 				}
 			}
-		}
-		// Simpler: color by callback prefix matching.
-		color = getTraceColor( node._callback, node._hook );
 
-		var nodeClass = 'scrutinizer-trace-node';
-		if ( hasChildren ) { nodeClass += ' has-children'; }
-		if ( depth === 0 ) { nodeClass += ' root-node'; }
-
-		var html = '<div class="' + nodeClass + '" data-depth="' + depth + '">';
-
-		// Row.
-		html += '<div class="scrutinizer-trace-row" style="padding-left:' + ( depth * 20 + 4 ) + 'px">';
-
-		// Toggle.
-		if ( hasChildren ) {
-			html += '<span class="scrutinizer-trace-toggle" title="' + node.children.length + ' children">▶</span>';
-		} else {
-			html += '<span class="scrutinizer-trace-leaf">·</span>';
-		}
-
-		// Callback name.
-		html += '<span class="scrutinizer-trace-callback">' + esc( node._callback ) + '</span>';
-
-		// Hook tag + priority.
-		html += ' <span class="scrutinizer-trace-hook">@' + esc( node._hook );
-		if ( node._priority ) {
-			html += ':' + esc( node._priority );
-		}
-		html += '</span>';
-
-		// Timing.
-		html += '<span class="scrutinizer-trace-timing">';
-		html += '<span class="scrutinizer-trace-inclusive">' + inclusiveMs + ' ms</span>';
-		if ( hasChildren && node.exclusive_ns !== node.inclusive_ns ) {
-			html += ' <span class="scrutinizer-trace-exclusive">(self: ' + exclusiveMs + ' ms)</span>';
-		}
-		html += '</span>';
-
-		// Mini bar.
-		html += '<span class="scrutinizer-trace-bar-wrap">';
-		html += '<span class="scrutinizer-trace-bar" style="left:' + barOffset.toFixed( 2 ) + '%;width:' + barWidth.toFixed( 2 ) + '%;background:' + color + '"></span>';
-		html += '</span>';
-
-		html += '</div>'; // .scrutinizer-trace-row
-
-		// Children (collapsed by default for depth > 0).
-		if ( hasChildren ) {
-			var collapsed = depth > 0 ? ' style="display:none"' : '';
-			html += '<div class="scrutinizer-trace-children"' + collapsed + '>';
-			html += renderTraceNodes( node.children, depth + 1, minNs, spanNs, sources );
 			html += '</div>';
+			html += '</details>';
+		}
+		html += '</div>';
+
+		return html;
+	}
+
+	/**
+	 * Group root-level trace nodes into lifecycle phases.
+	 * Nodes whose hook matches a known WP lifecycle hook become phase headers.
+	 * Adjacent non-lifecycle nodes are grouped under the preceding phase.
+	 */
+	function groupByPhase( rootNodes ) {
+		var lifecycleHooks = [
+			'muplugins_loaded', 'plugins_loaded', 'setup_theme', 'after_setup_theme',
+			'init', 'widgets_init', 'wp_loaded', 'parse_request', 'send_headers',
+			'wp', 'template_redirect', 'get_header', 'wp_head', 'wp_enqueue_scripts',
+			'the_post', 'loop_start', 'the_content', 'loop_end', 'get_sidebar',
+			'get_footer', 'wp_footer', 'wp_print_footer_scripts',
+			'admin_init', 'admin_menu', 'admin_enqueue_scripts', 'admin_head',
+			'admin_footer', 'shutdown'
+		];
+		var isLifecycle = {};
+		for ( var l = 0; l < lifecycleHooks.length; l++ ) {
+			isLifecycle[ lifecycleHooks[ l ] ] = true;
 		}
 
-		html += '</div>'; // .scrutinizer-trace-node
+		var phases = [];
+		var currentPhase = null;
+
+		for ( var i = 0; i < rootNodes.length; i++ ) {
+			var node = rootNodes[ i ];
+			var hook = node._hook || '';
+
+			if ( isLifecycle[ hook ] || null === currentPhase ) {
+				// Start a new phase.
+				currentPhase = {
+					name: hook || node._callback || 'startup',
+					nodes: [],
+					callbackCount: 0,
+					totalNs: 0
+				};
+				phases.push( currentPhase );
+			}
+
+			currentPhase.nodes.push( node );
+			var count = countDescendants( node );
+			currentPhase.callbackCount += count;
+			currentPhase.totalNs += node.inclusive_ns || 0;
+		}
+
+		return phases;
+	}
+
+	/**
+	 * Count total descendants (including self) of a trace node.
+	 */
+	function countDescendants( node ) {
+		var count = 1;
+		if ( node.children ) {
+			for ( var i = 0; i < node.children.length; i++ ) {
+				count += countDescendants( node.children[ i ] );
+			}
+		}
+		return count;
+	}
+
+	/**
+	 * Group a set of trace nodes by their hook name for sub-phase rendering.
+	 */
+	function groupChildrenByHook( nodes ) {
+		var hookMap = {};
+		var hookOrder = [];
+
+		for ( var i = 0; i < nodes.length; i++ ) {
+			var node = nodes[ i ];
+			// Flatten: add this node and all its children grouped by hook.
+			var allNodes = flattenWithChildren( node );
+			for ( var j = 0; j < allNodes.length; j++ ) {
+				var n = allNodes[ j ];
+				var hookName = n._hook || n._callback || 'unknown';
+				if ( ! hookMap[ hookName ] ) {
+					hookMap[ hookName ] = { name: hookName, callbacks: [], totalNs: 0 };
+					hookOrder.push( hookName );
+				}
+				hookMap[ hookName ].callbacks.push( n );
+				hookMap[ hookName ].totalNs += n.exclusive_ns || 0;
+			}
+		}
+
+		var result = [];
+		for ( var k = 0; k < hookOrder.length; k++ ) {
+			result.push( hookMap[ hookOrder[ k ] ] );
+		}
+		return result;
+	}
+
+	/**
+	 * Flatten a trace node tree into a list of leaf-like entries for display.
+	 */
+	function flattenWithChildren( node ) {
+		var result = [ node ];
+		if ( node.children ) {
+			for ( var i = 0; i < node.children.length; i++ ) {
+				result = result.concat( flattenWithChildren( node.children[ i ] ) );
+			}
+		}
+		return result;
+	}
+
+	/**
+	 * Render a single trace callback as a compact line.
+	 */
+	function renderTraceLeaf( node ) {
+		var exclusiveMs = ( ( node.exclusive_ns || 0 ) / 1e6 ).toFixed( 2 );
+		var inclusiveMs = ( ( node.inclusive_ns || 0 ) / 1e6 ).toFixed( 2 );
+		var timing = exclusiveMs + ' ms';
+		if ( node.children && node.children.length > 0 && node.exclusive_ns !== node.inclusive_ns ) {
+			timing += ' <span class="scrutinizer-muted">(incl: ' + inclusiveMs + ' ms)</span>';
+		}
+		var priority = node._priority ? ':' + esc( node._priority ) : '';
+
+		var html = '<div class="scrutinizer-trace-leaf">';
+		html += '<code>' + esc( node._callback ) + '</code>';
+		html += ' <span class="scrutinizer-trace-hook-tag">@' + esc( node._hook ) + priority + '</span>';
+		html += ' <span class="scrutinizer-trace-timing">' + timing + '</span>';
+		html += '</div>';
 		return html;
 	}
 
@@ -1757,6 +2007,44 @@
 			colorIndex++;
 		}
 		return pluginColorMap[ key ];
+	}
+
+	/* ------------------------------------------------------------------ */
+	/*  Source inference from caller strings                                */
+	/* ------------------------------------------------------------------ */
+
+	/**
+	 * Try to infer a source (plugin/theme/core) from a caller stack string.
+	 * Looks for common path patterns like /plugins/slug/ or /themes/slug/.
+	 */
+	function inferSourceFromCaller( callerStr ) {
+		if ( ! callerStr ) {
+			return null;
+		}
+
+		// Plugin: look for /plugins/slug/ pattern.
+		var pluginMatch = callerStr.match( /\/plugins\/([^\/]+)\// );
+		if ( pluginMatch ) {
+			return { type: 'plugin', name: pluginMatch[ 1 ] };
+		}
+
+		// Theme: look for /themes/slug/ pattern.
+		var themeMatch = callerStr.match( /\/themes\/([^\/]+)\// );
+		if ( themeMatch ) {
+			return { type: 'theme', name: themeMatch[ 1 ] };
+		}
+
+		// MU-plugin: look for /mu-plugins/ pattern.
+		if ( callerStr.indexOf( '/mu-plugins/' ) >= 0 ) {
+			return { type: 'mu-plugin', name: 'mu-plugin' };
+		}
+
+		// Core: look for /wp-includes/ or /wp-admin/ pattern.
+		if ( callerStr.indexOf( '/wp-includes/' ) >= 0 || callerStr.indexOf( '/wp-admin/includes/' ) >= 0 ) {
+			return { type: 'core', name: 'WordPress' };
+		}
+
+		return null;
 	}
 
 	/* ------------------------------------------------------------------ */
@@ -2549,7 +2837,7 @@
 		var html = '';
 
 		// --- Send to Agent section ---
-		html += '<div class="scrutinizer-api-section">';
+		html += '<div class="scrutinizer-api-section scrutinizer-api-section--agent">';
 		html += '<h3 class="scrutinizer-api-heading"><span class="dashicons dashicons-share-alt2"></span> Send to Agent</h3>';
 		html += '<p class="scrutinizer-api-desc">Generate a one-time prompt that gives an AI agent read-only access to your profiling data. ';
 		html += 'The credential auto-expires and is scoped to Scrutineer endpoints only.</p>';
@@ -2559,6 +2847,7 @@
 		html += '<button type="button" class="button button-link scrutinizer-revoke-link" id="scrutinizer-revoke-api-key" style="display:none;">';
 		html += '<span class="dashicons dashicons-dismiss"></span> Revoke Access</button>';
 		html += '</div>';
+		html += '<p class="scrutinizer-privacy-advisory">This prompt includes your site URL and a short-lived credential. Paste it into a private AI conversation \u2014 not a public or shared chat.</p>';
 		html += '<div id="scrutinizer-api-key-result" class="scrutinizer-api-result" style="display:none;"></div>';
 		html += '</div>';
 

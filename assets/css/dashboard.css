@@ -687,7 +687,7 @@
 .scrutinizer-bg-controls {
 	background: #fff;
 	border: 1px solid #c3c4c7;
-	border-left: 4px solid #72aee6;
+	border-left: 4px solid var(--wp-admin-theme-color, #2271b1);
 	padding: 12px 16px;
 	margin: 16px 0;
 }
@@ -730,7 +730,7 @@
 .scrutinizer-qp-controls {
 	background: #fff;
 	border: 1px solid #c3c4c7;
-	border-left: 4px solid #72aee6;
+	border-left: 4px solid var(--wp-admin-theme-color, #2271b1);
 	padding: 12px 16px;
 	margin: 0 0 16px;
 }
@@ -871,8 +871,8 @@
 	display: block;
 	margin-top: 6px;
 	padding: 6px 10px;
-	background: #2c3338;
-	color: #e0e0e0;
+	background: #f0f0f1;
+	color: #2c3338;
 	font-family: monospace;
 	font-size: 12px;
 	border-radius: 3px;
@@ -1298,7 +1298,7 @@
 }
 
 .scrutinizer-muted {
-	color: #a7aaad;
+	color: #787c82;
 	font-style: italic;
 }
 
@@ -1347,7 +1347,7 @@
 	font-size: 12px;
 	text-transform: uppercase;
 	letter-spacing: 0.5px;
-	color: #a7aaad;
+	color: #50575e;
 }
 
 .scrutinizer-cron-source-pills {
@@ -1377,24 +1377,24 @@
 	font-size: 11px;
 	text-transform: uppercase;
 	letter-spacing: 0.5px;
-	color: #a7aaad;
-	border-bottom: 1px solid #3c434a;
+	color: #50575e;
+	border-bottom: 1px solid #c3c4c7;
 	padding: 6px 8px;
 }
 
 .scrutinizer-cron-table td {
 	padding: 8px;
-	border-bottom: 1px solid #2c3338;
+	border-bottom: 1px solid #f0f0f1;
 	vertical-align: top;
 }
 
 .scrutinizer-cron-table tr:hover {
-	background: rgba(255, 255, 255, 0.02);
+	background: #f6f7f7;
 }
 
 .scrutinizer-cron-hook code {
 	font-size: 12px;
-	background: rgba(255, 255, 255, 0.06);
+	background: #f0f0f1;
 	padding: 2px 5px;
 	border-radius: 3px;
 }
@@ -1410,7 +1410,7 @@
 }
 
 .scrutinizer-cron-status-ok {
-	color: #68de7c;
+	color: #00a32a;
 	font-size: 12px;
 }
 
@@ -1421,7 +1421,7 @@
 .scrutinizer-cron-schedules summary {
 	cursor: pointer;
 	font-size: 12px;
-	color: #a7aaad;
+	color: #50575e;
 	padding: 6px 0;
 }
 
@@ -1436,19 +1436,19 @@
 	text-align: left;
 	font-size: 10px;
 	text-transform: uppercase;
-	color: #a7aaad;
-	border-bottom: 1px solid #3c434a;
+	color: #50575e;
+	border-bottom: 1px solid #c3c4c7;
 	padding: 4px 8px;
 }
 
 .scrutinizer-cron-schedule-table td {
 	padding: 4px 8px;
-	border-bottom: 1px solid #2c3338;
+	border-bottom: 1px solid #f0f0f1;
 }
 
 .scrutinizer-cron-schedule-table code {
 	font-size: 11px;
-	background: rgba(255, 255, 255, 0.06);
+	background: #f0f0f1;
 	padding: 1px 4px;
 	border-radius: 3px;
 }
@@ -1456,7 +1456,7 @@
 .scrutinizer-cron-actions {
 	margin-top: 16px;
 	padding-top: 12px;
-	border-top: 1px solid #2c3338;
+	border-top: 1px solid #f0f0f1;
 }
 
 /* ------------------------------------------------------------------ */
@@ -1468,7 +1468,7 @@
 	align-items: center;
 	gap: 8px;
 	font-size: 13px;
-	color: #a7aaad;
+	color: #50575e;
 	margin-bottom: 12px;
 	flex-wrap: wrap;
 }
@@ -1477,8 +1477,8 @@
 	padding: 3px 8px !important;
 	font-size: 12px !important;
 	width: 180px !important;
-	background: rgba(255, 255, 255, 0.06) !important;
-	border: 1px solid #3c434a !important;
+	background: #f6f7f7 !important;
+	border: 1px solid #c3c4c7 !important;
 	color: inherit !important;
 	border-radius: 3px !important;
 }
@@ -1490,7 +1490,7 @@
 }
 
 .scrutinizer-trace-node {
-	border-left: 1px solid rgba(255, 255, 255, 0.06);
+	border-left: 1px solid #e0e0e0;
 }
 
 .scrutinizer-trace-node.root-node {
@@ -1509,13 +1509,13 @@
 }
 
 .scrutinizer-trace-row:hover {
-	background: rgba(255, 255, 255, 0.04);
+	background: #f6f7f7;
 }
 
 .scrutinizer-trace-toggle {
 	cursor: pointer;
 	font-size: 9px;
-	color: #a7aaad;
+	color: #50575e;
 	width: 12px;
 	text-align: center;
 	flex-shrink: 0;
@@ -1524,14 +1524,14 @@
 }
 
 .scrutinizer-trace-toggle:hover {
-	color: #fff;
+	color: #1d2327;
 }
 
 .scrutinizer-trace-leaf {
 	width: 12px;
 	text-align: center;
 	flex-shrink: 0;
-	color: #3c434a;
+	color: #c3c4c7;
 	font-size: 9px;
 }
 
@@ -1547,7 +1547,7 @@
 
 .scrutinizer-trace-hook {
 	font-size: 11px;
-	color: #72aee6;
+	color: var(--wp-admin-theme-color, #2271b1);
 	white-space: nowrap;
 	flex-shrink: 0;
 }
@@ -1561,11 +1561,11 @@
 }
 
 .scrutinizer-trace-inclusive {
-	color: #dcdcde;
+	color: #1d2327;
 }
 
 .scrutinizer-trace-exclusive {
-	color: #a7aaad;
+	color: #50575e;
 	font-size: 10px;
 }
 
@@ -1573,7 +1573,7 @@
 	position: relative;
 	width: 80px;
 	height: 6px;
-	background: rgba(255, 255, 255, 0.06);
+	background: #f0f0f1;
 	border-radius: 3px;
 	flex-shrink: 0;
 	overflow: hidden;
@@ -1594,13 +1594,13 @@
 
 /* Depth-based visual nesting via left border color intensity. */
 .scrutinizer-trace-node[data-depth="0"] { border-left-color: transparent; }
-.scrutinizer-trace-node[data-depth="1"] { border-left-color: rgba(255, 255, 255, 0.08); }
-.scrutinizer-trace-node[data-depth="2"] { border-left-color: rgba(255, 255, 255, 0.12); }
-.scrutinizer-trace-node[data-depth="3"] { border-left-color: rgba(255, 255, 255, 0.16); }
+.scrutinizer-trace-node[data-depth="1"] { border-left-color: #e0e0e0; }
+.scrutinizer-trace-node[data-depth="2"] { border-left-color: #c3c4c7; }
+.scrutinizer-trace-node[data-depth="3"] { border-left-color: #a7aaad; }
 
 
 /* ------------------------------------------------------------------ */
-/*  API Tab                                                            */
+/*  API Tab (D35 — WP admin card pattern)                              */
 /* ------------------------------------------------------------------ */
 
 #scrutinizer-api-view {
@@ -1608,18 +1608,24 @@
 }
 
 .scrutinizer-api-section {
-	background: #1e1e1e;
-	border: 1px solid #333;
-	border-radius: 6px;
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+	border-radius: 4px;
 	padding: 20px 24px;
 	margin-bottom: 16px;
+}
+
+/* Security-sensitive card — blue left border (Send to Agent) */
+.scrutinizer-api-section--agent {
+	border-left: 4px solid var(--wp-admin-theme-color, #2271b1);
 }
 
 .scrutinizer-api-heading {
 	margin: 0 0 8px;
 	font-size: 15px;
 	font-weight: 600;
-	color: #f0f0f0;
+	color: #1d2327;
 	display: flex;
 	align-items: center;
 	gap: 6px;
@@ -1629,22 +1635,30 @@
 	font-size: 18px;
 	width: 18px;
 	height: 18px;
-	color: #72aee6;
+	color: var(--wp-admin-theme-color, #2271b1);
 }
 
 .scrutinizer-api-desc {
-	color: #999;
+	color: #50575e;
 	font-size: 13px;
 	line-height: 1.5;
 	margin: 0 0 16px;
 }
 
 .scrutinizer-api-desc code {
-	background: rgba(255, 255, 255, 0.06);
+	background: #f0f0f1;
 	padding: 1px 5px;
 	border-radius: 3px;
 	font-size: 12px;
-	color: #ccc;
+	color: #2c3338;
+}
+
+/* Privacy advisory below Copy Prompt (F16) */
+.scrutinizer-api-privacy-note {
+	margin-top: 10px;
+	font-size: 12px;
+	color: #787c82;
+	line-height: 1.5;
 }
 
 /* Diagnostics checkboxes */
@@ -1665,7 +1679,7 @@
 	display: flex;
 	align-items: center;
 	gap: 6px;
-	color: #ccc;
+	color: #2c3338;
 	font-size: 13px;
 	cursor: pointer;
 	padding: 4px 0;
@@ -1673,11 +1687,10 @@
 
 .scrutinizer-diag-checkbox input[type="checkbox"] {
 	margin: 0;
-	accent-color: #72aee6;
 }
 
 .scrutinizer-diag-checkbox:hover span {
-	color: #f0f0f0;
+	color: #1d2327;
 }
 
 .scrutinizer-diag-actions {
@@ -1687,7 +1700,7 @@
 }
 
 .scrutinizer-saved-notice {
-	color: #46b450;
+	color: #00a32a;
 	font-size: 13px;
 	font-weight: 500;
 }
@@ -1731,6 +1744,26 @@
 	height: 16px;
 }
 
+/* Inline feedback for save/revoke (F11) */
+.scrutinizer-inline-feedback {
+	font-size: 13px;
+	font-weight: 500;
+	opacity: 1;
+	transition: opacity 0.3s;
+}
+
+.scrutinizer-inline-feedback.is-success {
+	color: #00a32a;
+}
+
+.scrutinizer-inline-feedback.is-error {
+	color: #d63638;
+}
+
+.scrutinizer-inline-feedback.is-fading {
+	opacity: 0;
+}
+
 /* API result notices */
 .scrutinizer-api-result {
 	margin-top: 12px;
@@ -1738,11 +1771,11 @@
 
 .scrutinizer-api-success,
 .scrutinizer-api-revoked {
-	background: rgba(70, 180, 80, 0.1);
-	border: 1px solid rgba(70, 180, 80, 0.3);
+	background: #f0f7f1;
+	border: 1px solid #00a32a;
 	border-radius: 4px;
 	padding: 10px 14px;
-	color: #8ed29b;
+	color: #1d2327;
 	font-size: 13px;
 	display: flex;
 	align-items: center;
@@ -1751,18 +1784,18 @@
 
 .scrutinizer-api-success .dashicons,
 .scrutinizer-api-revoked .dashicons {
-	color: #46b450;
+	color: #00a32a;
 	font-size: 18px;
 	width: 18px;
 	height: 18px;
 }
 
 .scrutinizer-api-error {
-	background: rgba(214, 54, 56, 0.1);
-	border: 1px solid rgba(214, 54, 56, 0.3);
+	background: #fcf0f1;
+	border: 1px solid #d63638;
 	border-radius: 4px;
 	padding: 10px 14px;
-	color: #f0a0a0;
+	color: #1d2327;
 	font-size: 13px;
 	display: flex;
 	align-items: center;
@@ -1785,10 +1818,10 @@
 
 .scrutinizer-api-endpoints th {
 	text-align: left;
-	color: #999;
+	color: #50575e;
 	font-weight: 500;
 	padding: 6px 12px 6px 0;
-	border-bottom: 1px solid #333;
+	border-bottom: 1px solid #c3c4c7;
 	font-size: 11px;
 	text-transform: uppercase;
 	letter-spacing: 0.5px;
@@ -1796,30 +1829,30 @@
 
 .scrutinizer-api-endpoints td {
 	padding: 8px 12px 8px 0;
-	border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-	color: #ccc;
+	border-bottom: 1px solid #f0f0f1;
+	color: #2c3338;
 }
 
 .scrutinizer-api-endpoints code {
-	background: rgba(255, 255, 255, 0.06);
+	background: #f0f0f1;
 	padding: 1px 5px;
 	border-radius: 3px;
 	font-size: 12px;
-	color: #e0e0e0;
+	color: #2c3338;
 }
 
 .scrutinizer-api-base {
 	margin: 12px 0 0;
 	font-size: 12px;
-	color: #777;
+	color: #787c82;
 }
 
 .scrutinizer-api-base code {
-	background: rgba(255, 255, 255, 0.06);
+	background: #f0f0f1;
 	padding: 1px 5px;
 	border-radius: 3px;
 	font-size: 12px;
-	color: #999;
+	color: #50575e;
 }
 
 /* Spinner for API key generation */
@@ -1830,4 +1863,199 @@
 @keyframes scrutinizer-spin {
 	0% { transform: rotate(0deg); }
 	100% { transform: rotate(360deg); }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Settings Panel (D33 — behind gear icon)                            */
+/* ------------------------------------------------------------------ */
+
+.scrutinizer-gear-toggle {
+	vertical-align: middle;
+	margin-left: 8px;
+	color: #50575e;
+	cursor: pointer;
+	background: none;
+	border: none;
+	padding: 0;
+}
+
+.scrutinizer-gear-toggle:hover,
+.scrutinizer-gear-toggle:focus {
+	color: var(--wp-admin-theme-color, #2271b1);
+	outline: none;
+}
+
+.scrutinizer-gear-toggle .dashicons {
+	font-size: 20px;
+	width: 20px;
+	height: 20px;
+}
+
+#scrutinizer-settings-panel {
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+	padding: 20px 24px;
+	margin: 16px 0;
+}
+
+#scrutinizer-settings-panel h3 {
+	margin-top: 0;
+	margin-bottom: 12px;
+	font-size: 14px;
+}
+
+#scrutinizer-settings-panel h3:not(:first-child) {
+	margin-top: 20px;
+	padding-top: 16px;
+	border-top: 1px solid #f0f0f1;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Capture Rate Snap Buttons (D30)                                    */
+/* ------------------------------------------------------------------ */
+
+.scrutinizer-rate-snaps {
+	display: flex;
+	align-items: flex-start;
+	gap: 6px;
+	margin-top: 10px;
+	flex-wrap: wrap;
+}
+
+.scrutinizer-rate-snap {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	padding: 6px 14px;
+	border: 1px solid #c3c4c7;
+	border-radius: 3px;
+	background: #f6f7f7;
+	color: #2c3338;
+	font-size: 13px;
+	font-weight: 600;
+	cursor: pointer;
+	transition: border-color 0.15s, background-color 0.15s;
+	min-width: 64px;
+}
+
+.scrutinizer-rate-snap:hover {
+	border-color: var(--wp-admin-theme-color, #2271b1);
+	color: var(--wp-admin-theme-color, #2271b1);
+}
+
+.scrutinizer-rate-snap.is-active {
+	background: var(--wp-admin-theme-color, #2271b1);
+	border-color: var(--wp-admin-theme-color, #2271b1);
+	color: #fff;
+}
+
+.scrutinizer-rate-snap-label {
+	display: block;
+	font-size: 10px;
+	font-weight: 400;
+	color: #787c82;
+	text-align: center;
+	margin-top: 2px;
+}
+
+.scrutinizer-rate-snap.is-active .scrutinizer-rate-snap-label {
+	color: rgba(255, 255, 255, 0.8);
+}
+
+.scrutinizer-rate-custom {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	margin-left: 8px;
+	font-size: 13px;
+	color: #50575e;
+}
+
+.scrutinizer-rate-custom input {
+	width: 60px;
+	text-align: right;
+}
+
+.scrutinizer-rate-custom span {
+	font-size: 13px;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Contextual Help Terms (D32)                                        */
+/* ------------------------------------------------------------------ */
+
+details.scrutinizer-term {
+	display: inline;
+}
+
+details.scrutinizer-term > summary {
+	display: inline;
+	border-bottom: 1px dotted #787c82;
+	cursor: help;
+	list-style: none;
+}
+
+details.scrutinizer-term > summary::-webkit-details-marker {
+	display: none;
+}
+
+details.scrutinizer-term > summary::marker {
+	display: none;
+	content: '';
+}
+
+details.scrutinizer-term[open] > summary {
+	border-bottom-style: solid;
+	border-bottom-color: var(--wp-admin-theme-color, #2271b1);
+}
+
+details.scrutinizer-term > .scrutinizer-term-explain {
+	display: block;
+	font-size: 12px;
+	color: #787c82;
+	line-height: 1.5;
+	margin: 4px 0 8px;
+	padding-left: 0;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Route Filter Bar (D34)                                             */
+/* ------------------------------------------------------------------ */
+
+.scrutinizer-filter-bar {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin-bottom: 12px;
+	font-size: 13px;
+}
+
+.scrutinizer-filter-bar select {
+	max-width: 200px;
+}
+
+.scrutinizer-filter-bar .scrutinizer-route-search {
+	margin-left: auto;
+	width: 200px;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Two-line Route Labels (F9)                                         */
+/* ------------------------------------------------------------------ */
+
+.scrutinizer-route-cell {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.scrutinizer-route-label {
+	font-weight: 600;
+}
+
+.scrutinizer-route-key {
+	font-size: 12px;
+	color: #787c82;
+	font-family: Menlo, Consolas, 'Courier New', monospace;
 }
