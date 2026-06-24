@@ -836,11 +836,12 @@
 		var html = '<div class="scrutinizer-breakdown">';
 		html += '<div class="scrutinizer-breakdown-bar">';
 
-		var barTypes = [ 'plugin', 'theme', 'core', 'mu-plugin', 'unattributed' ];
+		var barTypes = [ 'plugin', 'theme', 'core', 'mu-plugin', 'unknown', 'unattributed' ];
 		for ( var b = 0; b < barTypes.length; b++ ) {
 			var bt = barTypes[ b ];
 			if ( breakdown[ bt ] && breakdown[ bt ].percent > 0 ) {
-				html += '<div class="segment ' + esc( bt ) + '" style="width:' + breakdown[ bt ].percent + '%" title="' + esc( bt ) + ': ' + breakdown[ bt ].percent + '%"></div>';
+				var bColor = sourceColors[ bt ] || '#888';
+				html += '<div class="segment" style="width:' + breakdown[ bt ].percent + '%;background:' + bColor + '" title="' + esc( bt ) + ': ' + breakdown[ bt ].percent + '%"></div>';
 			}
 		}
 
