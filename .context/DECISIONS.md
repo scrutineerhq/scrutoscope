@@ -101,3 +101,24 @@ Client-side decryption means brute-force happens offline — server rate limitin
 
 ## D29: Report viewer is human-only — no AI analysis
 The Studio viewer at scrutinizer.dev is for humans (support, consultants, site owners' helpers). No AI analysis in the viewer. "Send to Agent" IS the AI analysis path. Don't duplicate it.
+
+## D30: Sample rate snap points with custom override
+Background measurement uses labeled snap points: 0.1% (very busy site), 1% (busy site), 10% (lower traffic), 100% (debug mode, not recommended). Users can set any value between 0.0 and 100.0 — the control isn't a simple slider, it's a hybrid input (buttons for common values + numeric input for custom). Default: 10%.
+
+## D31: Profile retention — TTL + cap + keep pinned
+Profiles have a configurable TTL (default 30 days) and a max count per route (default 100 most recent). Pinned profiles are exempt from both limits. A scheduled cleanup event enforces these. If a site accumulates 500+ routes, something is misconfigured — the UI should surface this as a warning but not hard-cap.
+
+## D32: Contextual help via native HTML `<details><summary>`
+All technical terminology uses `<details><summary>` for inline progressive disclosure. The summary shows the term with a dotted underline; expanding it reveals one sentence in muted text. No modals, no popovers, no tooltips, no external docs links. Native HTML, keyboard-accessible, zero JS. This is the project-wide pattern for CONSTITUTION #7 (trustworthy defaults, transparency on demand).
+
+## D33: Layout — data first, controls behind gear panel
+The main dashboard shows the data table above-fold. Session controls, background measurement settings, and query profiling settings live behind a ⚙️ gear panel (inline flyout or settings sub-section). Empty state (no profiles) shows onboarding cards. Return visits go straight to data.
+
+## D34: Default route filter — successful requests only
+Routes view defaults to showing routes with ≥1 2xx response ("Pages that loaded"). 404/403 scanner probes are hidden by default. Filter dropdown offers: "Pages that loaded" (default), "Not found responses", "All requests". Requires `response_status` stored per profile.
+
+## D35: Dark styling → WP admin card pattern
+Replace all dark-background sections (#1e1e1e) with standard WP admin cards (white background, 1px #c3c4c7 border, subtle box-shadow). Security-sensitive sections (Send to Agent) get a blue left border using `var(--wp-admin-theme-color)`. All styling must adapt to WP's 8 built-in admin color schemes.
+
+## D36: Trace rendering — collapsed tree with search
+Trace tab renders top-level phase nodes collapsed by default. Each node shows callback count + total time. Expand on click to reveal hooks, then callbacks. Search/filter input at top for finding specific hooks. Never render 18K+ DOM nodes simultaneously.

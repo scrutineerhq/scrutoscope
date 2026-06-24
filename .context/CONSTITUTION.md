@@ -18,6 +18,7 @@ The rules that never bend. Every PR, every refactor, every "quick fix" must pass
 4. **Attribution ≠ causality.** Never say a plugin "caused" a regression. Say the largest observed increase in exclusive callback time was "associated with" it.
 5. **Honest measurement.** Never call Server Request Duration "page load." Never hide unattributed time. Never merge browser/Yoke timing into server duration.
 6. **No monetization.** No paid tiers, lead funnels, licensing telemetry, or upsell gates.
+7. **Trustworthy defaults, transparency on demand.** Every default should be safe to trust without reading a manual. But when someone is curious — about what a number means, why something is measured this way, what "unknown" contains — the answer should be one click away. Never force the explanation on everyone; never hide it from anyone who asks.
 
 ## Hard never-collect
 

@@ -248,3 +248,67 @@ Tests are PHPUnit, following WP test conventions:
 | Plugin constants/bootstrap | `scrutinizer.php` |
 | Coding standards config | `phpcs.xml.dist` |
 | CI workflow | `.github/workflows/ci.yml` |
+
+
+## Contextual Help (D32)
+
+Use `<details><summary>` for inline term explanations. The summary shows the
+term with a dotted underline (`border-bottom: 1px dotted #787c82; cursor: help`).
+The expanded content is one sentence in muted text (`color: #787c82; font-size: 12px`).
+Never use modals, popovers, or separate help pages for terminology.
+
+```html
+<details class="scrutinizer-term">
+    <summary>Server Request Duration</summary>
+    Wall-clock time the server spent on this PHP request — not the same as what
+    the browser shows, which includes network, DNS, and rendering.
+</details>
+```
+
+Terms that MUST have explanations:
+- Server Request Duration
+- Exclusive Callback Time
+- Inclusive Callback Time
+- Unattributed time (on Breakdown tab)
+- Unknown (source, on Sources tab)
+- Background measurement / Capture rate
+- Hook Execution Trace (Trace tab label)
+- Observed Memory Delta
+
+## Sample Rate Control (D30)
+
+The capture rate control uses labeled snap buttons + a numeric input for custom values.
+
+```
+Capture rate
+[0.1%] [1%] [10%] [100%]    or  [___]%
+ very    busy  lower   debug
+ busy          traffic (not recommended)
+```
+
+Clicking a snap button sets the value and highlights it. Typing a custom value
+deselects all snap buttons. Valid range: 0.0–100.0, one decimal place.
+Store as float in option `scrutinizer_sample_rate`.
+
+## Profile Retention (D31)
+
+Settings (in gear panel):
+- Keep profiles for: [30] days (0 = forever)
+- Max profiles per route: [100] (0 = unlimited)
+- Pinned profiles: always kept
+
+Cleanup runs on a twice-daily WP cron event (`scrutinizer_cleanup_profiles`).
+Option keys: `scrutinizer_retention_days`, `scrutinizer_max_per_route`.
+
+## Route Labels (F9)
+
+Route cells are two-line: human label on top, route key below in muted monospace.
+
+```css
+.route-label { font-weight: 600; }
+.route-key { font-size: 12px; color: #787c82; font-family: monospace; }
+```
+
+Labels are generated at profile capture time and stored in `profile_data.request.label`.
+Sources: `get_admin_page_title()`, post/page title, `post_type_archive_title()`,
+"AJAX: {action}", REST pattern. Fallback: route key shown once (no duplication).
