@@ -462,58 +462,23 @@ class Profiler {
 	private static function sanitize_query( $sql ) {
 		$sql = trim( $sql );
 
-		// Extract the operation (first keyword).
-		if ( preg_match( '/^(SELECT|INSERT|UPDATE|DELETE|REPLACE|ALTER|CREATE|DROP|TRUNCATE|SHOW|DESCRIBE|SET|START|COMMIT|ROLLBACK|SAVEPOINT)\b/i', $sql, $op_match ) ) {
-			$operation = strtoupper( $op_match[1] );
-		} else {
-			return 'UNKNOWN';
-		}
+		// Replace quoted string values with placeholder.
+		// Handle both single and double quotes, including escaped quotes inside.
+		$sql = preg_replace( "/('[^'\\\\]*(?:\\\\.[^'\\\\]*)*')/s", '%s', $sql );
+		$sql = preg_replace( '/"[^"\\\\]*(?:\\\\.[^"\\\\]*)*"/s', '%s', $sql );
 
-		$table = '';
+		// Replace numeric literals (standalone integers and decimals).
+		$sql = preg_replace( '/\b\d+\.?\d*\b/', '%d', $sql );
 
-		switch ( $operation ) {
-			case 'SELECT':
-			case 'DELETE':
-				// Match FROM <table>.
-				if ( preg_match( '/\bFROM\s+`?(\w+)`?/i', $sql, $m ) ) {
-					$table = $m[1];
-				}
-				break;
+		// Collapse IN( %s, %s, %s, ... ) or IN( %d, %d, %d, ... ) to IN( ... ).
+		$sql = preg_replace( '/\bIN\s*\(\s*(?:%[sd],?\s*)+\)/i', 'IN (...)', $sql );
 
-			case 'INSERT':
-			case 'REPLACE':
-				// Match INTO <table> or INSERT <table>.
-				if ( preg_match( '/\bINTO\s+`?(\w+)`?/i', $sql, $m ) ) {
-					$table = $m[1];
-				}
-				break;
+		// Collapse VALUES( %s, %s, ... ) to VALUES( ... ).
+		$sql = preg_replace( '/\bVALUES\s*\(\s*(?:%[sd],?\s*)+\)/i', 'VALUES (...)', $sql );
 
-			case 'UPDATE':
-				// Match UPDATE <table>.
-				if ( preg_match( '/^UPDATE\s+`?(\w+)`?/i', $sql, $m ) ) {
-					$table = $m[1];
-				}
-				break;
+		// Collapse runs of whitespace.
+		$sql = preg_replace( '/\s+/', ' ', $sql );
 
-			case 'ALTER':
-			case 'CREATE':
-			case 'DROP':
-			case 'TRUNCATE':
-				// Match TABLE <table>.
-				if ( preg_match( '/\bTABLE\s+(?:IF\s+(?:NOT\s+)?EXISTS\s+)?`?(\w+)`?/i', $sql, $m ) ) {
-					$table = $m[1];
-				}
-				break;
-
-			case 'SHOW':
-			case 'DESCRIBE':
-				// Match SHOW <something> or DESCRIBE <table>.
-				if ( preg_match( '/^(?:SHOW|DESCRIBE)\s+(?:\w+\s+)?`?(\w+)`?/i', $sql, $m ) ) {
-					$table = $m[1];
-				}
-				break;
-		}
-
-		return $table ? $operation . ' ' . $table : $operation;
+		return $sql;
 	}
 }
