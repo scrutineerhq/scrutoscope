@@ -282,9 +282,17 @@ The capture rate control uses labeled snap buttons + a numeric input for custom 
 ```
 Capture rate
 [0.1%] [1%] [10%] [100%]    or  [___]%
- very    busy  lower   debug
- busy          traffic (not recommended)
+ light  moderate  detailed  every request
 ```
+
+Button descriptions (shown via <details> expand below the control):
+- 0.1% — Minimal overhead. Good for production sites serving thousands of requests/day.
+- 1% — Light overhead. Balances visibility with performance on active sites.
+- 10% — Detailed view. Captures enough to spot patterns quickly.
+- 100% — Every request. Best for debugging; adds measurable overhead per request.
+
+Overhead number is TBD — needs benchmarking on shared hosting before qualifying.
+Do NOT hardcode "2-5ms" or any specific number until measured.
 
 Clicking a snap button sets the value and highlights it. Typing a custom value
 deselects all snap buttons. Valid range: 0.0–100.0, one decimal place.
