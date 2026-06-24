@@ -27,15 +27,15 @@ class Sanitizer {
 	private static $patterns = array();
 
 	/**
-	 * wp-config constant names that must never leak.
+	 * Sensitive constant names that must never leak.
+	 *
+	 * Only actual secrets — not config values like DB_NAME/DB_HOST
+	 * which can cause false positives when they contain common words.
 	 *
 	 * @var string[]
 	 */
 	private static $redacted_constants = array(
-		'DB_NAME',
-		'DB_USER',
 		'DB_PASSWORD',
-		'DB_HOST',
 		'AUTH_KEY',
 		'SECURE_AUTH_KEY',
 		'LOGGED_IN_KEY',
@@ -86,10 +86,6 @@ class Sanitizer {
 
 		// IPv4 addresses.
 		self::$patterns['#\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b#'] = '[ip]';
-
-		// IPv6 addresses (simplified — catches most common forms).
-		self::$patterns['#\b[0-9a-fA-F]{1,4}(:[0-9a-fA-F]{1,4}){7}\b#'] = '[ip]';
-		self::$patterns['#\b(::)?([0-9a-fA-F]{1,4}:){1,6}[0-9a-fA-F]{1,4}\b#'] = '[ip]';
 
 		// Email addresses.
 		self::$patterns['#[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}#'] = '[email]';
