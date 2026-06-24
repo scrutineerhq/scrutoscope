@@ -130,3 +130,12 @@ The warnings were the visible symptom, but the real problem is deeper: even with
 
 **Don't:** Claim the timeline shows "everything from PHP startup." It doesn't — it shows from profiler boot forward.
 **Do:** Be honest about the timeline's starting point. Unattributed time includes real pre-profiler overhead. The tooltip explains this accurately.
+
+---
+
+### Query sanitization must reduce, not mask
+
+**What happened:** The original `sanitize_query()` replaced literal values with `%s`/`%d` placeholders and collapsed IN/VALUES clauses, but preserved the full query structure — column names, WHERE predicates, ORDER BY, LIMIT, GROUP BY, HAVING, all of it. This leaked table schema details, query patterns, and structural information about the site. The bug was fixed, regressed, was fixed again, and regressed a second time because the approach (mask values) was fundamentally wrong.
+
+**Don't:** Sanitize SQL by substituting values while keeping structure. Regex-based literal replacement is fragile and always misses edge cases. Even "structure-preserving sanitization" leaks information — column names reveal schema, WHERE clauses reveal business logic, JOINs reveal relationships.
+**Do:** Reduce queries to verb + table name(s) only. `SELECT option_value FROM wp_options WHERE option_name = 'foo' LIMIT 1` becomes `SELECT wp_options`. Period. The reduction is applied at write time (Profiler::sanitize_query) and again at read time (Sanitizer::sanitize_sql) as defense-in-depth. Both implementations must stay in sync. If a stored query contains any SQL keyword beyond the verb, it's a regression.

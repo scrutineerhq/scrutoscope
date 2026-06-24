@@ -25,6 +25,9 @@
 - [ ] **Hard never-collect fields are enforced.** Passwords, cookies, auth headers, tokens, salts, private keys, DB creds, raw SQL literals, POST bodies, file contents, visitor data — all excluded from profiles, reports, and shared artifacts.
   - _Verify:_ `Storage::sanitize_profile()` strips these. Test suite covers each category.
 
+- [ ] **SQL queries are reduced to verb + table(s) only.** Stored and displayed queries contain ONLY the SQL verb (SELECT, INSERT, UPDATE, DELETE, SHOW) and the table name(s). No column names, no field lists, no WHERE clauses, no predicates (LIMIT, HAVING, GROUP BY, ORDER BY), no literal values, no query structure beyond verb + table. JOINs include all participating tables. Enforced at write time (Profiler::sanitize_query) AND read time (Sanitizer::sanitize_sql) as defense-in-depth. This has regressed twice — treat any query output containing SQL keywords beyond the verb as a bug.
+  - _Verify:_ `wp eval` to fetch a stored profile's queries array — every `sql` value matches pattern `/^(SELECT|INSERT|UPDATE|DELETE|SHOW)\s[\w, ]+$/` or is `SELECT FOUND_ROWS()` or a bare verb.
+
 - [ ] **Shared reports contain only user-approved sections.** The include/exclude checklist defaults all-on, but the published artifact matches exactly what the preview showed.
   - _Verify:_ `Share::build_report()` filters sections by user selection. Test covers section omission.
 

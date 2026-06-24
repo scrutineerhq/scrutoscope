@@ -149,18 +149,56 @@ class Sanitizer {
 	}
 
 	/**
-	 * Sanitize a SQL query string for display.
+	 * Reduce a SQL query to verb + table name(s) only.
 	 *
-	 * Replaces literal values with placeholders while preserving
-	 * query structure for diagnostic readability.
+	 * Defense-in-depth on the API read path. The write path
+	 * (Profiler::sanitize_query) already reduces at capture time,
+	 * but this ensures no query structure leaks even from old data
+	 * or direct DB access.
 	 *
-	 * @param string $sql  Raw SQL query.
-	 * @return string  Structure-preserved sanitized query.
+	 * @see .context/INVARIANTS.md "SQL query reduction" invariant.
+	 *
+	 * @param string $sql  Raw or pre-reduced SQL string.
+	 * @return string  Reduced "VERB table[, table2]" string.
 	 */
 	public static function sanitize_sql( $sql ) {
-		// First apply general string sanitization.
-		$sql = self::scrub_string( $sql );
+		$sql = trim( $sql );
 
-		return $sql;
+		// If already reduced (verb + table only, no spaces beyond the first),
+		// pass through without re-parsing.
+		if ( preg_match( '/^\w+(\s+\w[\w, ]*)?$/', $sql ) ) {
+			return $sql;
+		}
+
+		// Full reduction for unreduced queries (legacy data).
+		if ( false !== stripos( $sql, 'FOUND_ROWS' ) ) {
+			return 'SELECT FOUND_ROWS()';
+		}
+
+		if ( ! preg_match( '/^\s*(\w+)/i', $sql, $m ) ) {
+			return '(query)';
+		}
+		$verb = strtoupper( $m[1] );
+
+		if ( 'SHOW' === $verb ) {
+			if ( preg_match( '/SHOW\s+\w+\s+FROM\s+`?(\w+)`?/i', $sql, $m ) ) {
+				return 'SHOW ' . $m[1];
+			}
+			return 'SHOW';
+		}
+
+		$tables = array();
+		if ( preg_match_all( '/\b(?:FROM|JOIN|INTO|UPDATE)\s+`?(\w+)`?/i', $sql, $matches ) ) {
+			foreach ( $matches[1] as $t ) {
+				$tables[] = $t;
+			}
+		}
+		$tables = array_values( array_unique( $tables ) );
+
+		if ( empty( $tables ) ) {
+			return $verb;
+		}
+
+		return $verb . ' ' . implode( ', ', $tables );
 	}
 }

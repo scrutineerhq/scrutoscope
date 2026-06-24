@@ -688,39 +688,63 @@ class Profiler {
 	}
 
 	/**
-	 * Sanitize a SQL query to show only operation and table name.
+	 * Reduce a SQL query to verb + table name(s) only.
 	 *
-	 * Strips all values, columns, conditions, and clauses — returns only
-	 * the operation type (SELECT, INSERT, UPDATE, DELETE, etc.) and the
-	 * primary table name. Examples:
-	 *   "SELECT option_value FROM wp_options WHERE ..." → "SELECT wp_options"
-	 *   "INSERT INTO wp_postmeta ..."                  → "INSERT wp_postmeta"
-	 *   "UPDATE wp_posts SET ..."                      → "UPDATE wp_posts"
+	 * INVARIANT: No fields, WHERE clauses, predicates (LIMIT, HAVING,
+	 * GROUP BY, ORDER BY), or literal values ever leave this function.
+	 * Only the SQL verb and the table name(s) are kept. JOINs include
+	 * all participating tables.
+	 *
+	 * Examples:
+	 *   "SELECT option_value FROM wp_options WHERE ..."           → "SELECT wp_options"
+	 *   "SELECT ... FROM wp_terms JOIN wp_term_taxonomy JOIN ..." → "SELECT wp_terms, wp_term_taxonomy, ..."
+	 *   "INSERT INTO wp_postmeta ..."                             → "INSERT wp_postmeta"
+	 *   "UPDATE wp_posts SET ..."                                 → "UPDATE wp_posts"
+	 *   "SHOW COLUMNS FROM wp_scrutinizer_profiles"               → "SHOW wp_scrutinizer_profiles"
+	 *   "SELECT FOUND_ROWS()"                                     → "SELECT FOUND_ROWS()"
+	 *
+	 * @see .context/INVARIANTS.md "SQL query reduction" invariant.
+	 * @see .context/GOTCHAS.md "Query sanitization must reduce, not mask" entry.
 	 *
 	 * @param string $sql  Raw SQL query.
-	 * @return string  Sanitized "OPERATION table" string.
+	 * @return string  Reduced "VERB table[, table2]" string.
 	 */
 	private static function sanitize_query( $sql ) {
 		$sql = trim( $sql );
 
-		// Replace quoted string values with placeholder.
-		// Handle both single and double quotes, including escaped quotes inside.
-		$sql = preg_replace( "/('[^'\\\\]*(?:\\\\.[^'\\\\]*)*')/s", '%s', $sql );
-		$sql = preg_replace( '/"[^"\\\\]*(?:\\\\.[^"\\\\]*)*"/s', '%s', $sql );
+		// Special: FOUND_ROWS() is a server function with no table.
+		if ( false !== stripos( $sql, 'FOUND_ROWS' ) ) {
+			return 'SELECT FOUND_ROWS()';
+		}
 
-		// Replace numeric literals (standalone integers and decimals).
-		$sql = preg_replace( '/\b\d+\.?\d*\b/', '%d', $sql );
+		// Extract the SQL verb.
+		if ( ! preg_match( '/^\s*(\w+)/i', $sql, $m ) ) {
+			return '(query)';
+		}
+		$verb = strtoupper( $m[1] );
 
-		// Collapse IN( %s, %s, %s, ... ) or IN( %d, %d, %d, ... ) to IN( ... ).
-		$sql = preg_replace( '/\bIN\s*\(\s*(?:%[sd],?\s*)+\)/i', 'IN (...)', $sql );
+		// SHOW: keep only the target table.
+		if ( 'SHOW' === $verb ) {
+			if ( preg_match( '/SHOW\s+\w+\s+FROM\s+`?(\w+)`?/i', $sql, $m ) ) {
+				return 'SHOW ' . $m[1];
+			}
+			return 'SHOW';
+		}
 
-		// Collapse VALUES( %s, %s, ... ) to VALUES( ... ).
-		$sql = preg_replace( '/\bVALUES\s*\(\s*(?:%[sd],?\s*)+\)/i', 'VALUES (...)', $sql );
+		// Extract table names from FROM, JOIN, INTO, UPDATE clauses.
+		$tables = array();
+		if ( preg_match_all( '/\b(?:FROM|JOIN|INTO|UPDATE)\s+`?(\w+)`?/i', $sql, $matches ) ) {
+			foreach ( $matches[1] as $t ) {
+				$tables[] = $t;
+			}
+		}
+		$tables = array_values( array_unique( $tables ) );
 
-		// Collapse runs of whitespace.
-		$sql = preg_replace( '/\s+/', ' ', $sql );
+		if ( empty( $tables ) ) {
+			return $verb;
+		}
 
-		return $sql;
+		return $verb . ' ' . implode( ', ', $tables );
 	}
 
 	/**
