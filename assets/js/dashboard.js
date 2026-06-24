@@ -252,6 +252,55 @@
 		$( document ).on( 'click', '#scrutinizer-back-to-history', function() {
 			showHistoryView();
 		} );
+
+		// Trace: toggle expand/collapse.
+		$( document ).on( 'click', '.scrutinizer-trace-toggle', function() {
+			var $node = $( this ).closest( '.scrutinizer-trace-node' );
+			var $children = $node.children( '.scrutinizer-trace-children' );
+			if ( $children.is( ':visible' ) ) {
+				$children.hide();
+				$( this ).text( '▶' );
+			} else {
+				$children.show();
+				$( this ).text( '▼' );
+			}
+		} );
+
+		// Trace: expand all.
+		$( document ).on( 'click', '#scrutinizer-trace-expand-all', function() {
+			$( '.scrutinizer-trace-children' ).show();
+			$( '.scrutinizer-trace-toggle' ).text( '▼' );
+		} );
+
+		// Trace: collapse all.
+		$( document ).on( 'click', '#scrutinizer-trace-collapse-all', function() {
+			$( '.scrutinizer-trace-node:not(.root-node) > .scrutinizer-trace-children' ).hide();
+			$( '.scrutinizer-trace-node:not(.root-node) > .scrutinizer-trace-row .scrutinizer-trace-toggle' ).text( '▶' );
+		} );
+
+		// Trace: filter callbacks.
+		$( document ).on( 'input', '#scrutinizer-trace-filter', function() {
+			var q = $( this ).val().toLowerCase();
+			if ( ! q ) {
+				$( '.scrutinizer-trace-node' ).show();
+				return;
+			}
+			$( '.scrutinizer-trace-node' ).each( function() {
+				var text = $( this ).children( '.scrutinizer-trace-row' ).text().toLowerCase();
+				if ( text.indexOf( q ) >= 0 ) {
+					$( this ).show();
+					// Show all ancestors.
+					$( this ).parents( '.scrutinizer-trace-node' ).show();
+					$( this ).parents( '.scrutinizer-trace-children' ).show();
+				} else if ( $( this ).find( '.scrutinizer-trace-row' ).filter( function() {
+					return $( this ).text().toLowerCase().indexOf( q ) >= 0;
+				} ).length > 0 ) {
+					$( this ).show();
+				} else {
+					$( this ).hide();
+				}
+			} );
+		} );
 	}
 
 	/* ------------------------------------------------------------------ */
@@ -603,6 +652,7 @@
 		var autoloadOpts = data.autoloaded_options || {};
 		var assets       = data.enqueued_assets || {};
 		var timeline     = data.timeline || [];
+		var traceData    = data.trace || [];
 		var durMs        = ( summary.duration_ms || 0 ).toFixed( 1 );
 		var queryCount   = summary.query_count || 0;
 		var httpCount    = summary.http_call_count || 0;
@@ -666,6 +716,9 @@
 		if ( autoloadOpts.count > 0 ) {
 			html += '<button class="scrutinizer-tab" data-tab="options">Options (' + autoloadOpts.count + ')</button>';
 		}
+		if ( traceData.length > 0 ) {
+			html += '<button class="scrutinizer-tab" data-tab="trace">Trace (' + traceData.length + ')</button>';
+		}
 		html += '<button class="scrutinizer-tab" data-tab="metadata">Metadata</button>';
 		html += '</div>';
 
@@ -709,6 +762,13 @@
 		if ( autoloadOpts.count > 0 ) {
 			html += '<div class="scrutinizer-tab-content" id="scrutinizer-tab-options" style="display:none">';
 			html += renderOptionsTab( autoloadOpts );
+			html += '</div>';
+		}
+
+		// Tab: Hook Execution Trace.
+		if ( traceData.length > 0 ) {
+			html += '<div class="scrutinizer-tab-content" id="scrutinizer-tab-trace" style="display:none">';
+			html += renderTraceTab( traceData, sources );
 			html += '</div>';
 		}
 
@@ -1309,6 +1369,230 @@
 		}
 		html += '</tbody></table>';
 		return html;
+	}
+
+	/* ------------------------------------------------------------------ */
+	/*  Hook Execution Trace                                               */
+	/* ------------------------------------------------------------------ */
+
+	/**
+	 * Build a tree from the flat trace by inferring parent-child from time windows.
+	 * A frame B is a child of frame A if B.start >= A.start && B.end <= A.end.
+	 * The trace is sorted by start_ns (from CallStack pop order → re-sort needed).
+	 */
+	function buildTraceTree( flatTrace ) {
+		if ( ! flatTrace || flatTrace.length === 0 ) {
+			return [];
+		}
+
+		// Sort by start_ns ascending, break ties by end_ns descending (parents first).
+		var entries = flatTrace.slice().sort( function( a, b ) {
+			if ( a.start_ns !== b.start_ns ) { return a.start_ns - b.start_ns; }
+			return b.end_ns - a.end_ns;
+		});
+
+		// Annotate with parsed id components.
+		for ( var i = 0; i < entries.length; i++ ) {
+			entries[i] = parseTraceId( entries[i] );
+			entries[i].children = [];
+		}
+
+		// Stack-based tree builder.
+		var roots = [];
+		var stack = []; // stack of { node, end_ns }
+
+		for ( var j = 0; j < entries.length; j++ ) {
+			var node = entries[j];
+
+			// Pop finished parents.
+			while ( stack.length > 0 && stack[ stack.length - 1 ].end_ns <= node.start_ns ) {
+				stack.pop();
+			}
+
+			if ( stack.length > 0 ) {
+				stack[ stack.length - 1 ].node.children.push( node );
+			} else {
+				roots.push( node );
+			}
+
+			stack.push( { node: node, end_ns: node.end_ns } );
+		}
+
+		return roots;
+	}
+
+	function parseTraceId( entry ) {
+		// id format: "callback_name@hook_tag:priority"
+		var id   = entry.id || '';
+		var atIdx = id.lastIndexOf( '@' );
+		var callback = id;
+		var hookTag  = '';
+		var priority = '';
+
+		if ( atIdx > 0 ) {
+			callback = id.substring( 0, atIdx );
+			var rest = id.substring( atIdx + 1 );
+			var colonIdx = rest.lastIndexOf( ':' );
+			if ( colonIdx > 0 ) {
+				hookTag  = rest.substring( 0, colonIdx );
+				priority = rest.substring( colonIdx + 1 );
+			} else {
+				hookTag = rest;
+			}
+		}
+
+		entry._callback = callback;
+		entry._hook     = hookTag;
+		entry._priority = priority;
+		return entry;
+	}
+
+	function renderTraceTab( traceData, sources ) {
+		var tree = buildTraceTree( traceData );
+		var totalNs = 0;
+		for ( var t = 0; t < traceData.length; t++ ) {
+			if ( traceData[t].exclusive_ns > totalNs ) {
+				// Use the request duration from trace range instead.
+			}
+		}
+		// Total request window for bar scaling.
+		var minNs = Infinity, maxNs = 0;
+		for ( var m = 0; m < traceData.length; m++ ) {
+			if ( traceData[m].start_ns < minNs ) { minNs = traceData[m].start_ns; }
+			if ( traceData[m].end_ns > maxNs ) { maxNs = traceData[m].end_ns; }
+		}
+		var spanNs = maxNs - minNs || 1;
+
+		var html = '';
+
+		// Summary.
+		html += '<div class="scrutinizer-trace-summary">';
+		html += '<span>' + traceData.length + ' callbacks traced</span>';
+		html += ' · <span>' + tree.length + ' root hooks</span>';
+		html += ' · <button class="button button-small" id="scrutinizer-trace-expand-all">Expand All</button>';
+		html += ' <button class="button button-small" id="scrutinizer-trace-collapse-all">Collapse All</button>';
+		html += ' · <input type="text" id="scrutinizer-trace-filter" placeholder="Filter callbacks…" class="scrutinizer-trace-filter" />';
+		html += '</div>';
+
+		// Tree.
+		html += '<div class="scrutinizer-trace-tree">';
+		html += renderTraceNodes( tree, 0, minNs, spanNs, sources );
+		html += '</div>';
+
+		return html;
+	}
+
+	function renderTraceNodes( nodes, depth, minNs, spanNs, sources ) {
+		var html = '';
+		for ( var i = 0; i < nodes.length; i++ ) {
+			html += renderTraceNode( nodes[i], depth, minNs, spanNs, sources );
+		}
+		return html;
+	}
+
+	function renderTraceNode( node, depth, minNs, spanNs, sources ) {
+		var hasChildren = node.children && node.children.length > 0;
+		var inclusiveMs = ( node.inclusive_ns / 1e6 ).toFixed( 2 );
+		var exclusiveMs = ( node.exclusive_ns / 1e6 ).toFixed( 2 );
+		var barWidth    = Math.max( 1, ( node.inclusive_ns / spanNs ) * 100 );
+		var barOffset   = ( ( node.start_ns - minNs ) / spanNs ) * 100;
+
+		// Color from source lookup.
+		var color = '#888';
+		if ( sources ) {
+			for ( var s = 0; s < sources.length; s++ ) {
+				var src = sources[s];
+				// Match callback to source by checking if the hook is associated.
+				if ( src.type ) {
+					color = sourceColors[ src.type ] || '#888';
+				}
+			}
+		}
+		// Simpler: color by callback prefix matching.
+		color = getTraceColor( node._callback, node._hook );
+
+		var nodeClass = 'scrutinizer-trace-node';
+		if ( hasChildren ) { nodeClass += ' has-children'; }
+		if ( depth === 0 ) { nodeClass += ' root-node'; }
+
+		var html = '<div class="' + nodeClass + '" data-depth="' + depth + '">';
+
+		// Row.
+		html += '<div class="scrutinizer-trace-row" style="padding-left:' + ( depth * 20 + 4 ) + 'px">';
+
+		// Toggle.
+		if ( hasChildren ) {
+			html += '<span class="scrutinizer-trace-toggle" title="' + node.children.length + ' children">▶</span>';
+		} else {
+			html += '<span class="scrutinizer-trace-leaf">·</span>';
+		}
+
+		// Callback name.
+		html += '<span class="scrutinizer-trace-callback">' + esc( node._callback ) + '</span>';
+
+		// Hook tag + priority.
+		html += ' <span class="scrutinizer-trace-hook">@' + esc( node._hook );
+		if ( node._priority ) {
+			html += ':' + esc( node._priority );
+		}
+		html += '</span>';
+
+		// Timing.
+		html += '<span class="scrutinizer-trace-timing">';
+		html += '<span class="scrutinizer-trace-inclusive">' + inclusiveMs + ' ms</span>';
+		if ( hasChildren && node.exclusive_ns !== node.inclusive_ns ) {
+			html += ' <span class="scrutinizer-trace-exclusive">(self: ' + exclusiveMs + ' ms)</span>';
+		}
+		html += '</span>';
+
+		// Mini bar.
+		html += '<span class="scrutinizer-trace-bar-wrap">';
+		html += '<span class="scrutinizer-trace-bar" style="left:' + barOffset.toFixed( 2 ) + '%;width:' + barWidth.toFixed( 2 ) + '%;background:' + color + '"></span>';
+		html += '</span>';
+
+		html += '</div>'; // .scrutinizer-trace-row
+
+		// Children (collapsed by default for depth > 0).
+		if ( hasChildren ) {
+			var collapsed = depth > 0 ? ' style="display:none"' : '';
+			html += '<div class="scrutinizer-trace-children"' + collapsed + '>';
+			html += renderTraceNodes( node.children, depth + 1, minNs, spanNs, sources );
+			html += '</div>';
+		}
+
+		html += '</div>'; // .scrutinizer-trace-node
+		return html;
+	}
+
+	function getTraceColor( callback, hook ) {
+		// Try to identify plugin/theme from callback or hook name.
+		// Common patterns: ClassName::method → check class prefix
+		// For now, use hook-based coloring: core hooks get core color,
+		// plugin-prefixed hooks get plugin color.
+		var coreHooks = [ 'plugins_loaded', 'setup_theme', 'after_setup_theme', 'init',
+			'wp_loaded', 'parse_request', 'wp', 'template_redirect', 'wp_head',
+			'wp_enqueue_scripts', 'wp_footer', 'shutdown', 'admin_init', 'admin_menu',
+			'admin_enqueue_scripts' ];
+
+		for ( var i = 0; i < coreHooks.length; i++ ) {
+			if ( hook === coreHooks[i] ) {
+				return sourceColors.core;
+			}
+		}
+
+		// WP_ prefix in callback usually means core.
+		if ( callback.indexOf( 'WP_' ) === 0 || callback.indexOf( 'wp_' ) === 0 ) {
+			return sourceColors.core;
+		}
+
+		// If callback contains a class from known sources, match it.
+		// Fallback: use a rotating palette by callback's first segment.
+		var key = callback.split( '::' )[0] || callback.split( '_' )[0] || callback;
+		if ( ! pluginColorMap[ key ] ) {
+			pluginColorMap[ key ] = pluginPalette[ colorIndex % pluginPalette.length ];
+			colorIndex++;
+		}
+		return pluginColorMap[ key ];
 	}
 
 	/* ------------------------------------------------------------------ */
