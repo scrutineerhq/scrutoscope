@@ -36,6 +36,7 @@ class Ajax {
 		add_action( 'wp_ajax_scrutinizer_save_diagnostics_fields', array( __CLASS__, 'save_diagnostics_fields' ) );
 		add_action( 'wp_ajax_scrutinizer_create_api_password', array( __CLASS__, 'create_api_password' ) );
 		add_action( 'wp_ajax_scrutinizer_revoke_api_password', array( __CLASS__, 'revoke_api_password' ) );
+		add_action( 'wp_ajax_scrutinizer_toggle_query_profiling', array( __CLASS__, 'toggle_query_profiling' ) );
 	}
 
 	/**
@@ -217,6 +218,41 @@ class Ajax {
 				'message' => $enabled
 					? __( 'Background profiling enabled.', 'scrutinizer' )
 					: __( 'Background profiling disabled.', 'scrutinizer' ),
+			)
+		);
+	}
+
+	/**
+	 * Toggle query profiling (SAVEQUERIES management).
+	 *
+	 * Only works when the constant isn't externally defined. The change
+	 * takes effect on the next request.
+	 */
+	public static function toggle_query_profiling() {
+		check_ajax_referer( 'scrutinizer_nonce', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error(
+				array( 'message' => __( 'Permission denied.', 'scrutinizer' ) ),
+				403
+			);
+		}
+
+		if ( ! SCRUTINIZER_SAVEQUERIES_MANAGED ) {
+			wp_send_json_error(
+				array( 'message' => __( 'Query profiling is managed by wp-config.php and cannot be toggled here.', 'scrutinizer' ) )
+			);
+		}
+
+		$enabled = ! empty( $_POST['enabled'] );
+		update_option( 'scrutinizer_query_profiling', $enabled, true );
+
+		wp_send_json_success(
+			array(
+				'enabled' => $enabled,
+				'message' => $enabled
+					? __( 'Query profiling enabled. New captures will include SQL timing.', 'scrutinizer' )
+					: __( 'Query profiling disabled. New captures will skip SQL timing.', 'scrutinizer' ),
 			)
 		);
 	}

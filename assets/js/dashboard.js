@@ -100,6 +100,7 @@
 		}
 
 		initBackgroundControls();
+		initQueryProfilingControls();
 	}
 
 	/* ------------------------------------------------------------------ */
@@ -187,6 +188,20 @@
 			$( '#scrutinizer-rate-value' ).text( $( this ).val() + '%' );
 		} );
 		$( document ).on( 'change', '#scrutinizer-sample-rate', saveBackgroundRate );
+
+		// Query profiling toggle.
+		$( document ).on( 'change', '#scrutinizer-qp-toggle', toggleQueryProfiling );
+		$( document ).on( 'click', '.scrutinizer-qp-more', function( e ) {
+			e.preventDefault();
+			var $content = $( '.scrutinizer-qp-detail-content' );
+			if ( $content.is( ':visible' ) ) {
+				$content.slideUp( 150 );
+				$( this ).text( 'Details' );
+			} else {
+				$content.slideDown( 150 );
+				$( this ).text( 'Less' );
+			}
+		} );
 
 		// Top-level tab switcher (Routes | History | Cron | API).
 		$( document ).on( 'click', '.scrutinizer-top-tab', function() {
@@ -353,6 +368,84 @@
 			nonce:   scrutinizerAdmin.nonce,
 			enabled: $( '#scrutinizer-bg-toggle' ).is( ':checked' ) ? 1 : 0,
 			rate:    rate
+		} );
+	}
+
+	/* ------------------------------------------------------------------ */
+	/*  Query profiling controls                                           */
+	/* ------------------------------------------------------------------ */
+
+	function initQueryProfilingControls() {
+		var qp        = scrutinizerAdmin.queryProfiling;
+		var isOn      = qp.active;
+		var canToggle = qp.managed;
+
+		var html = '<div class="scrutinizer-qp-controls">';
+		html += '<div class="scrutinizer-qp-header">';
+		html += '<h3>Query Profiling</h3>';
+
+		// Toggle switch.
+		html += '<label class="scrutinizer-switch' + ( canToggle ? '' : ' disabled' ) + '">';
+		html += '<input type="checkbox" id="scrutinizer-qp-toggle"';
+		html += ( isOn ? ' checked' : '' );
+		html += ( canToggle ? '' : ' disabled' );
+		html += '>';
+		html += '<span class="scrutinizer-switch-slider"></span>';
+		html += '</label>';
+		html += '</div>';
+
+		// Status description — adapts to all three states.
+		html += '<p class="scrutinizer-qp-desc">';
+		if ( canToggle ) {
+			html += 'Record individual SQL query timing for the density heatmap and Queries tab.';
+		} else if ( isOn ) {
+			html += '<span class="scrutinizer-qp-badge">wp-config.php</span> ';
+			html += 'SAVEQUERIES is enabled in your configuration. Full query coverage from boot.';
+		} else {
+			html += '<span class="scrutinizer-qp-badge blocked">wp-config.php</span> ';
+			html += 'SAVEQUERIES is set to <code>false</code> — Scrutineer can\'t override a defined constant.';
+		}
+		html += '</p>';
+
+		// Progressive detail — technical users click through, everyone else ignores it.
+		html += '<div class="scrutinizer-qp-detail">';
+		html += '<a href="#" class="scrutinizer-qp-more">Details</a>';
+		html += '<div class="scrutinizer-qp-detail-content" style="display:none;">';
+
+		if ( canToggle ) {
+			html += '<p>Sets PHP\'s <code>SAVEQUERIES</code> constant so WordPress logs every query ';
+			html += 'with its execution time. Typical overhead is 1\u20132% per request.</p>';
+			html += '<p>Queries that run before plugin load (options autoload, core bootstrap) aren\'t captured \u2014 ';
+			html += 'usually &lt;10% of total. For full coverage from boot, add to wp-config.php:</p>';
+			html += '<code class="scrutinizer-qp-code">define( \'SAVEQUERIES\', true );</code>';
+		} else if ( isOn ) {
+			html += '<p><code>SAVEQUERIES</code> is defined as <code>true</code> before plugins load, ';
+			html += 'so every query from boot is captured. To let Scrutineer manage this toggle instead, ';
+			html += 'remove the <code>define()</code> line from wp-config.php.</p>';
+		} else {
+			html += '<p><code>define( \'SAVEQUERIES\', false )</code> in wp-config.php prevents redefinition \u2014 ';
+			html += 'PHP constants are immutable once set.</p>';
+			html += '<p>To enable: change <code>false</code> to <code>true</code>, or remove the line entirely ';
+			html += 'to let Scrutineer manage it via this toggle.</p>';
+		}
+
+		html += '</div></div>';
+		html += '</div>';
+
+		$( '.scrutinizer-bg-controls' ).after( html );
+	}
+
+	function toggleQueryProfiling() {
+		var enabled = $( '#scrutinizer-qp-toggle' ).is( ':checked' );
+
+		$.post( scrutinizerAdmin.ajaxUrl, {
+			action:  'scrutinizer_toggle_query_profiling',
+			nonce:   scrutinizerAdmin.nonce,
+			enabled: enabled ? 1 : 0
+		}, function( response ) {
+			if ( response.success ) {
+				showNotice( response.data.message, 'success' );
+			}
 		} );
 	}
 
@@ -1180,7 +1273,16 @@
 
 	function renderQueriesTable( queries ) {
 		if ( ! queries || 0 === queries.length ) {
-			return '<p class="scrutinizer-empty">No query data. Enable SAVEQUERIES in wp-config.php.</p>';
+			var qp = scrutinizerAdmin.queryProfiling;
+			var msg = 'No query data captured for this profile.';
+			if ( qp.managed && ! qp.active ) {
+				msg = 'Query profiling is off. Enable the toggle above, then capture a new profile.';
+			} else if ( ! qp.managed && ! qp.active ) {
+				msg = 'SAVEQUERIES is disabled in wp-config.php. Enable it to capture query timing.';
+			} else {
+				msg = 'No query data — this profile was captured before query profiling was enabled.';
+			}
+			return '<p class="scrutinizer-empty">' + msg + '</p>';
 		}
 
 		// Compute total query time.

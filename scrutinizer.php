@@ -26,6 +26,51 @@ define( 'SCRUTINIZER_FILE', __FILE__ );
 define( 'SCRUTINIZER_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SCRUTINIZER_URL', plugin_dir_url( __FILE__ ) );
 
+/*
+ * Query profiling: manage the SAVEQUERIES constant.
+ *
+ * If SAVEQUERIES is already defined (by wp-config.php or another plugin),
+ * we respect it and mark it as externally managed. Otherwise, we control
+ * it via a plugin option so the user can toggle it from the dashboard.
+ *
+ * This runs at plugin include time — after WP core is fully bootstrapped
+ * but before our profiler hooks fire, so queries from this point forward
+ * are captured when enabled.
+ */
+if ( defined( 'SAVEQUERIES' ) ) {
+	// Externally managed — respect whatever wp-config.php set.
+	define( 'SCRUTINIZER_SAVEQUERIES_MANAGED', false );
+} else {
+	// We control it. Default: on (you installed a profiler — you want data).
+	define( 'SCRUTINIZER_SAVEQUERIES_MANAGED', true );
+	if ( get_option( 'scrutinizer_query_profiling', true ) ) {
+		define( 'SAVEQUERIES', true );
+	}
+}
+
+/**
+ * Get the current query profiling state for the dashboard UI.
+ *
+ * @return array{state: string, active: bool, managed: bool}
+ */
+function scrutinizer_query_profiling_state() {
+	$active = defined( 'SAVEQUERIES' ) && SAVEQUERIES;
+
+	if ( SCRUTINIZER_SAVEQUERIES_MANAGED ) {
+		return array(
+			'state'   => $active ? 'controllable_on' : 'controllable_off',
+			'active'  => $active,
+			'managed' => true,
+		);
+	}
+
+	return array(
+		'state'   => $active ? 'forced_on' : 'forced_off',
+		'active'  => $active,
+		'managed' => false,
+	);
+}
+
 /**
  * Autoloader.
  *

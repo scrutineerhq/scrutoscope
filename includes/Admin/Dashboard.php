@@ -98,6 +98,7 @@ class Dashboard {
 				'apiBase'              => rest_url( 'scrutinizer/v1/' ),
 				'diagnosticsFields'    => \Scrutinizer\Api\Diagnostics::get_enabled_fields(),
 				'diagnosticsOptIn'     => \Scrutinizer\Api\Diagnostics::OPT_IN_FIELDS,
+				'queryProfiling'       => scrutinizer_query_profiling_state(),
 				'i18n'                 => array(
 					'startProfiling' => __( 'Start Profiling', 'scrutinizer' ),
 					'stopProfiling'  => __( 'Stop Profiling', 'scrutinizer' ),
