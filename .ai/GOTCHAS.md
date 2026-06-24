@@ -112,3 +112,21 @@ The warnings were the visible symptom, but the real problem is deeper: even with
 
 **Don't:** Wrap callbacks that have `&$param` parameters. `func_get_args()` always returns copies — there is no way in PHP to forward variadic arguments while preserving references through a generic closure wrapper.
 **Do:** Use `Reflection` at wrap time to detect by-reference parameters. Skip instrumenting those callbacks entirely. The loss of profiling data for a handful of ref-param callbacks is correct — we literally cannot observe them without changing their behavior. `has_reference_params()` in `Instrumentor.php` handles this.
+
+---
+
+### PHPCS array alignment is strict and catches cross-array inconsistencies
+
+**What happened:** CI failed on `Report.php` because adding new keys to an existing array changed the longest key name, which meant ALL other keys' spacing needed to change to stay aligned. PHPCS treats unaligned double arrows as warnings but they still fail CI.
+
+**Don't:** Add keys to a multi-line array and assume only the new line needs spacing.
+**Do:** When adding keys to a WPCS-linted array, check if the new key is longer than existing keys. If so, realign ALL double arrows in that array to match the new longest key. The `[x]` flag means PHPCBF can auto-fix, but since we don't have local composer/phpcs, catch this manually before pushing.
+
+---
+
+### `plugins_loaded` fires AFTER plugins are loaded, not during
+
+**What happened:** Phase marker for `plugins_loaded` captures the time when that action fires, not when plugins started loading. The profiler boots at `plugins_loaded` priority 0, so anything that happened before that (mu-plugins loading, earlier plugin bootstraps) is invisible. The `muplugins_loaded` marker won't fire if the profiler isn't active yet.
+
+**Don't:** Claim the timeline shows "everything from PHP startup." It doesn't — it shows from profiler boot forward.
+**Do:** Be honest about the timeline's starting point. Unattributed time includes real pre-profiler overhead. The tooltip explains this accurately.

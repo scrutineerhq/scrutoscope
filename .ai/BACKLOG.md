@@ -2,29 +2,38 @@
 
 > Known work items, grouped by milestone. Not a task tracker — a durable reference for what's in scope.
 
-## M1 — Core Instrumentation Engine (current)
+## M1 — Core Instrumentation Engine ✅ Complete
 
-- [ ] `Instrumentor::wrap_hooks()` — iterate `$wp_filter`, wrap each callback with timing bookends
-- [ ] `CallStack` — push/pop with `hrtime(true)`, exclusive time accumulation on parent frames
-- [ ] `Attribution::resolve()` — callback → file path → plugin/theme/core classification, memoized
-- [ ] `Profiler::finalize()` — compute Server Request Duration, unattributed time, build profile
-- [ ] `Storage::save_profile()` — JSON profile insert with route fingerprint
-- [ ] `Session` — activation URL generation, HMAC verification, cookie lifecycle
-- [ ] Dashboard — start/stop controls, Server Request Duration display, plugin summary table
-- [ ] AJAX — start, stop, delete handlers with nonce + capability checks
-- [ ] Admin bar indicator — green dot during active profiling (✅ scaffolded)
-- [ ] Route fingerprinting — coarse match key (route class + frontend/admin + anon/auth + cache state)
-- [ ] Decision tree entry point — "Slow admin? Logged-in? Visitors?" flow
+- [x] `Instrumentor::wrap_hooks()` — iterate `$wp_filter`, wrap each callback with timing bookends
+- [x] `CallStack` — push/pop with `hrtime(true)`, exclusive time accumulation on parent frames
+- [x] `Attribution::resolve()` — callback → file path → plugin/theme/core classification, memoized
+- [x] `Profiler::finalize()` — compute Server Request Duration, unattributed time, build profile
+- [x] `Storage::save_profile()` — JSON profile insert with route fingerprint
+- [x] `Session` — activation URL generation, HMAC verification, cookie lifecycle
+- [x] Dashboard — start/stop controls, Server Request Duration display, plugin summary table
+- [x] AJAX — start, stop, delete handlers with nonce + capability checks
+- [x] Admin bar indicator — green dot during active profiling
+- [x] Route fingerprinting — coarse match key (route class + frontend/admin + anon/auth + cache state)
+- [x] Decision tree entry point — "Slow admin? Logged-in? Visitors?" flow
+- [x] Background profiling — probabilistic sampling with configurable rate
+- [x] Page grouping — route_key normalization for grouped route view
+- [x] By-reference callback detection — skip callbacks with `&$param` via Reflection
 
-## M2 — Deep Mode, Diagnostics, and Timeline
+## M2 — Deep Mode, Diagnostics, and Timeline (current)
 
-- [ ] Deep profile mode — query detail (normalized), HTTP calls, cache ops, fuller trace
-- [ ] Memory observations — `memory_get_usage()` deltas per callback
+- [x] Request timeline — horizontal bar visualization, plugin-colored segments, lifecycle phase markers
+- [x] Lifecycle phase markers — hrtime snapshots at 8 key WP hooks
+- [x] Deep mode: query detail — individual SQL queries with time and caller via SAVEQUERIES
+- [x] Query count metric card — always via $wpdb->num_queries
+- [x] User role capture — wp_get_current_user() per request, role pill badges
+- [x] Metric cards — Server Request Duration, memory, queries, callbacks
+- [x] Tabbed detail view — Timeline, Breakdown, Sources, Queries, Metadata
+- [x] Weight glyphs — thin inline progress bars on source table rows
+- [x] Unattributed time tooltip — ⓘ explanation of bootstrap overhead
+- [ ] Memory observations — `memory_get_usage()` deltas per callback (already captured per timing, not yet visualized)
 - [ ] Enqueued assets inventory — script/style handles, sizes, dependencies
 - [ ] Cron inventory — scheduled events, overdue/duplicate indicators
-- [ ] Hook Execution Trace — nested callback visualization
-- [ ] Request timeline — horizontal bar visualization, plugin-colored segments, click-to-trace
-- [ ] Metric cards — Server Request Duration, memory, queries, HTTP, cache, assets
+- [ ] Hook Execution Trace — nested callback visualization (trace data exists, UI needed)
 
 ## M3 — Baselines and Regression Language
 
