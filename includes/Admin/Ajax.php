@@ -32,6 +32,7 @@ class Ajax {
 		add_action( 'wp_ajax_scrutinizer_update_annotation', array( __CLASS__, 'update_annotation' ) );
 		add_action( 'wp_ajax_scrutinizer_compare_profiles', array( __CLASS__, 'compare_profiles' ) );
 		add_action( 'wp_ajax_scrutinizer_get_history', array( __CLASS__, 'get_history' ) );
+		add_action( 'wp_ajax_scrutinizer_get_cron_inventory', array( __CLASS__, 'get_cron_inventory' ) );
 	}
 
 	/**
@@ -505,5 +506,26 @@ class Ajax {
 		$profiles = Storage::search_profiles( $args );
 
 		wp_send_json_success( array( 'profiles' => $profiles ) );
+	}
+
+	/**
+	 * AJAX: Get cron inventory.
+	 *
+	 * Returns all scheduled WP-Cron events with attribution,
+	 * overdue detection, and duplicate warnings.
+	 */
+	public static function get_cron_inventory() {
+		check_ajax_referer( 'scrutinizer_nonce', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error(
+				array( 'message' => __( 'Permission denied.', 'scrutinizer' ) ),
+				403
+			);
+		}
+
+		$inventory = \Scrutinizer\Diagnostics\Cron::collect();
+
+		wp_send_json_success( $inventory );
 	}
 }

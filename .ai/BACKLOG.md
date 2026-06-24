@@ -37,8 +37,8 @@
 - [x] History tab — filter by route, tag, date range, pinned-only
 - [x] Compare view — side-by-side profile deltas
 - [x] Cache-busting version via filemtime()
-- [ ] Memory observations — `memory_get_usage()` deltas per callback (already captured per timing, not yet visualized)
-- [ ] Enqueued assets inventory — script/style handles, sizes, dependencies
+- [x] Memory observations — `memory_get_usage()` deltas per callback, peak + allocated in summary, dashboard cards + per-source columns
+- [x] Enqueued assets inventory — script/style handles, sizes, dependencies, inline detection, handle-based attribution
 - [ ] Cron inventory — scheduled events, overdue/duplicate indicators
 - [ ] Hook Execution Trace — nested callback visualization (trace data exists, UI needed)
 

@@ -15,7 +15,7 @@
 	var pollingTimer  = null;
 	var currentView   = 'grouped'; // 'grouped', 'route', 'detail', 'history', 'compare'
 	var currentRoute  = '';        // route_key for the active drill-down
-	var activeTopTab  = 'routes';  // 'routes' or 'history'
+	var activeTopTab  = 'routes';  // 'routes', 'history', or 'cron'
 	var sortField     = '';
 	var sortDir       = 'desc';    // 'asc' or 'desc'
 	var groupedData   = [];
@@ -188,7 +188,7 @@
 		} );
 		$( document ).on( 'change', '#scrutinizer-sample-rate', saveBackgroundRate );
 
-		// Top-level tab switcher (Routes | History).
+		// Top-level tab switcher (Routes | History | Cron).
 		$( document ).on( 'click', '.scrutinizer-top-tab', function() {
 			var tab = $( this ).data( 'top-tab' );
 			$( '.scrutinizer-top-tab' ).removeClass( 'active' );
@@ -198,6 +198,8 @@
 				showGroupedView();
 			} else if ( 'history' === tab ) {
 				showHistoryView();
+			} else if ( 'cron' === tab ) {
+				showCronView();
 			}
 		} );
 
@@ -397,6 +399,7 @@
 		var html = '<div class="scrutinizer-top-tabs">';
 		html += '<button class="scrutinizer-top-tab active" data-top-tab="routes">' + esc( scrutinizerAdmin.i18n.routes || 'Routes' ) + '</button>';
 		html += '<button class="scrutinizer-top-tab" data-top-tab="history">' + esc( scrutinizerAdmin.i18n.history || 'History' ) + '</button>';
+		html += '<button class="scrutinizer-top-tab" data-top-tab="cron">' + esc( scrutinizerAdmin.i18n.cron || 'Cron' ) + '</button>';
 		html += '</div>';
 		$( '#scrutinizer-results h2' ).replaceWith( html );
 	}
@@ -1644,6 +1647,216 @@
 		} else {
 			$( '#scrutinizer-compare-btn' ).hide();
 		}
+	}
+
+	/* ------------------------------------------------------------------ */
+	/*  Cron inventory view                                                */
+	/* ------------------------------------------------------------------ */
+
+	var cronData = null; // cached cron inventory
+
+	function showCronView() {
+		currentView = 'cron';
+		$( '#scrutinizer-results' ).hide();
+		$( '#scrutinizer-detail' ).hide();
+		$( '#scrutinizer-compare-view' ).remove();
+
+		var $history = $( '#scrutinizer-history-view' );
+		if ( ! $history.length ) {
+			$( '#scrutinizer-results' ).after( '<div id="scrutinizer-history-view"></div>' );
+			$history = $( '#scrutinizer-history-view' );
+		}
+		$history.show();
+
+		$( '.scrutinizer-top-tab' ).removeClass( 'active' );
+		$( '.scrutinizer-top-tab[data-top-tab="cron"]' ).addClass( 'active' );
+
+		if ( cronData ) {
+			renderCronView( cronData );
+		} else {
+			$history.html( '<p class="scrutinizer-empty">Loading cron inventory…</p>' );
+			fetchCronInventory();
+		}
+	}
+
+	function fetchCronInventory() {
+		$.get( scrutinizerAdmin.ajaxUrl, {
+			action: 'scrutinizer_get_cron_inventory',
+			nonce:  scrutinizerAdmin.nonce
+		}, function( response ) {
+			if ( response.success ) {
+				cronData = response.data;
+				if ( 'cron' === currentView ) {
+					renderCronView( cronData );
+				}
+			} else {
+				$( '#scrutinizer-history-view' ).html(
+					'<p class="scrutinizer-empty">' + esc( response.data.message || 'Failed to load cron data.' ) + '</p>'
+				);
+			}
+		} );
+	}
+
+	function renderCronView( data ) {
+		var events    = data.events || [];
+		var summary   = data.summary || {};
+		var schedules = data.schedules || [];
+		var warnings  = data.warnings || [];
+
+		var html = '<div class="scrutinizer-cron-view">';
+
+		// Summary cards.
+		html += '<div class="scrutinizer-metrics">';
+		html += renderMetricCard( String( summary.total || 0 ), 'Events', 'default' );
+		html += renderMetricCard( String( summary.recurring || 0 ), 'Recurring', 'default' );
+		html += renderMetricCard( String( summary.one_shot || 0 ), 'One-Shot', 'default' );
+		html += renderMetricCard( String( summary.overdue || 0 ), 'Overdue', summary.overdue > 0 ? 'warning' : 'default' );
+		html += '</div>';
+
+		// Warnings.
+		if ( warnings.length > 0 ) {
+			html += '<div class="scrutinizer-cron-warnings">';
+			for ( var w = 0; w < warnings.length; w++ ) {
+				var warnClass = 'overdue_recurring' === warnings[w].type ? 'scrutinizer-warn-overdue' : 'scrutinizer-warn-duplicate';
+				html += '<div class="scrutinizer-cron-warning ' + warnClass + '">';
+				html += '<span class="scrutinizer-warn-icon">' + ( 'overdue_recurring' === warnings[w].type ? '⏰' : '⚠️' ) + '</span> ';
+				html += esc( warnings[w].message );
+				html += '</div>';
+			}
+			html += '</div>';
+		}
+
+		// By-source breakdown.
+		if ( summary.by_source && summary.by_source.length > 0 ) {
+			html += '<div class="scrutinizer-cron-sources">';
+			html += '<h4>By Source</h4>';
+			html += '<div class="scrutinizer-cron-source-pills">';
+			for ( var s = 0; s < summary.by_source.length; s++ ) {
+				var src  = summary.by_source[s];
+				var type = src.attribution.type || 'unknown';
+				html += '<span class="scrutinizer-source-pill" style="background:' + ( sourceColors[ type ] || '#888' ) + '">';
+				html += esc( src.attribution.name || src.attribution.slug || type );
+				html += ' <strong>' + src.count + '</strong>';
+				html += '</span> ';
+			}
+			html += '</div>';
+			html += '</div>';
+		}
+
+		// Events table.
+		html += '<table class="scrutinizer-cron-table">';
+		html += '<thead><tr>';
+		html += '<th>Hook</th>';
+		html += '<th>Next Run</th>';
+		html += '<th>Schedule</th>';
+		html += '<th>Source</th>';
+		html += '<th>Status</th>';
+		html += '</tr></thead>';
+		html += '<tbody>';
+
+		for ( var i = 0; i < events.length; i++ ) {
+			var ev = events[i];
+			var rowClass = ev.overdue ? 'scrutinizer-cron-overdue' : '';
+			var attrType = ev.attribution.type || 'unknown';
+
+			html += '<tr class="' + rowClass + '">';
+
+			// Hook name.
+			html += '<td class="scrutinizer-cron-hook"><code>' + esc( ev.hook ) + '</code>';
+			if ( ev.args && ev.args.length > 0 ) {
+				html += ' <span class="scrutinizer-muted">(' + ev.args.length + ' arg' + ( ev.args.length > 1 ? 's' : '' ) + ')</span>';
+			}
+			html += '</td>';
+
+			// Next run.
+			html += '<td>' + formatCronTime( ev.timestamp, ev.overdue, ev.overdue_by ) + '</td>';
+
+			// Schedule.
+			html += '<td>';
+			if ( 'once' === ev.schedule ) {
+				html += '<span class="scrutinizer-muted">one-shot</span>';
+			} else {
+				html += esc( ev.schedule );
+				if ( ev.interval ) {
+					html += ' <span class="scrutinizer-muted">(' + humanInterval( ev.interval ) + ')</span>';
+				}
+			}
+			html += '</td>';
+
+			// Source.
+			html += '<td><span class="scrutinizer-source-pill" style="background:' + ( sourceColors[ attrType ] || '#888' ) + '">';
+			html += esc( ev.attribution.name || ev.attribution.slug || attrType );
+			html += '</span></td>';
+
+			// Status.
+			html += '<td>';
+			if ( ev.overdue ) {
+				html += '<span class="scrutinizer-cron-status-overdue">overdue</span>';
+			} else {
+				html += '<span class="scrutinizer-cron-status-ok">scheduled</span>';
+			}
+			html += '</td>';
+
+			html += '</tr>';
+		}
+
+		html += '</tbody></table>';
+
+		// Available schedules.
+		if ( schedules.length > 0 ) {
+			html += '<details class="scrutinizer-cron-schedules">';
+			html += '<summary>Registered Schedules (' + schedules.length + ')</summary>';
+			html += '<table class="scrutinizer-cron-schedule-table"><thead><tr><th>Name</th><th>Interval</th><th>Display</th></tr></thead><tbody>';
+			for ( var j = 0; j < schedules.length; j++ ) {
+				html += '<tr>';
+				html += '<td><code>' + esc( schedules[j].name ) + '</code></td>';
+				html += '<td>' + humanInterval( schedules[j].interval ) + '</td>';
+				html += '<td>' + esc( schedules[j].display ) + '</td>';
+				html += '</tr>';
+			}
+			html += '</tbody></table></details>';
+		}
+
+		// Refresh button.
+		html += '<div class="scrutinizer-cron-actions">';
+		html += '<button class="button" id="scrutinizer-cron-refresh">↻ Refresh</button>';
+		html += '</div>';
+
+		html += '</div>';
+
+		$( '#scrutinizer-history-view' ).html( html );
+
+		// Bind refresh.
+		$( '#scrutinizer-cron-refresh' ).on( 'click', function() {
+			cronData = null;
+			fetchCronInventory();
+		} );
+	}
+
+	function formatCronTime( timestamp, overdue, overdueBy ) {
+		var d = new Date( timestamp * 1000 );
+		var now = Date.now() / 1000;
+		var diff = timestamp - now;
+		var html = '';
+
+		// Relative time.
+		if ( overdue ) {
+			html += '<span class="scrutinizer-cron-status-overdue">' + humanInterval( overdueBy ) + ' ago</span>';
+		} else {
+			html += 'in ' + humanInterval( Math.abs( diff ) );
+		}
+
+		// Absolute time underneath.
+		html += '<br><span class="scrutinizer-muted">' + d.toLocaleString() + '</span>';
+		return html;
+	}
+
+	function humanInterval( seconds ) {
+		seconds = Math.abs( Math.round( seconds ) );
+		if ( seconds < 60 ) { return seconds + 's'; }
+		if ( seconds < 3600 ) { return Math.round( seconds / 60 ) + 'm'; }
+		if ( seconds < 86400 ) { return Math.round( seconds / 3600 * 10 ) / 10 + 'h'; }
+		return Math.round( seconds / 86400 * 10 ) / 10 + 'd';
 	}
 
 	/* ------------------------------------------------------------------ */
