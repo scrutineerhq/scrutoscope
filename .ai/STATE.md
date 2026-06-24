@@ -2,13 +2,13 @@
 
 > Volatile snapshot of the project. Updated after significant sessions.
 
-**Last updated:** 2026-06-23
+**Last updated:** 2026-06-23 (evening session)
 
 ## Version
 
 - Plugin: `0.1.0-dev`
 - Phase: 1 (Scrutinizer — profiler only)
-- Milestone: M2 (Deep Mode & Timeline) — in progress
+- Milestone: M2 (Deep Mode & Timeline) — near complete; API spec (M2.5) designed
 
 ## Codebase
 
@@ -31,7 +31,7 @@
 - `Attribution` for callback → plugin/theme/core/mu-plugin classification
 - Background sampling with configurable rate (1-100%)
 - By-reference parameter detection to skip unsafe callback wrapping
-- **Lifecycle phase markers** — `hrtime(true)` snapshots at 8 key WP hooks (muplugins_loaded through wp)
+- **Lifecycle phase markers** — `hrtime(true)` snapshots at 25 WP hooks across early boot, core init, front-end template lifecycle, admin, and terminal (shutdown)
 - **Deep mode query logging** — captures `$wpdb->queries` when `SAVEQUERIES` is enabled (sql, time_ms, caller)
 - **Query count** — always captured via `$wpdb->num_queries`
 - **User role capture** — `wp_get_current_user()->roles` per request (administrator/editor/subscriber/anonymous)
@@ -39,15 +39,20 @@
 
 ### Dashboard UI
 - Three-level drill-down: grouped routes → route profiles → single profile detail
-- **Tabbed detail view**: Timeline, Breakdown, Sources, Queries, Metadata
-- **Timeline visualization** — horizontal bar with callback segments, lifecycle phase marker lines, time axis, source legend
+- **Tabbed detail view**: Timeline, Breakdown, Sources, Queries, Metadata, History
+- **Timeline visualization** — horizontal bar with callback segments, lollipop milestone markers (vertical stem + dot + label, tiered to prevent overlap), time axis, source legend
+- **Breakdown bar** — inline colors from `sourceColors` map (not CSS classes), consistent between bar segments and legend. Unknown/unattributed shown in amber.
 - **Metric cards** — Server Request Duration, Peak Memory, DB Queries, Callbacks
 - **Role pills** — color-coded badges (🔒 admin red, editor blue, subscriber gray, 👤 anonymous outline)
 - **Weight glyphs** — thin inline progress bars on source table rows, proportional to % of total execution time
-- **Unattributed time tooltip** — ⓘ icon explaining bootstrap/autoloader/core init overhead
-- **Query table** — sortable by time, slow query highlighting (>10ms), caller trace
+- **Unattributed time tooltip** — tap-toggle `<button>` + `<span>` bubble (mobile-friendly, replaces old `title` attribute)
+- **Query table** — sortable by time, slow query highlighting (>10ms), caller trace, structure-preserving sanitized SQL
+- **Pin/Annotate/Prune** — toolbar per profile: pin important profiles, add text annotations, delete unneeded profiles
+- **History tab** — filter profiles by route, tag, date range, pinned-only
+- **Compare view** — side-by-side profile comparison with delta summary
 - Background profiling toggle with sample rate slider
 - Sortable column headers, route grouping, profile deletion
+- Cache-busting version string via `filemtime()` on dashboard.js
 
 ### Storage
 - Custom DB table with auto-upgrade (`maybe_upgrade_table`)
@@ -88,9 +93,10 @@
 |-----------|-------|--------|
 | M0 — Foundation | Scaffold, CI, accounts, dev env | ✅ Complete |
 | M1 — Core Instrumentation | Profiler engine, Standard mode, basic dashboard | ✅ Complete |
-| M2 — Deep Mode & Timeline | Deep mode, request timeline visualization, full diagnostics | 🔨 In progress |
+| M2 — Deep Mode & Timeline | Deep mode, request timeline visualization, full diagnostics | 🔨 Near complete (4 items remaining) |
+| M2.5 — AI Agent API & Sharing | REST API, prompt endpoint, diagnostics panel, zero-knowledge relay, Studio viewer | ⬜ Spec complete, not started |
 | M3 — Baselines & Regression | Named baselines, route-matched comparison, regression language | ⬜ Not started |
-| M4 — Report Sharing | Capability links, R2 upload, hosted viewer, revocation | ⬜ Not started |
+| M4 — Report Sharing | ~~Absorbed into M2.5~~ | ✅ Redesigned |
 | M5 — External Diagnostics & CLI | Yoke integration, 11 WP-CLI commands | ⬜ Not started |
 | M6 — Polish & wp.org | Submission readiness, hosted infra live | ⬜ Not started |
 

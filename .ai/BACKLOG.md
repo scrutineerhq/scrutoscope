@@ -22,18 +22,58 @@
 ## M2 — Deep Mode, Diagnostics, and Timeline (current)
 
 - [x] Request timeline — horizontal bar visualization, plugin-colored segments, lifecycle phase markers
-- [x] Lifecycle phase markers — hrtime snapshots at 8 key WP hooks
+- [x] Lifecycle phase markers — hrtime snapshots at 25 WP hooks (early boot through shutdown)
+- [x] Lollipop milestone markers — tiered vertical stem + dot + label, overlap prevention
 - [x] Deep mode: query detail — individual SQL queries with time and caller via SAVEQUERIES
+- [x] Query sanitization — structure-preserving, replaces literals with placeholders, collapses IN/VALUES
 - [x] Query count metric card — always via $wpdb->num_queries
 - [x] User role capture — wp_get_current_user() per request, role pill badges
 - [x] Metric cards — Server Request Duration, memory, queries, callbacks
-- [x] Tabbed detail view — Timeline, Breakdown, Sources, Queries, Metadata
+- [x] Tabbed detail view — Timeline, Breakdown, Sources, Queries, Metadata, History
 - [x] Weight glyphs — thin inline progress bars on source table rows
-- [x] Unattributed time tooltip — ⓘ explanation of bootstrap overhead
+- [x] Unattributed time tooltip — tap-toggle button+bubble (mobile-friendly)
+- [x] Breakdown bar color fix — inline colors from sourceColors map, consistent bar+legend
+- [x] Pin/Annotate/Prune — toolbar per profile
+- [x] History tab — filter by route, tag, date range, pinned-only
+- [x] Compare view — side-by-side profile deltas
+- [x] Cache-busting version via filemtime()
 - [ ] Memory observations — `memory_get_usage()` deltas per callback (already captured per timing, not yet visualized)
 - [ ] Enqueued assets inventory — script/style handles, sizes, dependencies
 - [ ] Cron inventory — scheduled events, overdue/duplicate indicators
 - [ ] Hook Execution Trace — nested callback visualization (trace data exists, UI needed)
+
+## M2.5 — AI Agent API & Secure Sharing (NEW — designed June 23, 2026)
+
+Full spec at `workspace/your_files/scrutineer-api-spec.md`. Panel review at `workspace/your_files/scrutineer-api-panel-review.md`.
+
+### API Foundation
+- [ ] REST API endpoint registration (`/v1/prompt`, `/v1/diagnostics`, `/v1/routes`, `/v1/profile/{id}`, `/v1/compare/{a}/{b}`)
+- [ ] Diagnostics data collector (§4.1 always-included + §4.2 opt-in fields)
+- [ ] Hard sanitization pass (§4.3 — paths, creds, IPs stripped before any output)
+- [ ] Diagnostics sharing checkbox panel + WP option storage
+- [ ] `/v1/prompt` content — measurement contract, tone rules, endpoint schemas, boundaries
+- [ ] Scoped auto-created Application Passwords (§6 — 24h TTL, restricted to scrutinizer/v1/*)
+- [ ] "Send to Agent" button — auto-creates password, copies one-liner to clipboard
+
+### Secure Sharing Relay
+- [ ] scrutinizer.dev CF Worker — KV storage, capability URLs
+- [ ] Client-side AES-256-GCM encryption (Web Crypto API, key in URL fragment)
+- [ ] Relay endpoints: POST /r/, GET /r/{id}, GET /r/{id}/data, DELETE /r/{id}
+- [ ] "Send to Support" button — encrypt + upload + display share URL
+- [ ] Expiry options (1/7/14/30 days + expire-after-reading)
+- [ ] Shared Reports management panel (list active shares, one-click revoke)
+- [ ] Optional passphrase protection (PBKDF2 key wrapping, minimum strength)
+
+### Report Viewer (Studio)
+- [ ] Standalone SPA at scrutinizer.dev — full dashboard experience, read-only
+- [ ] Client-side decryption flow
+- [ ] Guidance header ("How to read this report" + security warning)
+- [ ] Error states (missing fragment, expired, wrong passphrase, corrupted)
+- [ ] Responsive design, dark/light mode, print-friendly
+- [ ] Referrer-Policy: no-referrer
+
+### TODO
+- [ ] Add PANEL.md to .ai/ with standing review panel personas
 
 ## M3 — Baselines and Regression Language
 
@@ -43,16 +83,18 @@
 - [ ] Compare view — side-by-side timeline, delta summary
 - [ ] Messaging enforcement — "slower" not "slow," "associated with" not "caused by"
 
-## M4 — Report Sharing
+## M4 — Report Sharing (ABSORBED into M2.5)
 
-- [ ] Capability-link generation — 128-bit random, URL-safe
-- [ ] Section include/exclude UI — checklist with preview
-- [ ] R2 upload — retention encoded in key path, lifecycle auto-delete
-- [ ] Hosted viewer — scrutineer.dev/d/{id}, structured rendering, no innerHTML
-- [ ] Revocation — dashboard + standalone link, immediate retrieval block
-- [ ] Report receipt — sections included, access log, revocation status
-- [ ] Secret protection — enforce hard-never-collect on shared artifacts
-- [ ] Size limits — transparent truncation with in-report notice
+Sharing architecture redesigned June 23, 2026. Zero-knowledge relay pulled into Phase 1 (was Phase 2). R2 replaced by CF KV. See M2.5 above for full breakdown.
+
+~~- [ ] Capability-link generation~~
+~~- [ ] Section include/exclude UI~~
+~~- [ ] R2 upload~~
+~~- [ ] Hosted viewer~~
+~~- [ ] Revocation~~
+~~- [ ] Report receipt~~
+~~- [ ] Secret protection~~
+~~- [ ] Size limits~~
 
 ## M5 — External Diagnostics and WP-CLI
 
