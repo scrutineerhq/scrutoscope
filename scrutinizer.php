@@ -63,10 +63,11 @@ register_activation_hook( __FILE__, 'scrutinizer_activate' );
 /**
  * Plugin deactivation callback.
  *
- * Stops any active profiling session.
+ * Stops any active profiling session and cleans up API credentials.
  */
 function scrutinizer_deactivate() {
 	\Scrutinizer\Profiler\Session::stop_session();
+	\Scrutinizer\Api\ApplicationPassword::deactivate();
 }
 register_deactivation_hook( __FILE__, 'scrutinizer_deactivate' );
 
@@ -128,11 +129,13 @@ function scrutinizer_admin_bar_menu( $wp_admin_bar ) {
 add_action( 'admin_bar_menu', 'scrutinizer_admin_bar_menu', 100 );
 
 /**
- * Register admin page and AJAX handlers.
+ * Register admin page, AJAX handlers, and REST API.
  */
 function scrutinizer_admin_init() {
 	\Scrutinizer\Admin\Dashboard::register();
 	\Scrutinizer\Admin\Ajax::register();
 	\Scrutinizer\Profiler\Storage::maybe_upgrade_table();
+	\Scrutinizer\Api\RestApi::register();
+	\Scrutinizer\Api\ApplicationPassword::register();
 }
 add_action( 'plugins_loaded', 'scrutinizer_admin_init' );

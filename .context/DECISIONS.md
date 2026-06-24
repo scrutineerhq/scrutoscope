@@ -78,8 +78,17 @@ Individual query log is always sorted slowest-first in the dashboard. The raw da
 ## D24: Zero-knowledge relay for report sharing
 scrutinizer.dev stores only ciphertext. Encryption/decryption is client-side (AES-256-GCM via Web Crypto API). Decryption key lives in URL fragment (#key) — never sent to server. Scrutineer (the org) cannot view shared reports. Supersedes D8.
 
-## D25: Scoped auto-created Application Passwords
-"Send to Agent" auto-creates a WP Application Password scoped to `/scrutinizer/v1/*` only, with 24h TTL. User never touches the Application Passwords UI. Plugin hooks `rest_authentication_errors` to restrict scope and enforce expiry.
+## D25: Application Passwords — unscoped by core, gated by permission_callback
+WordPress Application Passwords have NO endpoint scoping in core (scoping is "future development" per the Integration Guide). An app password inherits the full capabilities of the user it belongs to. Our real access control is `permission_callback` on each `register_rest_route` call — that's the gate, not the password's capabilities. We document that a dedicated least-privilege user is recommended but don't enforce it.
+
+### D25a: Regenerate-on-export, always auto-rotate
+"Send to Agent" always revokes any existing Scrutineer Application Password (matched by `app_id`) and creates a fresh one. No option to keep old passwords alive — only one credential is ever valid at a time. Plaintext is returned once from core and copied to clipboard; we never store it.
+
+### D25b: app_id for lifecycle management
+All Scrutineer-created Application Passwords use a fixed `app_id` UUID. This lets us: (1) find/revoke our passwords without touching others, (2) clean up on plugin deactivation, (3) detect if a valid password already exists. The `app_id` is the handle for all password lifecycle operations.
+
+### D25c: TTL is plugin-enforced, not core
+Core Application Passwords have no expiry. We store `created` timestamp and enforce TTL ourselves. Default 1 hour, user-configurable up to 24 hours max. On each authenticated request to our routes, we check age and reject expired passwords. A scheduled event also garbage-collects stale passwords matching our `app_id`.
 
 ## D26: Hard sanitization before any output
 All output paths (API responses AND shared reports) run a hard sanitization pass that strips filesystem paths, DB credentials, IPs, auth keys/salts, wp-config constants, and user PII — regardless of checkbox settings. Reports are safe by construction, protecting against social engineering attacks that trick users into sharing.
