@@ -164,13 +164,8 @@ class Sanitizer {
 	public static function sanitize_sql( $sql ) {
 		$sql = trim( $sql );
 
-		// If already reduced (verb + table only, no spaces beyond the first),
-		// pass through without re-parsing.
-		if ( preg_match( '/^\w+(\s+\w[\w, ]*)?$/', $sql ) ) {
-			return $sql;
-		}
-
-		// Full reduction for unreduced queries (legacy data).
+		// Always run full reduction — no shortcut. Old profiles store
+		// unreduced queries, and heuristic pass-through checks are fragile.
 		if ( false !== stripos( $sql, 'FOUND_ROWS' ) ) {
 			return 'SELECT FOUND_ROWS()';
 		}
