@@ -188,7 +188,7 @@
 		} );
 		$( document ).on( 'change', '#scrutinizer-sample-rate', saveBackgroundRate );
 
-		// Top-level tab switcher (Routes | History | Cron).
+		// Top-level tab switcher (Routes | History | Cron | API).
 		$( document ).on( 'click', '.scrutinizer-top-tab', function() {
 			var tab = $( this ).data( 'top-tab' );
 			$( '.scrutinizer-top-tab' ).removeClass( 'active' );
@@ -200,6 +200,8 @@
 				showHistoryView();
 			} else if ( 'cron' === tab ) {
 				showCronView();
+			} else if ( 'api' === tab ) {
+				showApiView();
 			}
 		} );
 
@@ -449,6 +451,7 @@
 		html += '<button class="scrutinizer-top-tab active" data-top-tab="routes">' + esc( scrutinizerAdmin.i18n.routes || 'Routes' ) + '</button>';
 		html += '<button class="scrutinizer-top-tab" data-top-tab="history">' + esc( scrutinizerAdmin.i18n.history || 'History' ) + '</button>';
 		html += '<button class="scrutinizer-top-tab" data-top-tab="cron">' + esc( scrutinizerAdmin.i18n.cron || 'Cron' ) + '</button>';
+		html += '<button class="scrutinizer-top-tab" data-top-tab="api">' + esc( scrutinizerAdmin.i18n.api || 'API' ) + '</button>';
 		html += '</div>';
 		$( '#scrutinizer-results h2' ).replaceWith( html );
 	}
@@ -527,6 +530,7 @@
 		$( '#scrutinizer-detail' ).hide();
 		$( '#scrutinizer-history-view' ).remove();
 		$( '#scrutinizer-compare-view' ).remove();
+		$( '#scrutinizer-api-view' ).hide();
 		$( '.scrutinizer-top-tab' ).removeClass( 'active' );
 		$( '.scrutinizer-top-tab[data-top-tab="routes"]' ).addClass( 'active' );
 		renderGroupedTable( groupedData );
@@ -1778,6 +1782,7 @@
 		$( '#scrutinizer-route-detail' ).remove();
 		$( '#scrutinizer-detail' ).hide();
 		$( '#scrutinizer-compare-view' ).remove();
+		$( '#scrutinizer-api-view' ).hide();
 		$( '.scrutinizer-top-tab' ).removeClass( 'active' );
 		$( '.scrutinizer-top-tab[data-top-tab="history"]' ).addClass( 'active' );
 
@@ -1944,6 +1949,7 @@
 		$( '#scrutinizer-results' ).hide();
 		$( '#scrutinizer-detail' ).hide();
 		$( '#scrutinizer-compare-view' ).remove();
+		$( '#scrutinizer-api-view' ).hide();
 
 		var $history = $( '#scrutinizer-history-view' );
 		if ( ! $history.length ) {
@@ -2347,6 +2353,225 @@
 		var units = [ 'B', 'KB', 'MB', 'GB' ];
 		var i     = Math.floor( Math.log( abs ) / Math.log( 1024 ) );
 		return sign + ( abs / Math.pow( 1024, i ) ).toFixed( 1 ) + ' ' + units[ i ];
+	}
+
+	/* ------------------------------------------------------------------ */
+	/*  API Tab: Diagnostics Checkboxes + Send to Agent                     */
+	/* ------------------------------------------------------------------ */
+
+	function showApiView() {
+		currentView = 'api';
+		$( '#scrutinizer-results' ).hide();
+		$( '#scrutinizer-detail' ).hide();
+		$( '#scrutinizer-compare-view' ).remove();
+
+		var $container = $( '#scrutinizer-api-view' );
+		if ( ! $container.length ) {
+			$( '#scrutinizer-results' ).after( '<div id="scrutinizer-api-view"></div>' );
+			$container = $( '#scrutinizer-api-view' );
+		}
+		$container.show();
+
+		// Hide cron/history if visible.
+		$( '#scrutinizer-history-view' ).hide();
+
+		$( '.scrutinizer-top-tab' ).removeClass( 'active' );
+		$( '.scrutinizer-top-tab[data-top-tab="api"]' ).addClass( 'active' );
+
+		renderApiView( $container );
+	}
+
+	function renderApiView( $container ) {
+		var optInFields = scrutinizerAdmin.diagnosticsOptIn || {};
+		var enabledFields = scrutinizerAdmin.diagnosticsFields || [];
+		var apiBase = scrutinizerAdmin.apiBase || '';
+
+		var html = '';
+
+		// --- Send to Agent section ---
+		html += '<div class="scrutinizer-api-section">';
+		html += '<h3 class="scrutinizer-api-heading"><span class="dashicons dashicons-share-alt2"></span> Send to Agent</h3>';
+		html += '<p class="scrutinizer-api-desc">Generate a one-time prompt that gives an AI agent read-only access to your profiling data. ';
+		html += 'The credential auto-expires and is scoped to Scrutineer endpoints only.</p>';
+		html += '<div class="scrutinizer-send-agent-controls">';
+		html += '<button type="button" class="button button-primary" id="scrutinizer-create-api-key">';
+		html += '<span class="dashicons dashicons-clipboard"></span> Copy Prompt to Clipboard</button>';
+		html += '<button type="button" class="button button-link scrutinizer-revoke-link" id="scrutinizer-revoke-api-key" style="display:none;">';
+		html += '<span class="dashicons dashicons-dismiss"></span> Revoke Access</button>';
+		html += '</div>';
+		html += '<div id="scrutinizer-api-key-result" class="scrutinizer-api-result" style="display:none;"></div>';
+		html += '</div>';
+
+		// --- Diagnostics sharing fields ---
+		html += '<div class="scrutinizer-api-section">';
+		html += '<h3 class="scrutinizer-api-heading"><span class="dashicons dashicons-admin-tools"></span> Diagnostics Sharing</h3>';
+		html += '<p class="scrutinizer-api-desc">Choose which server environment details to include when an agent reads <code>/v1/diagnostics</code>. ';
+		html += 'These fields are opt-in — nothing is shared unless you check it.</p>';
+		html += '<div class="scrutinizer-diagnostics-checkboxes">';
+
+		var fieldKeys = Object.keys( optInFields );
+		for ( var i = 0; i < fieldKeys.length; i++ ) {
+			var key = fieldKeys[ i ];
+			var label = optInFields[ key ];
+			var checked = enabledFields.indexOf( key ) !== -1 ? ' checked' : '';
+			html += '<label class="scrutinizer-diag-checkbox">';
+			html += '<input type="checkbox" name="diag_field" value="' + esc( key ) + '"' + checked + '>';
+			html += ' <span>' + esc( label ) + '</span>';
+			html += '</label>';
+		}
+
+		html += '</div>';
+		html += '<div class="scrutinizer-diag-actions">';
+		html += '<button type="button" class="button" id="scrutinizer-save-diag-fields">Save Preferences</button>';
+		html += '<span id="scrutinizer-diag-saved" class="scrutinizer-saved-notice" style="display:none;">✓ Saved</span>';
+		html += '</div>';
+		html += '</div>';
+
+		// --- Endpoints reference ---
+		html += '<div class="scrutinizer-api-section">';
+		html += '<h3 class="scrutinizer-api-heading"><span class="dashicons dashicons-rest-api"></span> Endpoints</h3>';
+		html += '<table class="scrutinizer-api-endpoints">';
+		html += '<thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead>';
+		html += '<tbody>';
+		html += '<tr><td><code>GET</code></td><td><code>/v1/prompt</code></td><td>System prompt (text/plain) — the API contract</td></tr>';
+		html += '<tr><td><code>GET</code></td><td><code>/v1/diagnostics</code></td><td>Site fingerprint with opt-in fields</td></tr>';
+		html += '<tr><td><code>GET</code></td><td><code>/v1/routes</code></td><td>Profiled routes with summary stats</td></tr>';
+		html += '<tr><td><code>GET</code></td><td><code>/v1/profile/{id}</code></td><td>Compiled profile detail</td></tr>';
+		html += '<tr><td><code>GET</code></td><td><code>/v1/compare/{a}/{b}</code></td><td>Two profiles with deltas</td></tr>';
+		html += '</tbody></table>';
+		if ( apiBase ) {
+			html += '<p class="scrutinizer-api-base">Base URL: <code>' + esc( apiBase ) + '</code></p>';
+		}
+		html += '</div>';
+
+		$container.html( html );
+
+		bindApiEvents( $container );
+	}
+
+	function bindApiEvents( $container ) {
+		// Save diagnostics field preferences.
+		$container.find( '#scrutinizer-save-diag-fields' ).off( 'click' ).on( 'click', function() {
+			var $btn = $( this );
+			var fields = [];
+			$container.find( 'input[name="diag_field"]:checked' ).each( function() {
+				fields.push( $( this ).val() );
+			} );
+
+			$btn.prop( 'disabled', true ).text( 'Saving…' );
+
+			$.post( scrutinizerAdmin.ajaxUrl, {
+				action: 'scrutinizer_save_diagnostics_fields',
+				nonce:  scrutinizerAdmin.nonce,
+				fields: fields
+			}, function( response ) {
+				$btn.prop( 'disabled', false ).text( 'Save Preferences' );
+				if ( response.success ) {
+					scrutinizerAdmin.diagnosticsFields = response.data.fields;
+					$( '#scrutinizer-diag-saved' ).fadeIn( 200 ).delay( 2000 ).fadeOut( 400 );
+				}
+			} ).fail( function() {
+				$btn.prop( 'disabled', false ).text( 'Save Preferences' );
+			} );
+		} );
+
+		// Create API password and copy prompt.
+		$container.find( '#scrutinizer-create-api-key' ).off( 'click' ).on( 'click', function() {
+			var $btn = $( this );
+			$btn.prop( 'disabled', true ).html( '<span class="dashicons dashicons-update spin"></span> Generating…' );
+
+			$.post( scrutinizerAdmin.ajaxUrl, {
+				action: 'scrutinizer_create_api_password',
+				nonce:  scrutinizerAdmin.nonce
+			}, function( response ) {
+				if ( response.success ) {
+					var d = response.data;
+
+					// Copy prompt to clipboard.
+					copyToClipboard( d.prompt );
+
+					// Show success.
+					var ttlLabel = d.ttl_hours <= 1 ? '1 hour' : d.ttl_hours + ' hours';
+					$( '#scrutinizer-api-key-result' )
+						.html(
+							'<div class="scrutinizer-api-success">' +
+							'<span class="dashicons dashicons-yes-alt"></span> ' +
+							'<strong>Prompt copied to clipboard.</strong> ' +
+							'Paste it into your AI agent. Access expires in ' + esc( ttlLabel ) + '.' +
+							'</div>'
+						)
+						.slideDown( 200 );
+
+					$btn.prop( 'disabled', false )
+						.html( '<span class="dashicons dashicons-clipboard"></span> Regenerate &amp; Copy' );
+					$( '#scrutinizer-revoke-api-key' ).show();
+				} else {
+					$( '#scrutinizer-api-key-result' )
+						.html(
+							'<div class="scrutinizer-api-error">' +
+							'<span class="dashicons dashicons-warning"></span> ' +
+							esc( response.data.message || 'Failed to create access key.' ) +
+							'</div>'
+						)
+						.slideDown( 200 );
+					$btn.prop( 'disabled', false )
+						.html( '<span class="dashicons dashicons-clipboard"></span> Copy Prompt to Clipboard' );
+				}
+			} ).fail( function() {
+				$btn.prop( 'disabled', false )
+					.html( '<span class="dashicons dashicons-clipboard"></span> Copy Prompt to Clipboard' );
+			} );
+		} );
+
+		// Revoke API password.
+		$container.find( '#scrutinizer-revoke-api-key' ).off( 'click' ).on( 'click', function() {
+			var $btn = $( this );
+			$btn.prop( 'disabled', true );
+
+			$.post( scrutinizerAdmin.ajaxUrl, {
+				action: 'scrutinizer_revoke_api_password',
+				nonce:  scrutinizerAdmin.nonce
+			}, function( response ) {
+				$btn.prop( 'disabled', false );
+				if ( response.success ) {
+					$( '#scrutinizer-api-key-result' )
+						.html(
+							'<div class="scrutinizer-api-revoked">' +
+							'<span class="dashicons dashicons-yes-alt"></span> ' +
+							'Access revoked.' +
+							'</div>'
+						)
+						.slideDown( 200 )
+						.delay( 3000 )
+						.slideUp( 400 );
+
+					$( '#scrutinizer-create-api-key' )
+						.html( '<span class="dashicons dashicons-clipboard"></span> Copy Prompt to Clipboard' );
+					$btn.hide();
+				}
+			} ).fail( function() {
+				$btn.prop( 'disabled', false );
+			} );
+		} );
+	}
+
+	/**
+	 * Copy text to clipboard, with fallback for older browsers.
+	 */
+	function copyToClipboard( text ) {
+		if ( navigator.clipboard && navigator.clipboard.writeText ) {
+			navigator.clipboard.writeText( text );
+			return;
+		}
+		// Fallback: hidden textarea + execCommand.
+		var $ta = $( '<textarea>' ).val( text ).css( {
+			position: 'fixed',
+			left: '-9999px',
+			opacity: 0
+		} ).appendTo( 'body' );
+		$ta[0].select();
+		try { document.execCommand( 'copy' ); } catch ( e ) { /* noop */ }
+		$ta.remove();
 	}
 
 	// Initialize on DOM ready.

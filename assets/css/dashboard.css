@@ -1399,3 +1399,237 @@
 .scrutinizer-trace-node[data-depth="1"] { border-left-color: rgba(255, 255, 255, 0.08); }
 .scrutinizer-trace-node[data-depth="2"] { border-left-color: rgba(255, 255, 255, 0.12); }
 .scrutinizer-trace-node[data-depth="3"] { border-left-color: rgba(255, 255, 255, 0.16); }
+
+
+/* ------------------------------------------------------------------ */
+/*  API Tab                                                            */
+/* ------------------------------------------------------------------ */
+
+#scrutinizer-api-view {
+	max-width: 800px;
+}
+
+.scrutinizer-api-section {
+	background: #1e1e1e;
+	border: 1px solid #333;
+	border-radius: 6px;
+	padding: 20px 24px;
+	margin-bottom: 16px;
+}
+
+.scrutinizer-api-heading {
+	margin: 0 0 8px;
+	font-size: 15px;
+	font-weight: 600;
+	color: #f0f0f0;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.scrutinizer-api-heading .dashicons {
+	font-size: 18px;
+	width: 18px;
+	height: 18px;
+	color: #72aee6;
+}
+
+.scrutinizer-api-desc {
+	color: #999;
+	font-size: 13px;
+	line-height: 1.5;
+	margin: 0 0 16px;
+}
+
+.scrutinizer-api-desc code {
+	background: rgba(255, 255, 255, 0.06);
+	padding: 1px 5px;
+	border-radius: 3px;
+	font-size: 12px;
+	color: #ccc;
+}
+
+/* Diagnostics checkboxes */
+.scrutinizer-diagnostics-checkboxes {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 8px 24px;
+	margin-bottom: 16px;
+}
+
+@media ( max-width: 600px ) {
+	.scrutinizer-diagnostics-checkboxes {
+		grid-template-columns: 1fr;
+	}
+}
+
+.scrutinizer-diag-checkbox {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	color: #ccc;
+	font-size: 13px;
+	cursor: pointer;
+	padding: 4px 0;
+}
+
+.scrutinizer-diag-checkbox input[type="checkbox"] {
+	margin: 0;
+	accent-color: #72aee6;
+}
+
+.scrutinizer-diag-checkbox:hover span {
+	color: #f0f0f0;
+}
+
+.scrutinizer-diag-actions {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.scrutinizer-saved-notice {
+	color: #46b450;
+	font-size: 13px;
+	font-weight: 500;
+}
+
+/* Send to Agent controls */
+.scrutinizer-send-agent-controls {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	flex-wrap: wrap;
+}
+
+.scrutinizer-send-agent-controls .button-primary {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+}
+
+.scrutinizer-send-agent-controls .button-primary .dashicons {
+	font-size: 16px;
+	width: 16px;
+	height: 16px;
+}
+
+.scrutinizer-revoke-link {
+	color: #d63638 !important;
+	text-decoration: none !important;
+	display: inline-flex !important;
+	align-items: center;
+	gap: 2px;
+	font-size: 13px;
+}
+
+.scrutinizer-revoke-link:hover {
+	color: #a02224 !important;
+}
+
+.scrutinizer-revoke-link .dashicons {
+	font-size: 16px;
+	width: 16px;
+	height: 16px;
+}
+
+/* API result notices */
+.scrutinizer-api-result {
+	margin-top: 12px;
+}
+
+.scrutinizer-api-success,
+.scrutinizer-api-revoked {
+	background: rgba(70, 180, 80, 0.1);
+	border: 1px solid rgba(70, 180, 80, 0.3);
+	border-radius: 4px;
+	padding: 10px 14px;
+	color: #8ed29b;
+	font-size: 13px;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.scrutinizer-api-success .dashicons,
+.scrutinizer-api-revoked .dashicons {
+	color: #46b450;
+	font-size: 18px;
+	width: 18px;
+	height: 18px;
+}
+
+.scrutinizer-api-error {
+	background: rgba(214, 54, 56, 0.1);
+	border: 1px solid rgba(214, 54, 56, 0.3);
+	border-radius: 4px;
+	padding: 10px 14px;
+	color: #f0a0a0;
+	font-size: 13px;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.scrutinizer-api-error .dashicons {
+	color: #d63638;
+	font-size: 18px;
+	width: 18px;
+	height: 18px;
+}
+
+/* Endpoints reference table */
+.scrutinizer-api-endpoints {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 13px;
+}
+
+.scrutinizer-api-endpoints th {
+	text-align: left;
+	color: #999;
+	font-weight: 500;
+	padding: 6px 12px 6px 0;
+	border-bottom: 1px solid #333;
+	font-size: 11px;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.scrutinizer-api-endpoints td {
+	padding: 8px 12px 8px 0;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+	color: #ccc;
+}
+
+.scrutinizer-api-endpoints code {
+	background: rgba(255, 255, 255, 0.06);
+	padding: 1px 5px;
+	border-radius: 3px;
+	font-size: 12px;
+	color: #e0e0e0;
+}
+
+.scrutinizer-api-base {
+	margin: 12px 0 0;
+	font-size: 12px;
+	color: #777;
+}
+
+.scrutinizer-api-base code {
+	background: rgba(255, 255, 255, 0.06);
+	padding: 1px 5px;
+	border-radius: 3px;
+	font-size: 12px;
+	color: #999;
+}
+
+/* Spinner for API key generation */
+.dashicons.spin {
+	animation: scrutinizer-spin 1s linear infinite;
+}
+
+@keyframes scrutinizer-spin {
+	0% { transform: rotate(0deg); }
+	100% { transform: rotate(360deg); }
+}

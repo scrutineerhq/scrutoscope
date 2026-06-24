@@ -95,6 +95,9 @@ class Dashboard {
 				'siteUrl'              => home_url( '/' ),
 				'backgroundEnabled'    => (bool) get_option( 'scrutinizer_background_profiling', false ),
 				'backgroundSampleRate' => (int) get_option( 'scrutinizer_sample_rate', 5 ),
+				'apiBase'              => rest_url( 'scrutinizer/v1/' ),
+				'diagnosticsFields'    => \Scrutinizer\Api\Diagnostics::get_enabled_fields(),
+				'diagnosticsOptIn'     => \Scrutinizer\Api\Diagnostics::OPT_IN_FIELDS,
 				'i18n'                 => array(
 					'startProfiling' => __( 'Start Profiling', 'scrutinizer' ),
 					'stopProfiling'  => __( 'Stop Profiling', 'scrutinizer' ),

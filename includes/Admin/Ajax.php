@@ -33,6 +33,9 @@ class Ajax {
 		add_action( 'wp_ajax_scrutinizer_compare_profiles', array( __CLASS__, 'compare_profiles' ) );
 		add_action( 'wp_ajax_scrutinizer_get_history', array( __CLASS__, 'get_history' ) );
 		add_action( 'wp_ajax_scrutinizer_get_cron_inventory', array( __CLASS__, 'get_cron_inventory' ) );
+		add_action( 'wp_ajax_scrutinizer_save_diagnostics_fields', array( __CLASS__, 'save_diagnostics_fields' ) );
+		add_action( 'wp_ajax_scrutinizer_create_api_password', array( __CLASS__, 'create_api_password' ) );
+		add_action( 'wp_ajax_scrutinizer_revoke_api_password', array( __CLASS__, 'revoke_api_password' ) );
 	}
 
 	/**
@@ -527,5 +530,90 @@ class Ajax {
 		$inventory = \Scrutinizer\Diagnostics\Cron::collect();
 
 		wp_send_json_success( $inventory );
+	}
+
+	/**
+	 * AJAX: Save diagnostics sharing field preferences.
+	 */
+	public static function save_diagnostics_fields() {
+		check_ajax_referer( 'scrutinizer_nonce', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error(
+				array( 'message' => __( 'Permission denied.', 'scrutinizer' ) ),
+				403
+			);
+		}
+
+		$fields = isset( $_POST['fields'] ) ? array_map( 'sanitize_text_field', (array) wp_unslash( $_POST['fields'] ) ) : array();
+
+		\Scrutinizer\Api\Diagnostics::set_enabled_fields( $fields );
+
+		wp_send_json_success( array( 'fields' => \Scrutinizer\Api\Diagnostics::get_enabled_fields() ) );
+	}
+
+	/**
+	 * AJAX: Create a new Scrutineer Application Password for the current user.
+	 *
+	 * Revokes any existing one first (auto-rotate per D25a).
+	 */
+	public static function create_api_password() {
+		check_ajax_referer( 'scrutinizer_nonce', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error(
+				array( 'message' => __( 'Permission denied.', 'scrutinizer' ) ),
+				403
+			);
+		}
+
+		$result = \Scrutinizer\Api\ApplicationPassword::create_for_user( get_current_user_id() );
+
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error(
+				array( 'message' => $result->get_error_message() ),
+				500
+			);
+		}
+
+		// Build the one-liner prompt for clipboard.
+		$api_base = rest_url( 'scrutinizer/v1/' );
+		$username = wp_get_current_user()->user_login;
+		$prompt   = sprintf(
+			'Read %sprompt and follow its instructions to diagnose my site\'s performance. Use this Application Password to authenticate: username: %s / password: %s',
+			$api_base,
+			$username,
+			$result['password']
+		);
+
+		$ttl_hours = round( $result['ttl'] / 3600, 1 );
+
+		wp_send_json_success(
+			array(
+				'prompt'    => $prompt,
+				'password'  => $result['password'],
+				'username'  => $username,
+				'ttl_hours' => $ttl_hours,
+				'expires'   => gmdate( 'c', $result['expires'] ),
+			)
+		);
+	}
+
+	/**
+	 * AJAX: Revoke all Scrutineer Application Passwords for the current user.
+	 */
+	public static function revoke_api_password() {
+		check_ajax_referer( 'scrutinizer_nonce', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error(
+				array( 'message' => __( 'Permission denied.', 'scrutinizer' ) ),
+				403
+			);
+		}
+
+		$revoked = \Scrutinizer\Api\ApplicationPassword::revoke_all_for_user( get_current_user_id() );
+
+		wp_send_json_success( array( 'revoked' => $revoked ) );
 	}
 }
