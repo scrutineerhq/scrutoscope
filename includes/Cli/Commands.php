@@ -164,7 +164,7 @@ class Commands {
 			array( 'Key' => 'Method', 'Value' => $profile['request_method'] ),
 			array( 'Key' => 'Route', 'Value' => $profile['route_key'] ?: $profile['route_class'] ),
 			array( 'Key' => 'Duration', 'Value' => round( isset( $summary['duration_ms'] ) ? $summary['duration_ms'] : 0, 1 ) . ' ms' ),
-			array( 'Key' => 'Peak Memory', 'Value' => self::format_bytes( isset( $summary['peak_memory'] ) ? $summary['peak_memory'] : 0 ) ),
+			array( 'Key' => 'Peak Memory', 'Value' => self::format_bytes( isset( $summary['memory_peak'] ) ? $summary['memory_peak'] : 0 ) ),
 			array( 'Key' => 'DB Queries', 'Value' => isset( $summary['query_count'] ) ? $summary['query_count'] : 'n/a' ),
 			array( 'Key' => 'HTTP Calls', 'Value' => isset( $summary['http_call_count'] ) ? $summary['http_call_count'] : 0 ),
 			array( 'Key' => 'Callbacks', 'Value' => isset( $summary['callback_count'] ) ? $summary['callback_count'] : 0 ),
@@ -189,13 +189,23 @@ class Commands {
 			WP_CLI::log( '' );
 			WP_CLI::log( WP_CLI::colorize( '%BSources%n' ) );
 
+			// Compute total exclusive time for weight percentages.
+			$total_excl_ns = 0;
+			foreach ( $sources as $s ) {
+				$total_excl_ns += isset( $s['exclusive_ns'] ) ? $s['exclusive_ns'] : 0;
+			}
+
 			$source_rows = array();
 			foreach ( $sources as $s ) {
+				$excl_ns  = isset( $s['exclusive_ns'] ) ? $s['exclusive_ns'] : 0;
+				$excl_ms  = round( $excl_ns / 1e6, 2 );
+				$weight   = $total_excl_ns > 0 ? round( ( $excl_ns / $total_excl_ns ) * 100, 1 ) : 0;
+
 				$source_rows[] = array(
 					'Source'    => isset( $s['name'] ) ? $s['name'] : '(unknown)',
 					'Type'     => isset( $s['type'] ) ? $s['type'] : '',
-					'Excl.'    => round( isset( $s['exclusive_ms'] ) ? $s['exclusive_ms'] : 0, 2 ) . ' ms',
-					'Weight'   => isset( $s['weight_pct'] ) ? round( $s['weight_pct'], 1 ) . '%' : '',
+					'Excl.'    => $excl_ms . ' ms',
+					'Weight'   => $weight . '%',
 					'Calls'    => isset( $s['call_count'] ) ? $s['call_count'] : '',
 				);
 			}
