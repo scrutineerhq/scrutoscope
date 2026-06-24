@@ -73,7 +73,7 @@ Full spec at `workspace/your_files/scrutineer-api-spec.md`. Panel review at `wor
 - [ ] Referrer-Policy: no-referrer
 
 ### TODO
-- [ ] Add PANEL.md to .ai/ with standing review panel personas
+- [ ] Add PANEL.md to .context/ with standing review panel personas
 
 ## M3 — Baselines and Regression Language
 

@@ -6,7 +6,7 @@
 
 ```
 scrutineer/
-├── .ai/                    # Agent context (this directory)
+├── .context/                    # Agent context (this directory)
 ├── .github/workflows/      # CI (phpcs + phpunit matrix)
 ├── assets/
 │   ├── css/dashboard.css   # Admin dashboard styles

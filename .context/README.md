@@ -1,4 +1,4 @@
-# .ai/ — Scrutinizer Agent Context
+# .context/ — Scrutinizer Agent Context
 
 > These files give AI coding agents the context they need to work in this codebase without introducing entropy. Read the relevant files before making changes.
 
@@ -22,4 +22,4 @@ Design question: `DECISIONS.md` → `CONSTITUTION.md`
 
 ## Master Spec
 
-The full product specification lives outside this repo at `~/workspace/your_files/triage-spec.md` (1269 lines). These `.ai/` files distill the spec into agent-actionable context — they don't replace it. When in doubt, the spec is authoritative.
+The full product specification lives outside this repo at `~/workspace/your_files/triage-spec.md` (1269 lines). These `.context/` files distill the spec into agent-actionable context — they don't replace it. When in doubt, the spec is authoritative.
