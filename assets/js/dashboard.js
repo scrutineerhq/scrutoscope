@@ -692,7 +692,7 @@
 
 		var html = '<div class="scrutinizer-timeline-container">';
 
-		// Phase marker labels at top — stack upward to prevent collisions.
+		// Phase milestones — lollipop stems above the bar.
 		var labelPositions = [];
 		for ( var m = 0; m < phaseMarkers.length; m++ ) {
 			var marker   = phaseMarkers[ m ];
@@ -702,8 +702,7 @@
 			}
 			labelPositions.push( { pct: markerPct, name: marker.name } );
 		}
-		// Assign tiers: each label goes one tier higher if it's within 8% of
-		// any label already placed at the same or lower tier.
+		// Assign tiers to prevent horizontal label overlap.
 		var labelTiers = [];
 		for ( var li = 0; li < labelPositions.length; li++ ) {
 			var tier = 0;
@@ -720,33 +719,25 @@
 				maxTier = labelTiers[ lt ];
 			}
 		}
-		// Container height: 18px per tier + 4px padding.
-		var labelsHeight = ( maxTier + 1 ) * 18 + 4;
-		html += '<div class="scrutinizer-phase-labels" style="height:' + labelsHeight + 'px">';
+		// Each tier is 24px: 14px label + 10px spacing.
+		var milestoneHeight = ( maxTier + 1 ) * 24 + 12;
+		html += '<div class="scrutinizer-milestones" style="height:' + milestoneHeight + 'px">';
 		for ( var lk = 0; lk < labelPositions.length; lk++ ) {
-			// Tier 0 = bottom row (closest to bar), higher tiers go up.
-			// Use top positioning: highest tier at top:0, lowest tier at bottom.
-			var topPx = ( maxTier - labelTiers[ lk ] ) * 18;
-			html += '<div class="phase-label" style="left:' + labelPositions[ lk ].pct.toFixed( 2 ) + '%;top:' + topPx + 'px">';
-			html += '<span class="phase-label-text">' + esc( formatPhaseName( labelPositions[ lk ].name ) ) + '</span>';
+			var stemHeight = ( labelTiers[ lk ] + 1 ) * 24;
+			var leftPct    = labelPositions[ lk ].pct.toFixed( 2 );
+			// Vertical stem from bottom, with dot at top and label above dot.
+			html += '<div class="milestone" style="left:' + leftPct + '%;height:' + stemHeight + 'px">';
+			html += '<span class="milestone-label">' + esc( formatPhaseName( labelPositions[ lk ].name ) ) + '</span>';
+			html += '<span class="milestone-dot"></span>';
+			html += '<span class="milestone-stem"></span>';
 			html += '</div>';
 		}
 		html += '</div>';
 
-		// Timeline bar with phase marker lines.
+		// Timeline bar.
 		html += '<div class="scrutinizer-timeline-bar">';
 
-		// Phase marker vertical lines — extend up through the labels area.
-		var lineTopPx = labelsHeight + 8;
-		for ( var p = 0; p < phaseMarkers.length; p++ ) {
-			var pm    = phaseMarkers[ p ];
-			var pmPct = ( pm.offset_ns / durationNs ) * 100;
-			if ( pmPct > 100 ) {
-				pmPct = 100;
-			}
-			html += '<div class="phase-marker-line" style="left:' + pmPct.toFixed( 2 ) + '%;top:-' + lineTopPx + 'px" title="' + esc( pm.name ) + ' @ ' + ( pm.offset_ns / 1e6 ).toFixed( 1 ) + ' ms"></div>';
-		}
-		// Group timeline entries by source for a cleaner view.
+				// Group timeline entries by source for a cleaner view.
 		var bySource = {};
 		for ( var t = 0; t < timeline.length; t++ ) {
 			var entry = timeline[ t ];

@@ -258,27 +258,44 @@
 	position: relative;
 }
 
-.scrutinizer-phase-labels {
+.scrutinizer-milestones {
 	position: relative;
-	margin-bottom: 4px;
-	/* Height set dynamically by JS based on tier count. */
+	margin-bottom: 0;
 }
 
-.phase-label {
+.milestone {
 	position: absolute;
+	bottom: 0;
 	transform: translateX(-50%);
-	white-space: nowrap;
-	z-index: 3;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
 }
 
-.phase-label-text {
+.milestone-label {
 	font-size: 10px;
 	color: #50575e;
-	background: #f0f0f1;
-	padding: 1px 4px;
-	border-radius: 2px;
-	position: relative;
-	z-index: 3;
+	white-space: nowrap;
+	line-height: 14px;
+	order: 1;
+}
+
+.milestone-dot {
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background: #787c82;
+	border: 2px solid #fff;
+	flex-shrink: 0;
+	order: 2;
+}
+
+.milestone-stem {
+	width: 1px;
+	background: #c3c4c7;
+	flex-grow: 1;
+	min-height: 4px;
+	order: 3;
 }
 
 .scrutinizer-timeline-bar {
@@ -289,15 +306,7 @@
 	overflow: visible;
 }
 
-.phase-marker-line {
-	position: absolute;
-	/* top set dynamically by JS to reach through label tiers. */
-	bottom: -4px;
-	width: 1px;
-	border-left: 1px dashed #bbb;
-	z-index: 1;
-	pointer-events: none;
-}
+/* Phase marker lines removed — milestones use lollipop stems instead. */
 
 .timeline-segment {
 	position: absolute;

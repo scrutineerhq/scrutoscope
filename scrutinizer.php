@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'SCRUTINIZER_VERSION', '0.1.0-dev' );
+define( 'SCRUTINIZER_VERSION', '0.1.0-dev.' . filemtime( __DIR__ . '/assets/js/dashboard.js' ) );
 define( 'SCRUTINIZER_FILE', __FILE__ );
 define( 'SCRUTINIZER_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SCRUTINIZER_URL', plugin_dir_url( __FILE__ ) );
