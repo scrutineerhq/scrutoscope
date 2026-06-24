@@ -42,9 +42,19 @@ class ApplicationPassword {
 	const MAX_TTL = 86400;
 
 	/**
+	 * The authenticated application password item for the current request,
+	 * captured from the application_password_did_authenticate action.
+	 *
+	 * @var array|null
+	 */
+	private static $current_app_password = null;
+
+	/**
 	 * Register hooks.
 	 */
 	public static function register() {
+		// Capture the app password item when WP authenticates via one.
+		add_action( 'application_password_did_authenticate', array( __CLASS__, 'capture_authenticated_password' ), 10, 2 );
 		add_action( 'rest_api_init', array( __CLASS__, 'enforce_scope' ) );
 		add_action( 'scrutinizer_cleanup_passwords', array( __CLASS__, 'garbage_collect' ) );
 
@@ -52,6 +62,19 @@ class ApplicationPassword {
 		if ( ! wp_next_scheduled( 'scrutinizer_cleanup_passwords' ) ) {
 			wp_schedule_event( time(), 'hourly', 'scrutinizer_cleanup_passwords' );
 		}
+	}
+
+	/**
+	 * Capture the application password item after successful authentication.
+	 *
+	 * Hooked to 'application_password_did_authenticate' which fires in
+	 * wp_authenticate_application_password() after a valid password match.
+	 *
+	 * @param \WP_User $user  Authenticated user.
+	 * @param array    $item  The matched application password record.
+	 */
+	public static function capture_authenticated_password( $user, $item ) {
+		self::$current_app_password = $item;
 	}
 
 	/**
@@ -117,25 +140,17 @@ class ApplicationPassword {
 	/**
 	 * Check if the current REST request is authenticated via a Scrutineer password.
 	 *
-	 * Reads the REMOTE_USER / PHP_AUTH_USER that WP sets after Basic Auth validation.
+	 * Uses the item captured by the application_password_did_authenticate action.
 	 *
 	 * @return bool
 	 */
 	public static function is_scrutineer_auth() {
-		$user_id = get_current_user_id();
-		if ( 0 === $user_id ) {
+		if ( null === self::$current_app_password ) {
 			return false;
 		}
 
-		// Check if this request was authenticated via an Application Password.
-		// WP sets this global after successful app password auth.
-		global $wp_current_application_password;
-		if ( empty( $wp_current_application_password ) ) {
-			return false;
-		}
-
-		return isset( $wp_current_application_password['app_id'] )
-			&& self::APP_ID === $wp_current_application_password['app_id'];
+		return isset( self::$current_app_password['app_id'] )
+			&& self::APP_ID === self::$current_app_password['app_id'];
 	}
 
 	/**
@@ -162,21 +177,19 @@ class ApplicationPassword {
 			return $result;
 		}
 
-		global $wp_current_application_password;
+		$item = self::$current_app_password;
 
 		// Check TTL.
-		$created = isset( $wp_current_application_password['created'] )
-			? (int) $wp_current_application_password['created']
-			: 0;
+		$created = isset( $item['created'] ) ? (int) $item['created'] : 0;
 		$ttl     = self::get_ttl();
 
 		if ( $created > 0 && ( time() - $created ) > $ttl ) {
 			// Expired — revoke it and reject.
 			$user_id = get_current_user_id();
-			if ( isset( $wp_current_application_password['uuid'] ) ) {
+			if ( isset( $item['uuid'] ) ) {
 				\WP_Application_Passwords::delete_application_password(
 					$user_id,
-					$wp_current_application_password['uuid']
+					$item['uuid']
 				);
 			}
 
