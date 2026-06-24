@@ -131,21 +131,19 @@ class RestApi {
 	/**
 	 * Handle GET /v1/prompt.
 	 *
+	 * Returns raw text/plain — not JSON-wrapped.
+	 *
 	 * @param \WP_REST_Request $request  Request object.
 	 * @return \WP_REST_Response
 	 */
 	public static function handle_prompt( $request ) {
 		$prompt = Prompt::build();
 
-		$response = new \WP_REST_Response( $prompt );
-		$response->set_headers(
-			array(
-				'Content-Type'  => 'text/plain; charset=utf-8',
-				'Cache-Control' => 'private, max-age=3600',
-			)
-		);
-
-		return $response;
+		// Bypass WP REST JSON encoding — send raw text.
+		header( 'Content-Type: text/plain; charset=utf-8' );
+		header( 'Cache-Control: private, max-age=3600' );
+		echo $prompt;
+		exit;
 	}
 
 	/**
@@ -171,7 +169,7 @@ class RestApi {
 
 		$routes = array();
 		foreach ( $groups as $group ) {
-			$route_label = $group['request_method'] . ' ' . $group['route_key'];
+			$route_label = $group['route_key'];
 
 			// Get the latest profile ID for this route.
 			$route_profiles = Storage::get_profiles_for_route( $group['route_key'], 1 );
@@ -233,7 +231,7 @@ class RestApi {
 		// Build response matching the spec shape.
 		$response = array(
 			'id'          => (int) $profile['id'],
-			'route'       => $profile['request_method'] . ' ' . $profile['route_key'],
+			'route'       => $profile['route_key'],
 			'captured_at' => gmdate( 'c', strtotime( $profile['captured_at'] ) ),
 			'duration_ms' => round( (float) $profile['duration_ns'] / 1e6, 1 ),
 			'pinned'      => ! empty( $profile['is_pinned'] ),
@@ -337,7 +335,7 @@ class RestApi {
 
 			return array(
 				'id'          => (int) $raw['id'],
-				'route'       => $raw['request_method'] . ' ' . $raw['route_key'],
+				'route'       => $raw['route_key'],
 				'captured_at' => gmdate( 'c', strtotime( $raw['captured_at'] ) ),
 				'duration_ms' => round( (float) $raw['duration_ns'] / 1e6, 1 ),
 				'query_count' => isset( $summary['query_count'] ) ? (int) $summary['query_count'] : ( ! empty( $data['queries'] ) ? count( $data['queries'] ) : 0 ),
