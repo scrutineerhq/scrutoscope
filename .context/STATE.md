@@ -2,13 +2,13 @@
 
 > Volatile snapshot of the project. Updated after significant sessions.
 
-**Last updated:** 2026-06-23 (evening session)
+**Last updated:** 2026-06-24 (morning session)
 
 ## Version
 
 - Plugin: `0.1.0-dev`
 - Phase: 1 (Scrutinizer — profiler only)
-- Milestone: M2 (Deep Mode & Timeline) — near complete; API spec (M2.5) designed
+- Milestone: M2.5 (AI Agent API) — **COMPLETE**
 
 ## Codebase
 
@@ -16,7 +16,8 @@
 |-----------|--------|
 | Plugin bootstrap (`scrutinizer.php`) | ✅ Functional — autoloader, activation/deactivation hooks, admin bar indicator |
 | Profiler engine (`includes/Profiler/`) | ✅ Complete — Profiler, Session, CallStack, Attribution, Instrumentor, Report, Storage |
-| Admin UI (`includes/Admin/`) | ✅ Functional — Dashboard page, AJAX handlers, tabbed detail view |
+| API (`includes/Api/`) | ✅ Complete — RestApi (5 endpoints), Sanitizer, Diagnostics (opt-in fields), Prompt, ApplicationPassword (TTL/scope/GC) |
+| Admin UI (`includes/Admin/`) | ✅ Functional — Dashboard page, AJAX handlers (17 total), tabbed detail view, API tab |
 | CSS/JS (`assets/`) | ✅ Functional — dashboard.css, dashboard.js with timeline, metric cards, query table |
 | WP-CLI (`includes/CLI/`) | ⬜ Empty — M5 scope |
 | Report sharing (`includes/Share/`) | ⬜ Empty — M4 scope |
@@ -39,6 +40,7 @@
 
 ### Dashboard UI
 - Three-level drill-down: grouped routes → route profiles → single profile detail
+- **Four top-level tabs**: Routes, History, Cron, **API**
 - **Tabbed detail view**: Timeline, Breakdown, Sources, Queries, Metadata, History
 - **Timeline visualization** — horizontal bar with callback segments, lollipop milestone markers (vertical stem + dot + label, tiered to prevent overlap), time axis, source legend
 - **Breakdown bar** — inline colors from `sourceColors` map (not CSS classes), consistent between bar segments and legend. Unknown/unattributed shown in amber.
@@ -53,6 +55,15 @@
 - Background profiling toggle with sample rate slider
 - Sortable column headers, route grouping, profile deletion
 - Cache-busting version string via `filemtime()` on dashboard.js
+
+### REST API (M2.5)
+- 5 authenticated endpoints: `/v1/prompt`, `/v1/diagnostics`, `/v1/routes`, `/v1/profile/{id}`, `/v1/compare/{a}/{b}`
+- **Application Password lifecycle** — auto-create, auto-rotate (one credential max), plugin-enforced TTL (1hr default, 24hr max), hourly GC, full cleanup on deactivation
+- **Scope enforcement** — Scrutineer passwords (matched by `app_id`) restricted to `scrutinizer/v1/*` routes only; non-scrutineer endpoints return 403
+- **Diagnostics opt-in** — 12 environment fields selectable via admin UI checkboxes, saved to `wp_options`
+- **Send to Agent** — one-click button creates scoped Application Password, formats one-liner prompt with credentials, copies to clipboard
+- **Prompt endpoint** — self-bootstrapping `text/plain` system prompt for AI agents
+- **Hard sanitization** — paths, credentials, IPs scrubbed from all API output via `Sanitizer`
 
 ### Storage
 - Custom DB table with auto-upgrade (`maybe_upgrade_table`)
@@ -94,7 +105,7 @@
 | M0 — Foundation | Scaffold, CI, accounts, dev env | ✅ Complete |
 | M1 — Core Instrumentation | Profiler engine, Standard mode, basic dashboard | ✅ Complete |
 | M2 — Deep Mode & Timeline | Deep mode, request timeline visualization, full diagnostics | 🔨 Near complete (4 items remaining) |
-| M2.5 — AI Agent API & Sharing | REST API, prompt endpoint, diagnostics panel, zero-knowledge relay, Studio viewer | ⬜ Spec complete, not started |
+| M2.5 — AI Agent API & Sharing | REST API, prompt endpoint, diagnostics panel, zero-knowledge relay, Studio viewer | ✅ Core API complete (5 endpoints, scope enforcement, UI) |
 | M3 — Baselines & Regression | Named baselines, route-matched comparison, regression language | ⬜ Not started |
 | M4 — Report Sharing | ~~Absorbed into M2.5~~ | ✅ Redesigned |
 | M5 — External Diagnostics & CLI | Yoke integration, 11 WP-CLI commands | ⬜ Not started |
