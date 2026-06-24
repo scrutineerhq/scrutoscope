@@ -67,6 +67,8 @@ class Commands {
 	 *     wp scrutinizer list --route="POST:/wp-admin/admin-ajax.php" --format=json
 	 *     wp scrutinizer list --pinned
 	 *
+	 * @subcommand list
+	 *
 	 * @param array $args       Positional arguments.
 	 * @param array $assoc_args Associative arguments.
 	 */
