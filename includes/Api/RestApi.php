@@ -175,32 +175,12 @@ class RestApi {
 			$route_profiles = Storage::get_profiles_for_route( $group['route_key'], 1 );
 			$latest_id      = ! empty( $route_profiles ) ? (int) $route_profiles[0]['id'] : null;
 
-			// Compute average query count and time from latest profiles.
-			$recent        = Storage::get_profiles_for_route( $group['route_key'], 10 );
-			$total_queries = 0;
-			$total_qt      = 0;
-			$profiles_with_queries = 0;
-
-			foreach ( $recent as $p ) {
-				$profile = Storage::get_profile( (int) $p['id'] );
-				if ( null === $profile || empty( $profile['profile_data']['queries'] ) ) {
-					continue;
-				}
-				$queries = $profile['profile_data']['queries'];
-				$total_queries += count( $queries );
-				foreach ( $queries as $q ) {
-					$total_qt += isset( $q['time_ms'] ) ? (float) $q['time_ms'] : 0;
-				}
-				++$profiles_with_queries;
-			}
-
 			$routes[] = array(
 				'route'              => $route_label,
 				'profile_count'      => (int) $group['request_count'],
 				'latest_profile_id'  => $latest_id,
 				'avg_duration_ms'    => round( (float) $group['avg_duration_ns'] / 1e6, 1 ),
-				'avg_query_count'    => $profiles_with_queries > 0 ? (int) round( $total_queries / $profiles_with_queries ) : null,
-				'avg_query_time_ms'  => $profiles_with_queries > 0 ? round( $total_qt / $profiles_with_queries, 1 ) : null,
+				'avg_query_count'    => null !== $group['avg_query_count'] ? (int) round( (float) $group['avg_query_count'] ) : null,
 			);
 		}
 

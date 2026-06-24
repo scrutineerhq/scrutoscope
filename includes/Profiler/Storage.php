@@ -615,7 +615,8 @@ class Storage {
 				MAX(duration_ns) AS max_duration_ns,
 				MAX(captured_at) AS last_captured,
 				MIN(captured_at) AS first_captured,
-				GROUP_CONCAT(DISTINCT profile_type) AS profile_types
+				GROUP_CONCAT(DISTINCT profile_type) AS profile_types,
+				AVG(JSON_EXTRACT(profile_data, '$.summary.query_count')) AS avg_query_count
 			FROM {$table}
 			WHERE {$where_sql}
 			GROUP BY route_key, route_class, request_method
