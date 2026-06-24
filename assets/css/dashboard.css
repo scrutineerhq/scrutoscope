@@ -268,13 +268,17 @@
 	position: absolute;
 	transform: translateX(-50%);
 	white-space: nowrap;
+	z-index: 3;
 }
 
 .phase-label-text {
 	font-size: 10px;
 	color: #50575e;
-	background: #fff;
-	padding: 0 2px;
+	background: #f0f0f1;
+	padding: 1px 4px;
+	border-radius: 2px;
+	position: relative;
+	z-index: 3;
 }
 
 .scrutinizer-timeline-bar {
@@ -290,8 +294,8 @@
 	/* top set dynamically by JS to reach through label tiers. */
 	bottom: -4px;
 	width: 1px;
-	border-left: 1px dashed #999;
-	z-index: 2;
+	border-left: 1px dashed #bbb;
+	z-index: 1;
 	pointer-events: none;
 }
 
