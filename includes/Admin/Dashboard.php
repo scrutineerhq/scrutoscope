@@ -94,7 +94,9 @@ class Dashboard {
 				'profileCount'         => $recent_count,
 				'siteUrl'              => home_url( '/' ),
 				'backgroundEnabled'    => (bool) get_option( 'scrutinizer_background_profiling', false ),
-				'backgroundSampleRate' => (int) get_option( 'scrutinizer_sample_rate', 5 ),
+				'backgroundSampleRate' => (float) get_option( 'scrutinizer_sample_rate', 10 ),
+				'retentionDays'        => (int) get_option( 'scrutinizer_retention_days', 30 ),
+				'maxPerRoute'          => (int) get_option( 'scrutinizer_max_per_route', 100 ),
 				'apiBase'              => rest_url( 'scrutinizer/v1/' ),
 				'diagnosticsFields'    => \Scrutinizer\Api\Diagnostics::get_enabled_fields(),
 				'diagnosticsOptIn'     => \Scrutinizer\Api\Diagnostics::OPT_IN_FIELDS,
@@ -143,67 +145,12 @@ class Dashboard {
 		$session_id = Session::get_session_id();
 		?>
 		<div class="wrap" id="scrutinizer-dashboard">
-			<h1><?php echo esc_html__( 'Scrutinizer', 'scrutinizer' ); ?></h1>
-			<p class="description"><?php echo esc_html__( 'WordPress Performance Profiler — See where your server request duration is spent.', 'scrutinizer' ); ?></p>
-
-			<!-- Status Section -->
-			<div class="scrutinizer-status-card" id="scrutinizer-status">
-				<h2><?php echo esc_html__( 'Session Status', 'scrutinizer' ); ?></h2>
-				<div class="scrutinizer-status-indicator">
-					<span class="scrutinizer-dot <?php echo $is_active ? 'active' : 'inactive'; ?>"></span>
-					<span id="scrutinizer-status-text">
-						<?php
-						if ( $is_active ) {
-							echo esc_html__( 'Profiling active', 'scrutinizer' );
-						} else {
-							echo esc_html__( 'Profiling inactive', 'scrutinizer' );
-						}
-						?>
-					</span>
-				</div>
-
-				<?php if ( $is_active ) : ?>
-					<p class="scrutinizer-session-info">
-						<?php
-						printf(
-							/* translators: %s: session ID */
-							esc_html__( 'Session: %s', 'scrutinizer' ),
-							'<code>' . esc_html( $session_id ) . '</code>'
-						);
-						?>
-					</p>
-				<?php endif; ?>
-			</div>
-
-			<!-- Controls -->
-			<div class="scrutinizer-controls" id="scrutinizer-controls">
-				<?php if ( ! $is_active ) : ?>
-					<div class="scrutinizer-decision-prompt">
-						<h3><?php echo esc_html__( "What's slow?", 'scrutinizer' ); ?></h3>
-						<div class="scrutinizer-decision-cards">
-							<button type="button" class="scrutinizer-decision-card" data-target="<?php echo esc_url( admin_url() ); ?>">
-								<span class="dashicons dashicons-dashboard"></span>
-								<strong><?php echo esc_html__( 'Admin Dashboard', 'scrutinizer' ); ?></strong>
-								<span><?php echo esc_html__( 'Profile wp-admin requests', 'scrutinizer' ); ?></span>
-							</button>
-							<button type="button" class="scrutinizer-decision-card" data-target="<?php echo esc_url( home_url( '/' ) ); ?>">
-								<span class="dashicons dashicons-admin-users"></span>
-								<strong><?php echo esc_html__( 'Logged-in Frontend', 'scrutinizer' ); ?></strong>
-								<span><?php echo esc_html__( 'Profile as logged-in user', 'scrutinizer' ); ?></span>
-							</button>
-							<button type="button" class="scrutinizer-decision-card" data-target="<?php echo esc_url( home_url( '/' ) ); ?>">
-								<span class="dashicons dashicons-visibility"></span>
-								<strong><?php echo esc_html__( 'Visitor View', 'scrutinizer' ); ?></strong>
-								<span><?php echo esc_html__( 'Profile the public frontend', 'scrutinizer' ); ?></span>
-							</button>
-						</div>
-					</div>
-				<?php else : ?>
-					<button type="button" class="button button-secondary button-large" id="scrutinizer-stop">
-						<?php echo esc_html__( 'Stop Profiling', 'scrutinizer' ); ?>
-					</button>
-				<?php endif; ?>
-			</div>
+			<h1>
+				<?php echo esc_html__( 'Scrutinizer', 'scrutinizer' ); ?>
+				<button type="button" class="scrutinizer-gear-toggle" title="<?php echo esc_attr__( 'Settings', 'scrutinizer' ); ?>" aria-expanded="false" aria-controls="scrutinizer-settings-panel">
+					<span class="dashicons dashicons-admin-generic"></span>
+				</button>
+			</h1>
 
 			<!-- Activation URL (hidden until generated) -->
 			<div class="scrutinizer-activation" id="scrutinizer-activation" style="display:none;">
@@ -217,7 +164,7 @@ class Dashboard {
 				</div>
 			</div>
 
-			<!-- Results -->
+			<!-- Results (data-first — above-fold for return visitors) -->
 			<div class="scrutinizer-results" id="scrutinizer-results">
 				<h2><?php echo esc_html__( 'Routes', 'scrutinizer' ); ?></h2>
 				<div id="scrutinizer-profile-list">
@@ -231,6 +178,71 @@ class Dashboard {
 					<?php echo esc_html__( '← Back to profiles', 'scrutinizer' ); ?>
 				</button>
 				<div id="scrutinizer-detail-content"></div>
+			</div>
+
+			<!-- Settings Panel (D33 — toggled by gear icon) -->
+			<div id="scrutinizer-settings-panel" style="display:none;" role="region" aria-label="<?php echo esc_attr__( 'Settings', 'scrutinizer' ); ?>">
+
+				<!-- Session Status -->
+				<div class="scrutinizer-status-card" id="scrutinizer-status">
+					<h3><?php echo esc_html__( 'Session Status', 'scrutinizer' ); ?></h3>
+					<div class="scrutinizer-status-indicator">
+						<span class="scrutinizer-dot <?php echo $is_active ? 'active' : 'inactive'; ?>"></span>
+						<span id="scrutinizer-status-text">
+							<?php
+							if ( $is_active ) {
+								echo esc_html__( 'Profiling active', 'scrutinizer' );
+							} else {
+								echo esc_html__( 'Profiling inactive', 'scrutinizer' );
+							}
+							?>
+						</span>
+					</div>
+
+					<?php if ( $is_active ) : ?>
+						<p class="scrutinizer-session-info">
+							<?php
+							printf(
+								/* translators: %s: session ID */
+								esc_html__( 'Session: %s', 'scrutinizer' ),
+								'<code>' . esc_html( $session_id ) . '</code>'
+							);
+							?>
+						</p>
+					<?php endif; ?>
+				</div>
+
+				<!-- Controls -->
+				<div class="scrutinizer-controls" id="scrutinizer-controls">
+					<?php if ( ! $is_active ) : ?>
+						<div class="scrutinizer-decision-prompt">
+							<h3><?php echo esc_html__( "What's slow?", 'scrutinizer' ); ?></h3>
+							<div class="scrutinizer-decision-cards">
+								<button type="button" class="scrutinizer-decision-card" data-target="<?php echo esc_url( admin_url() ); ?>">
+									<span class="dashicons dashicons-dashboard"></span>
+									<strong><?php echo esc_html__( 'Admin Dashboard', 'scrutinizer' ); ?></strong>
+									<span><?php echo esc_html__( 'Profile wp-admin requests', 'scrutinizer' ); ?></span>
+								</button>
+								<button type="button" class="scrutinizer-decision-card" data-target="<?php echo esc_url( home_url( '/' ) ); ?>">
+									<span class="dashicons dashicons-admin-users"></span>
+									<strong><?php echo esc_html__( 'Logged-in Frontend', 'scrutinizer' ); ?></strong>
+									<span><?php echo esc_html__( 'Profile as logged-in user', 'scrutinizer' ); ?></span>
+								</button>
+								<button type="button" class="scrutinizer-decision-card" data-target="<?php echo esc_url( home_url( '/' ) ); ?>">
+									<span class="dashicons dashicons-visibility"></span>
+									<strong><?php echo esc_html__( 'Visitor View', 'scrutinizer' ); ?></strong>
+									<span><?php echo esc_html__( 'Profile the public frontend', 'scrutinizer' ); ?></span>
+								</button>
+							</div>
+						</div>
+					<?php else : ?>
+						<button type="button" class="button button-secondary button-large" id="scrutinizer-stop">
+							<?php echo esc_html__( 'Stop Profiling', 'scrutinizer' ); ?>
+						</button>
+					<?php endif; ?>
+				</div>
+
+				<!-- Background Profiling + Query Profiling rendered by JS here -->
 			</div>
 		</div>
 		<?php
