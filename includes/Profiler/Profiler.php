@@ -757,7 +757,10 @@ class Profiler {
 			$size       = 0;
 			$location   = 'external';
 
-			if ( ! empty( $src ) ) {
+			if ( empty( $src ) ) {
+				// Empty src = inline/generated style (common with block themes).
+				$location = 'inline';
+			} else {
 				$local_path = self::resolve_asset_path( $src, $abspath );
 				if ( $local_path && file_exists( $local_path ) ) {
 					$size     = (int) filesize( $local_path );
@@ -782,6 +785,26 @@ class Profiler {
 			} elseif ( ! empty( $src ) ) {
 				// Try attribution from URL path segments for known plugin/theme patterns.
 				$attribution = self::classify_asset_url( $src );
+			}
+
+			// Handle-based attribution for wp-block-* and theme styles with no src.
+			if ( 'unknown' === $attribution['type'] ) {
+				if ( 0 === strpos( $handle, 'wp-block-' ) || 0 === strpos( $handle, 'wp-emoji' ) || 'core-block-supports' === $handle ) {
+					$attribution = array(
+						'type' => 'core',
+						'slug' => 'wordpress',
+						'name' => 'WordPress Core',
+					);
+				} elseif ( preg_match( '/^([a-z0-9-]+)-style$/', $handle, $hm ) ) {
+					$theme = wp_get_theme( $hm[1] );
+					if ( $theme->exists() ) {
+						$attribution = array(
+							'type' => 'theme',
+							'slug' => $hm[1],
+							'name' => $theme->get( 'Name' ) ?: $hm[1],
+						);
+					}
+				}
 			}
 
 			$assets[] = array(
