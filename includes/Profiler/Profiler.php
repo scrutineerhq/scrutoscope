@@ -349,6 +349,7 @@ class Profiler {
 			'queries'            => self::get_query_log(),
 			'http_calls'         => $this->build_http_calls(),
 			'autoloaded_options' => self::get_autoloaded_options(),
+			'enqueued_assets'    => self::get_enqueued_assets(),
 			'referer'            => isset( $_SERVER['HTTP_REFERER'] ) ? sanitize_url( wp_unslash( $_SERVER['HTTP_REFERER'] ) ) : '',
 			'ajax_action'        => ( defined( 'DOING_AJAX' ) && DOING_AJAX && isset( $_REQUEST['action'] ) )
 				? sanitize_text_field( wp_unslash( $_REQUEST['action'] ) )
@@ -692,5 +693,186 @@ class Profiler {
 		$sql = preg_replace( '/\s+/', ' ', $sql );
 
 		return $sql;
+	}
+
+	/**
+	 * Collect enqueued scripts and styles.
+	 *
+	 * Called at shutdown, after wp_print_footer_scripts has run, so
+	 * wp_scripts()->done and wp_styles()->done are populated.
+	 *
+	 * Each asset includes handle, src, version, dependencies, file size
+	 * (local files only), location (header/footer), and attribution.
+	 *
+	 * @return array{scripts: array, styles: array, total_size: int, counts: array{scripts: int, styles: int}}
+	 */
+	private static function get_enqueued_assets() {
+		$scripts = self::collect_asset_group( wp_scripts(), 'script' );
+		$styles  = self::collect_asset_group( wp_styles(), 'style' );
+
+		$total_size = 0;
+		foreach ( $scripts as $s ) {
+			$total_size += $s['size'];
+		}
+		foreach ( $styles as $s ) {
+			$total_size += $s['size'];
+		}
+
+		return array(
+			'scripts'    => $scripts,
+			'styles'     => $styles,
+			'total_size' => $total_size,
+			'counts'     => array(
+				'scripts' => count( $scripts ),
+				'styles'  => count( $styles ),
+			),
+		);
+	}
+
+	/**
+	 * Collect assets from a WP_Dependencies instance (scripts or styles).
+	 *
+	 * @param \WP_Dependencies $deps  The WP_Scripts or WP_Styles global.
+	 * @param string           $kind  'script' or 'style'.
+	 * @return array
+	 */
+	private static function collect_asset_group( $deps, $kind ) {
+		if ( ! $deps || empty( $deps->done ) ) {
+			return array();
+		}
+
+		$assets   = array();
+		$abspath  = wp_normalize_path( ABSPATH );
+
+		foreach ( $deps->done as $handle ) {
+			if ( ! isset( $deps->registered[ $handle ] ) ) {
+				continue;
+			}
+
+			$obj = $deps->registered[ $handle ];
+			$src = $obj->src ?: '';
+
+			// Resolve local path for file size and attribution.
+			$local_path = '';
+			$size       = 0;
+			$location   = 'external';
+
+			if ( ! empty( $src ) ) {
+				$local_path = self::resolve_asset_path( $src, $abspath );
+				if ( $local_path && file_exists( $local_path ) ) {
+					$size     = (int) filesize( $local_path );
+					$location = 'local';
+				}
+			}
+
+			// Footer vs header (scripts only — styles are always header).
+			if ( 'script' === $kind ) {
+				$in_footer = isset( $obj->extra['group'] ) && 1 === (int) $obj->extra['group'];
+				$location  = $in_footer ? 'footer' : 'header';
+			}
+
+			// Attribution via file path.
+			$attribution = array(
+				'type' => 'unknown',
+				'slug' => '',
+				'name' => '',
+			);
+			if ( $local_path ) {
+				$attribution = Attribution::classify( $local_path );
+			} elseif ( ! empty( $src ) ) {
+				// Try attribution from URL path segments for known plugin/theme patterns.
+				$attribution = self::classify_asset_url( $src );
+			}
+
+			$assets[] = array(
+				'handle'      => $handle,
+				'src'         => $src,
+				'version'     => $obj->ver ?: '',
+				'deps'        => $obj->deps ?: array(),
+				'size'        => $size,
+				'location'    => $location,
+				'attribution' => $attribution,
+			);
+		}
+
+		// Sort by size descending (largest first).
+		usort(
+			$assets,
+			function ( $a, $b ) {
+				return $b['size'] <=> $a['size'];
+			}
+		);
+
+		return $assets;
+	}
+
+	/**
+	 * Resolve an enqueued asset URL to a local filesystem path.
+	 *
+	 * @param string $src      Asset source URL (relative or absolute).
+	 * @param string $abspath  Normalized ABSPATH.
+	 * @return string  Local path or empty string if external.
+	 */
+	private static function resolve_asset_path( $src, $abspath ) {
+		// Handle protocol-relative URLs.
+		if ( 0 === strpos( $src, '//' ) ) {
+			$src = 'https:' . $src;
+		}
+
+		// Relative path (starts with /).
+		if ( 0 === strpos( $src, '/' ) && 0 !== strpos( $src, '//' ) ) {
+			$path = wp_normalize_path( $abspath . ltrim( $src, '/' ) );
+			return file_exists( $path ) ? $path : '';
+		}
+
+		// Full URL — check if it's on this site.
+		$site_url = wp_normalize_path( site_url( '/' ) );
+		$home_url = wp_normalize_path( home_url( '/' ) );
+
+		foreach ( array( $site_url, $home_url ) as $base ) {
+			if ( 0 === strpos( $src, $base ) ) {
+				$relative = substr( $src, strlen( $base ) );
+				// Strip query string.
+				$relative = strtok( $relative, '?' );
+				$path     = wp_normalize_path( $abspath . $relative );
+				return file_exists( $path ) ? $path : '';
+			}
+		}
+
+		return '';
+	}
+
+	/**
+	 * Attempt attribution from an asset URL's path segments.
+	 *
+	 * For external CDN assets or when local path resolution fails,
+	 * looks for /plugins/slug/ or /themes/slug/ in the URL.
+	 *
+	 * @param string $src  Asset source URL.
+	 * @return array{type: string, slug: string, name: string}
+	 */
+	private static function classify_asset_url( $src ) {
+		$result = array(
+			'type' => 'unknown',
+			'slug' => '',
+			'name' => '',
+		);
+
+		// Look for /wp-content/plugins/slug/ or /wp-content/themes/slug/.
+		if ( preg_match( '#/wp-content/plugins/([^/]+)/#', $src, $m ) ) {
+			$result['type'] = 'plugin';
+			$result['slug'] = $m[1];
+			$result['name'] = $m[1];
+		} elseif ( preg_match( '#/wp-content/themes/([^/]+)/#', $src, $m ) ) {
+			$result['type'] = 'theme';
+			$result['slug'] = $m[1];
+			$result['name'] = $m[1];
+		} elseif ( preg_match( '#/wp-(?:admin|includes)/#', $src ) ) {
+			$result['type'] = 'core';
+			$result['slug'] = 'wordpress';
+			$result['name'] = 'WordPress Core';
+		}
+
+		return $result;
 	}
 }

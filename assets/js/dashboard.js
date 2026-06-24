@@ -598,6 +598,7 @@
 		var queries      = data.queries || [];
 		var httpCalls    = data.http_calls || [];
 		var autoloadOpts = data.autoloaded_options || {};
+		var assets       = data.enqueued_assets || {};
 		var timeline     = data.timeline || [];
 		var durMs        = ( summary.duration_ms || 0 ).toFixed( 1 );
 		var queryCount   = summary.query_count || 0;
@@ -656,6 +657,9 @@
 		if ( httpCalls.length > 0 ) {
 			html += '<button class="scrutinizer-tab" data-tab="http">HTTP Calls (' + httpCalls.length + ')</button>';
 		}
+		if ( ( assets.counts && ( assets.counts.scripts + assets.counts.styles ) > 0 ) ) {
+			html += '<button class="scrutinizer-tab" data-tab="assets">Assets (' + ( assets.counts.scripts + assets.counts.styles ) + ')</button>';
+		}
 		if ( autoloadOpts.count > 0 ) {
 			html += '<button class="scrutinizer-tab" data-tab="options">Options (' + autoloadOpts.count + ')</button>';
 		}
@@ -688,6 +692,13 @@
 		if ( httpCalls.length > 0 ) {
 			html += '<div class="scrutinizer-tab-content" id="scrutinizer-tab-http" style="display:none">';
 			html += renderHttpCallsTable( httpCalls );
+			html += '</div>';
+		}
+
+		// Tab: Enqueued Assets.
+		if ( assets.counts && ( assets.counts.scripts + assets.counts.styles ) > 0 ) {
+			html += '<div class="scrutinizer-tab-content" id="scrutinizer-tab-assets" style="display:none">';
+			html += renderAssetsTab( assets );
 			html += '</div>';
 		}
 
@@ -1140,6 +1151,78 @@
 	}
 
 	/* ------------------------------------------------------------------ */
+	/*  Enqueued Assets tab                                                */
+	/* ------------------------------------------------------------------ */
+
+	function renderAssetsTab( assets ) {
+		var scripts   = assets.scripts || [];
+		var styles    = assets.styles || [];
+		var totalSize = assets.total_size || 0;
+		var counts    = assets.counts || {};
+
+		var html = '<div class="scrutinizer-queries-summary">';
+		html += '<strong>' + ( counts.scripts || 0 ) + ' scripts</strong>';
+		html += ' + <strong>' + ( counts.styles || 0 ) + ' stylesheets</strong>';
+		if ( totalSize > 0 ) {
+			html += ' totaling <strong>' + formatBytes( totalSize ) + '</strong> on disk';
+		}
+		html += '</div>';
+
+		if ( scripts.length > 0 ) {
+			html += '<h4 class="scrutinizer-asset-section-label">Scripts</h4>';
+			html += renderAssetTable( scripts );
+		}
+		if ( styles.length > 0 ) {
+			html += '<h4 class="scrutinizer-asset-section-label">Stylesheets</h4>';
+			html += renderAssetTable( styles );
+		}
+
+		return html;
+	}
+
+	function renderAssetTable( assetList ) {
+		var html = '<table class="scrutinizer-source-table scrutinizer-asset-table widefat">';
+		html += '<thead><tr>';
+		html += '<th>Handle</th>';
+		html += '<th>Source</th>';
+		html += '<th class="numeric">Size</th>';
+		html += '<th>Location</th>';
+		html += '<th>Dependencies</th>';
+		html += '<th>Version</th>';
+		html += '</tr></thead><tbody>';
+
+		for ( var i = 0; i < assetList.length; i++ ) {
+			var a      = assetList[ i ];
+			var attr   = a.attribution || {};
+			var srcUrl = a.src || '';
+			// Show just the path portion, truncated.
+			var srcDisplay = srcUrl.replace( /^https?:\/\/[^\/]+/, '' );
+
+			var sourcePill = '';
+			if ( attr.type && 'unknown' !== attr.type ) {
+				var pillColor = sourceColors[ attr.type ] || '#888';
+				sourcePill = '<span class="scrutinizer-asset-source-pill" style="background:' + pillColor + '">'
+					+ esc( attr.name || attr.slug ) + '</span> ';
+			}
+
+			var sizeCell = a.size > 0 ? formatBytes( a.size ) : '<span class="scrutinizer-muted">external</span>';
+			var sizeClass = a.size > 102400 ? ' scrutinizer-asset-large' : ''; // >100KB
+
+			html += '<tr>';
+			html += '<td>' + sourcePill + '<code>' + esc( a.handle ) + '</code></td>';
+			html += '<td class="scrutinizer-src-cell" title="' + esc( srcUrl ) + '">' + esc( truncate( srcDisplay, 60 ) ) + '</td>';
+			html += '<td class="numeric' + sizeClass + '">' + sizeCell + '</td>';
+			html += '<td>' + esc( a.location || '' ) + '</td>';
+			html += '<td>' + ( a.deps && a.deps.length > 0 ? '<code>' + esc( a.deps.join( ', ' ) ) + '</code>' : '—' ) + '</td>';
+			html += '<td>' + ( a.version ? '<code>' + esc( a.version ) + '</code>' : '—' ) + '</td>';
+			html += '</tr>';
+		}
+
+		html += '</tbody></table>';
+		return html;
+	}
+
+	/* ------------------------------------------------------------------ */
 	/*  Options (autoloaded) tab                                           */
 	/* ------------------------------------------------------------------ */
 
@@ -1218,6 +1301,9 @@
 		html += '<tr><td>HTTP Calls</td><td>' + ( summary.http_call_count || 0 ) + ( summary.http_total_ms > 0 ? ' (' + summary.http_total_ms + ' ms total)' : '' ) + '</td></tr>';
 		html += '<tr><td>Callbacks Observed</td><td>' + ( summary.callback_count || 0 ) + '</td></tr>';
 		html += '<tr><td>Sources Identified</td><td>' + ( summary.source_count || 0 ) + '</td></tr>';
+		if ( summary.asset_count ) {
+			html += '<tr><td>Enqueued Assets</td><td>' + summary.asset_count + ( summary.asset_total_size ? ' (' + formatBytes( summary.asset_total_size ) + ')' : '' ) + '</td></tr>';
+		}
 		html += '</tbody></table>';
 		return html;
 	}

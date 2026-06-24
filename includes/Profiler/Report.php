@@ -131,6 +131,12 @@ class Report {
 				'http_total_ms'        => round( $http_total_ms, 2 ),
 				'memory_peak'          => memory_get_peak_usage(),
 				'memory_allocated'     => $total_mem_allocated,
+				'asset_count'          => isset( $request_metadata['enqueued_assets']['counts'] )
+					? ( $request_metadata['enqueued_assets']['counts']['scripts'] + $request_metadata['enqueued_assets']['counts']['styles'] )
+					: 0,
+				'asset_total_size'     => isset( $request_metadata['enqueued_assets']['total_size'] )
+					? (int) $request_metadata['enqueued_assets']['total_size']
+					: 0,
 			),
 			'sources'       => array_values( $by_source ),
 			'trace'         => $call_stack_trace,
@@ -150,6 +156,7 @@ class Report {
 			'queries'       => isset( $request_metadata['queries'] ) ? $request_metadata['queries'] : array(),
 			'http_calls'    => $http_calls,
 			'autoloaded_options' => isset( $request_metadata['autoloaded_options'] ) ? $request_metadata['autoloaded_options'] : array(),
+			'enqueued_assets'    => isset( $request_metadata['enqueued_assets'] ) ? $request_metadata['enqueued_assets'] : array(),
 			'timeline'      => self::build_timeline( $raw_timings, $duration_ns ),
 		);
 	}
