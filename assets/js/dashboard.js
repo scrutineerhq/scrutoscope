@@ -816,17 +816,31 @@
 
 	function formatPhaseName( name ) {
 		var short = {
-			muplugins_loaded:  'mu-plugins',
-			plugins_loaded:    'plugins',
-			setup_theme:       'theme setup',
-			after_setup_theme: 'after theme',
-			init:              'init',
-			wp_loaded:         'wp_loaded',
-			template_redirect: 'template',
-			wp:                'wp',
-			shutdown:          'shutdown'
+			muplugins_loaded:      'mu-plugins',
+			plugins_loaded:        'plugins loaded',
+			setup_theme:           'theme setup',
+			after_setup_theme:     'after theme',
+			init:                  'init',
+			widgets_init:          'widgets',
+			wp_loaded:             'wp_loaded',
+			parse_request:         'parse request',
+			wp:                    'main query',
+			template_redirect:     'template',
+			get_header:            'header',
+			wp_head:               'wp_head',
+			wp_enqueue_scripts:    'enqueue',
+			the_post:              'the_post',
+			loop_start:            'loop start',
+			loop_end:              'loop end',
+			get_footer:            'footer',
+			wp_footer:             'wp_footer',
+			wp_print_footer_scripts: 'footer scripts',
+			admin_init:            'admin init',
+			admin_menu:            'admin menu',
+			admin_enqueue_scripts: 'admin enqueue',
+			shutdown:              'shutdown'
 		};
-		return short[ name ] || name;
+		return short[ name ] || name.replace( /_/g, ' ' );
 	}
 
 	/* ------------------------------------------------------------------ */

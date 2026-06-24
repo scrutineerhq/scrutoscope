@@ -167,14 +167,38 @@ class Profiler {
 		// Register lifecycle phase markers at priority 0 to capture timing
 		// as early as possible within each phase.
 		$lifecycle_hooks = array(
+			// Early boot (may not fire if profiler starts late).
 			'muplugins_loaded',
 			'plugins_loaded',
 			'setup_theme',
 			'after_setup_theme',
+
+			// Core init.
 			'init',
+			'widgets_init',
 			'wp_loaded',
-			'template_redirect',
+
+			// Front-end request lifecycle.
+			'parse_request',
 			'wp',
+			'template_redirect',
+			'get_header',
+			'wp_head',
+			'wp_enqueue_scripts',
+			'the_post',
+			'loop_start',
+			'loop_end',
+			'get_footer',
+			'wp_footer',
+			'wp_print_footer_scripts',
+
+			// Admin request lifecycle.
+			'admin_init',
+			'admin_menu',
+			'admin_enqueue_scripts',
+
+			// Terminal.
+			'shutdown',
 		);
 		foreach ( $lifecycle_hooks as $hook ) {
 			add_action( $hook, array( $this, 'record_phase_marker' ), 0 );
