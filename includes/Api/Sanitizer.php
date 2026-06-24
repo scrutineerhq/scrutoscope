@@ -164,8 +164,14 @@ class Sanitizer {
 	public static function sanitize_sql( $sql ) {
 		$sql = trim( $sql );
 
-		// Always run full reduction — no shortcut. Old profiles store
-		// unreduced queries, and heuristic pass-through checks are fragile.
+		// If no SQL structural keywords are present, the query is already
+		// reduced (verb + table list only). Pass through without re-parsing.
+		// This lets already-reduced data from Profiler::sanitize_query survive
+		// the defense-in-depth pass, while old profiles with full query
+		// structure (containing FROM, WHERE, JOIN, etc.) get properly reduced.
+		if ( ! preg_match( '/\b(FROM|WHERE|JOIN|INTO|SET|ORDER|GROUP|HAVING|LIMIT|VALUES|COLUMNS)\b/i', $sql ) ) {
+			return $sql;
+		}
 		if ( false !== stripos( $sql, 'FOUND_ROWS' ) ) {
 			return 'SELECT FOUND_ROWS()';
 		}
