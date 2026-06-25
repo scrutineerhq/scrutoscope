@@ -253,6 +253,32 @@ class Storage {
 	}
 
 	/**
+	 * Delete multiple profiles in a single query.
+	 *
+	 * @param int[] $ids  Array of profile IDs.
+	 * @return int|false  Number of rows deleted, or false on error.
+	 */
+	public static function delete_profiles_bulk( $ids ) {
+		global $wpdb;
+
+		$ids = array_map( 'absint', $ids );
+		$ids = array_filter( $ids );
+
+		if ( empty( $ids ) ) {
+			return 0;
+		}
+
+		$table        = self::table_name();
+		$placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$sql = $wpdb->prepare( "DELETE FROM {$table} WHERE id IN ({$placeholders})", $ids );
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		return $wpdb->query( $sql );
+	}
+
+	/**
 	 * Pin a profile and optionally set a note and tags.
 	 *
 	 * @param int    $profile_id  Profile row ID.
@@ -287,6 +313,32 @@ class Storage {
 	}
 
 	/**
+	 * Pin multiple profiles in a single query.
+	 *
+	 * @param int[] $ids  Array of profile IDs.
+	 * @return int|false  Number of rows updated, or false on error.
+	 */
+	public static function pin_profiles_bulk( $ids ) {
+		global $wpdb;
+
+		$ids = array_map( 'absint', $ids );
+		$ids = array_filter( $ids );
+
+		if ( empty( $ids ) ) {
+			return 0;
+		}
+
+		$table        = self::table_name();
+		$placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$sql = $wpdb->prepare( "UPDATE {$table} SET is_pinned = 1 WHERE id IN ({$placeholders})", $ids );
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		return $wpdb->query( $sql );
+	}
+
+	/**
 	 * Unpin a profile.
 	 *
 	 * @param int $profile_id  Profile row ID.
@@ -304,6 +356,32 @@ class Storage {
 		);
 
 		return ( false !== $result );
+	}
+
+	/**
+	 * Unpin multiple profiles in a single query.
+	 *
+	 * @param int[] $ids  Array of profile IDs.
+	 * @return int|false  Number of rows updated, or false on error.
+	 */
+	public static function unpin_profiles_bulk( $ids ) {
+		global $wpdb;
+
+		$ids = array_map( 'absint', $ids );
+		$ids = array_filter( $ids );
+
+		if ( empty( $ids ) ) {
+			return 0;
+		}
+
+		$table        = self::table_name();
+		$placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$sql = $wpdb->prepare( "UPDATE {$table} SET is_pinned = 0 WHERE id IN ({$placeholders})", $ids );
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		return $wpdb->query( $sql );
 	}
 
 	/**
@@ -506,9 +584,45 @@ class Storage {
 			$vals[]  = $args['date_to'] . ' 23:59:59';
 		}
 
-		$limit     = isset( $args['limit'] ) ? absint( $args['limit'] ) : 100;
 		$where_sql = implode( ' AND ', $where );
-		$vals[]    = $limit;
+		$per_page  = isset( $args['per_page'] ) ? absint( $args['per_page'] ) : 0;
+		$page      = isset( $args['page'] ) ? max( 1, absint( $args['page'] ) ) : 0;
+
+		// When page is requested, return paginated result with total count.
+		if ( $page > 0 && $per_page > 0 ) {
+			// Count total matching rows.
+			// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+			$count_sql = "SELECT COUNT(*) FROM {$table} WHERE {$where_sql}";
+			if ( ! empty( $vals ) ) {
+				$count_sql = $wpdb->prepare( $count_sql, $vals );
+			}
+			$total = (int) $wpdb->get_var( $count_sql );
+
+			$offset     = ( $page - 1 ) * $per_page;
+			$query_vals = array_merge( $vals, array( $per_page, $offset ) );
+
+			$sql = "SELECT id, session_id, profile_type, request_url, request_method, route_class, route_key, duration_ns, user_role, captured_at, is_pinned, note, tags
+				FROM {$table}
+				WHERE {$where_sql}
+				ORDER BY captured_at DESC
+				LIMIT %d OFFSET %d";
+
+			$sql = $wpdb->prepare( $sql, $query_vals );
+
+			$profiles = $wpdb->get_results( $sql, ARRAY_A );
+			// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+
+			return array(
+				'profiles' => $profiles,
+				'total'    => $total,
+				'page'     => $page,
+				'pages'    => (int) ceil( $total / $per_page ),
+			);
+		}
+
+		// Legacy non-paginated path.
+		$limit  = isset( $args['limit'] ) ? absint( $args['limit'] ) : 100;
+		$vals[] = $limit;
 
 		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
 		$sql = "SELECT id, session_id, profile_type, request_url, request_method, route_class, route_key, duration_ns, user_role, captured_at, is_pinned, note, tags

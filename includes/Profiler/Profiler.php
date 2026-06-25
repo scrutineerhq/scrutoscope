@@ -626,32 +626,69 @@ class Profiler {
 		$caller_parts = array();
 		$source_file  = '';
 
+		// Function/class names to skip (WP hook dispatch + HTTP internals + PHP glue).
+		$skip_functions = array(
+			'apply_filters',
+			'apply_filters_ref_array',
+			'do_action',
+			'do_action_ref_array',
+			'do_action_deprecated',
+			'call_user_func',
+			'call_user_func_array',
+			'wp_remote_get',
+			'wp_remote_post',
+			'wp_remote_head',
+			'wp_remote_request',
+			'wp_safe_remote_get',
+			'wp_safe_remote_post',
+			'wp_safe_remote_head',
+			'wp_safe_remote_request',
+			'require',
+			'require_once',
+			'include',
+			'include_once',
+		);
+		$skip_classes = array( 'WP_Hook', 'WP_Http', 'WP_Http_Curl', 'WP_Http_Streams', 'Requests', 'WpOrg\\Requests\\Requests' );
+
 		foreach ( $trace as $frame ) {
-			// Skip frames without a file.
 			if ( empty( $frame['file'] ) ) {
 				continue;
 			}
 
-			$file = $frame['file'];
+			$file    = $frame['file'];
+			$fn_name = isset( $frame['function'] ) ? $frame['function'] : '';
+			$class   = isset( $frame['class'] ) ? $frame['class'] : '';
 
-			// Skip WP HTTP internals, hook dispatch, and this profiler.
-			if ( false !== strpos( $file, 'class-http.php' )
-				|| false !== strpos( $file, 'class-wp-http' )
-				|| false !== strpos( $file, 'class-wp-hook.php' )
-				|| false !== strpos( $file, 'plugin.php' )
-				|| false !== strpos( $file, 'Profiler.php' )
+			// Skip profiler frames by file.
+			if ( false !== strpos( $file, 'Profiler.php' )
 				|| false !== strpos( $file, 'Instrumentor.php' )
-				|| false !== strpos( $file, 'http.php' )
 			) {
+				continue;
+			}
+
+			// Skip WP hook dispatch and HTTP wrapper functions.
+			if ( in_array( $fn_name, $skip_functions, true ) ) {
+				continue;
+			}
+
+			// Skip WP HTTP implementation classes.
+			$skip_class = false;
+			foreach ( $skip_classes as $sc ) {
+				if ( $class === $sc || ( strlen( $class ) > strlen( $sc ) && substr( $class, -strlen( $sc ) - 1 ) === '\\' . $sc ) ) {
+					$skip_class = true;
+					break;
+				}
+			}
+			if ( $skip_class ) {
 				continue;
 			}
 
 			// Build a short caller label.
 			$fn = '';
-			if ( ! empty( $frame['class'] ) ) {
-				$fn = $frame['class'] . '::' . $frame['function'];
-			} elseif ( ! empty( $frame['function'] ) ) {
-				$fn = $frame['function'];
+			if ( ! empty( $class ) ) {
+				$fn = $class . '::' . $fn_name;
+			} elseif ( ! empty( $fn_name ) ) {
+				$fn = $fn_name;
 			}
 
 			if ( $fn && count( $caller_parts ) < 3 ) {

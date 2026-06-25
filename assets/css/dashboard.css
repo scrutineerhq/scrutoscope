@@ -484,6 +484,7 @@
 
 .scrutinizer-timeline-container {
 	position: relative;
+	padding: 0 24px;
 }
 
 /* Zoom viewport — clips content when zoomed */
@@ -1441,6 +1442,7 @@
 	border: 1px solid #c3c4c7;
 	border-radius: 3px;
 	font-size: 12px;
+	min-width: 100px;
 }
 
 #scrutinizer-share-passphrase-field {
@@ -1485,13 +1487,18 @@
 	display: flex;
 	align-items: center;
 	gap: 8px;
+	margin-top: 12px;
 }
 
-.scrutinizer-share-actions .dashicons {
-	vertical-align: text-bottom;
+.scrutinizer-share-actions .button .dashicons {
+	display: inline-block;
+	vertical-align: middle;
 	font-size: 16px;
 	width: 16px;
 	height: 16px;
+	line-height: 16px;
+	margin-right: 2px;
+	margin-top: -2px;
 }
 
 .scrutinizer-share-success {
@@ -1548,6 +1555,16 @@
 
 .dashicons.spin {
 	animation: spin 1s linear infinite;
+	display: inline-block;
+	width: 16px;
+	height: 16px;
+	font-size: 16px;
+	line-height: 16px;
+	text-align: center;
+	transform-origin: 50% 50%;
+	vertical-align: middle;
+	margin-top: -2px;
+	margin-right: 2px;
 }
 
 /* ----- History filters ----- */
@@ -1785,6 +1802,38 @@
 
 .density-bar.density-slow {
 	background: #d63638;
+}
+
+/* ----- Memory sparkline ----- */
+
+.scrutinizer-memory-sparkline-wrap {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin-top: 6px;
+}
+
+.scrutinizer-memory-sparkline {
+	flex: 1;
+	position: relative;
+	height: 28px;
+	transform-origin: left center;
+}
+
+.memory-sparkline-svg {
+	width: 100%;
+	height: 100%;
+	display: block;
+}
+
+.memory-sparkline-label {
+	position: absolute;
+	right: 0;
+	top: -1px;
+	font-size: 9px;
+	color: #e67e22;
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
 }
 
 /* ----- I/O summary counts ----- */
@@ -2664,6 +2713,10 @@
 	font-size: 16px;
 	width: 16px;
 	height: 16px;
+	line-height: 16px;
+	vertical-align: middle;
+	margin-right: 2px;
+	margin-top: -2px;
 }
 
 .scrutinizer-revoke-link {
@@ -2671,8 +2724,9 @@
 	text-decoration: none !important;
 	display: inline-flex !important;
 	align-items: center;
-	gap: 2px;
+	gap: 4px;
 	font-size: 13px;
+	padding: 4px 0;
 }
 
 .scrutinizer-revoke-link:hover {
@@ -2683,6 +2737,7 @@
 	font-size: 16px;
 	width: 16px;
 	height: 16px;
+	line-height: 16px;
 }
 
 /* Inline feedback for save/revoke (F11) */
@@ -2901,7 +2956,7 @@
 }
 
 .scrutinizer-modal-body {
-	padding: 28px 28px 32px;
+	padding: 0;
 }
 
 /* Section spacing inside settings modal */
@@ -2909,24 +2964,27 @@
 #scrutinizer-settings-panel > .scrutinizer-controls,
 #scrutinizer-settings-panel > .scrutinizer-bg-controls,
 #scrutinizer-settings-panel > .scrutinizer-qp-controls {
-	margin-top: 20px;
-	margin-bottom: 0;
-	padding: 24px 28px;
+	margin: 0;
+	padding: 20px 24px;
+	border-bottom: 1px solid #dcdcde;
 }
 
 #scrutinizer-settings-panel > .scrutinizer-status-card:first-child {
 	margin-top: 0;
 }
 
+/* Hide the controls section when it's empty (profiling inactive). */
+#scrutinizer-settings-panel > .scrutinizer-controls:empty {
+	display: none;
+}
+
 #scrutinizer-settings-panel > .scrutinizer-controls {
-	border: 1px solid #c3c4c7;
 	border-left: 4px solid var(--wp-admin-theme-color, #2271b1);
 	background: #fff;
 }
 
 #scrutinizer-settings-panel > .scrutinizer-bg-controls,
 #scrutinizer-settings-panel > .scrutinizer-qp-controls {
-	border: 1px solid #c3c4c7;
 	border-left: 4px solid var(--wp-admin-theme-color, #2271b1);
 }
 
@@ -3195,4 +3253,26 @@ details.scrutinizer-term > .scrutinizer-term-explain {
 	font-size: 12px;
 	color: #787c82;
 	font-family: Menlo, Consolas, 'Courier New', monospace;
+}
+
+/* ------------------------------------------------------------------ */
+/*  History Pagination                                                 */
+/* ------------------------------------------------------------------ */
+
+.scrutinizer-pagination {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 12px;
+	margin: 16px 0 8px;
+}
+
+.scrutinizer-page-info {
+	font-size: 13px;
+	color: #50575e;
+}
+
+.scrutinizer-pagination .button.disabled {
+	pointer-events: none;
+	opacity: 0.5;
 }

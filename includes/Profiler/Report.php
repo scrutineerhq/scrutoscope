@@ -366,6 +366,7 @@ class Report {
 				'excl_ns'   => $t['exclusive_ns'] ?? 0,
 				'pct_start' => $pct_start,
 				'pct_width' => $pct_width,
+				'mem_after'  => $t['memory_after'] ?? 0,
 			);
 		}
 

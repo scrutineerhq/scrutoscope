@@ -24,6 +24,9 @@
 	var groupedData   = [];
 	var routeData     = [];
 	var historyData   = [];
+	var historyPage   = 1;
+	var historyPages  = 1;
+	var historyTotal  = 0;
 	var compareChecked = {};       // { profileId: true }
 	var currentProfileId = 0;     // currently viewed profile detail
 	var currentProfileData = null; // full profile object for the current detail view
@@ -593,11 +596,27 @@
 			}
 		} );
 
-		// History filters.
-		$( document ).on( 'change', '#scrutinizer-history-route', fetchHistory );
-		$( document ).on( 'input', '#scrutinizer-history-tag', debounceHistory );
-		$( document ).on( 'change', '#scrutinizer-history-pinned', fetchHistory );
-		$( document ).on( 'change', '#scrutinizer-history-from, #scrutinizer-history-to', fetchHistory );
+		// History filters — reset to page 1 on any filter change.
+		$( document ).on( 'change', '#scrutinizer-history-route', function() { historyPage = 1; fetchHistory(); } );
+		$( document ).on( 'input', '#scrutinizer-history-tag', function() { historyPage = 1; debounceHistory(); } );
+		$( document ).on( 'change', '#scrutinizer-history-pinned', function() { historyPage = 1; fetchHistory(); } );
+		$( document ).on( 'change', '#scrutinizer-history-from, #scrutinizer-history-to', function() { historyPage = 1; fetchHistory(); } );
+
+		// History pagination.
+		$( document ).on( 'click', '#scrutinizer-page-prev', function( e ) {
+			e.preventDefault();
+			if ( historyPage > 1 ) {
+				historyPage--;
+				fetchHistory();
+			}
+		} );
+		$( document ).on( 'click', '#scrutinizer-page-next', function( e ) {
+			e.preventDefault();
+			if ( historyPage < historyPages ) {
+				historyPage++;
+				fetchHistory();
+			}
+		} );
 
 		// Compare checkboxes.
 		$( document ).on( 'change', '.scrutinizer-compare-check', function() {
@@ -638,71 +657,63 @@
 			if ( ! confirm( 'Delete ' + ids.length + ' profile' + ( ids.length > 1 ? 's' : '' ) + '?' ) ) {
 				return;
 			}
-			var remaining = ids.length;
-			var failed    = 0;
-			ids.forEach( function( id ) {
-				$.post( scrutinizerAdmin.ajaxUrl, {
-					action:     'scrutinizer_delete_profile',
-					nonce:      scrutinizerAdmin.nonce,
-					profile_id: id
-				} ).always( function( resp ) {
-					remaining--;
-					if ( ! resp || ! resp.success ) {
-						failed++;
-					}
-					if ( 0 === remaining ) {
-						compareChecked = {};
-						updateCompareButton();
-						fetchHistory();
-						if ( failed > 0 ) {
-							showNotice( failed + ' profile(s) could not be deleted.', 'error' );
-						} else {
-							showNotice( ids.length + ' profile(s) deleted.' );
-						}
-					}
-				} );
+			$.post( scrutinizerAdmin.ajaxUrl, {
+				action:      'scrutinizer_delete_profiles_bulk',
+				nonce:       scrutinizerAdmin.nonce,
+				profile_ids: ids
+			}, function( resp ) {
+				compareChecked = {};
+				updateCompareButton();
+				fetchHistory();
+				if ( resp && resp.success ) {
+					showNotice( resp.data.message );
+				} else {
+					showNotice( 'Failed to delete profiles.', 'error' );
+				}
 			} );
 		} );
 
 		// Bulk pin.
 		$( document ).on( 'click', '#scrutinizer-bulk-pin', function() {
 			var ids = Object.keys( compareChecked );
-			var remaining = ids.length;
-			ids.forEach( function( id ) {
-				$.post( scrutinizerAdmin.ajaxUrl, {
-					action:     'scrutinizer_pin_profile',
-					nonce:      scrutinizerAdmin.nonce,
-					profile_id: id
-				} ).always( function() {
-					remaining--;
-					if ( 0 === remaining ) {
-						compareChecked = {};
-						updateCompareButton();
-						fetchHistory();
-						showNotice( ids.length + ' profile(s) pinned.' );
-					}
-				} );
+			if ( ! ids.length ) {
+				return;
+			}
+			$.post( scrutinizerAdmin.ajaxUrl, {
+				action:      'scrutinizer_pin_profiles_bulk',
+				nonce:       scrutinizerAdmin.nonce,
+				profile_ids: ids
+			}, function( resp ) {
+				compareChecked = {};
+				updateCompareButton();
+				fetchHistory();
+				if ( resp && resp.success ) {
+					showNotice( resp.data.message );
+				} else {
+					showNotice( 'Failed to pin profiles.', 'error' );
+				}
 			} );
 		} );
 
 		// Bulk unpin.
 		$( document ).on( 'click', '#scrutinizer-bulk-unpin', function() {
 			var ids = Object.keys( compareChecked );
-			var remaining = ids.length;
-			ids.forEach( function( id ) {
-				$.post( scrutinizerAdmin.ajaxUrl, {
-					action:     'scrutinizer_unpin_profile',
-					nonce:      scrutinizerAdmin.nonce,
-					profile_id: id
-				} ).always( function() {
-					remaining--;
-					if ( 0 === remaining ) {
-						compareChecked = {};
-						updateCompareButton();
-						fetchHistory();
-						showNotice( ids.length + ' profile(s) unpinned.' );
-					}
-				} );
+			if ( ! ids.length ) {
+				return;
+			}
+			$.post( scrutinizerAdmin.ajaxUrl, {
+				action:      'scrutinizer_unpin_profiles_bulk',
+				nonce:       scrutinizerAdmin.nonce,
+				profile_ids: ids
+			}, function( resp ) {
+				compareChecked = {};
+				updateCompareButton();
+				fetchHistory();
+				if ( resp && resp.success ) {
+					showNotice( resp.data.message );
+				} else {
+					showNotice( 'Failed to unpin profiles.', 'error' );
+				}
 			} );
 		} );
 
@@ -1458,6 +1469,20 @@
 		}
 
 		html += '</tbody></table>';
+
+		// Pagination.
+		if ( historyPages > 1 ) {
+			html += '<div class="scrutinizer-pagination">';
+			html += '<a href="#" id="scrutinizer-page-prev" class="button' + ( historyPage <= 1 ? ' disabled' : '' ) + '">&laquo; Previous</a>';
+			html += '<span class="scrutinizer-page-info">Page ' + historyPage + ' of ' + historyPages + ' (' + historyTotal + ' profiles)</span>';
+			html += '<a href="#" id="scrutinizer-page-next" class="button' + ( historyPage >= historyPages ? ' disabled' : '' ) + '">Next &raquo;</a>';
+			html += '</div>';
+		} else if ( historyTotal > 0 ) {
+			html += '<div class="scrutinizer-pagination">';
+			html += '<span class="scrutinizer-page-info">' + historyTotal + ' profile' + ( historyTotal !== 1 ? 's' : '' ) + '</span>';
+			html += '</div>';
+		}
+
 		$container.html( html );
 	}
 
@@ -1914,6 +1939,43 @@
 			html += '</div>';
 		}
 
+		// Memory usage sparkline — SVG line synced to the timeline width.
+		var memPoints = [];
+		for ( var mi = 0; mi < timeline.length; mi++ ) {
+			var memVal = timeline[ mi ].mem_after || 0;
+			if ( memVal > 0 ) {
+				memPoints.push( { pct: timeline[ mi ].pct_start + ( timeline[ mi ].pct_width || 0 ), mem: memVal } );
+			}
+		}
+		if ( memPoints.length >= 2 ) {
+			var memMin = memPoints[ 0 ].mem;
+			var memMax = memPoints[ 0 ].mem;
+			for ( var mm = 1; mm < memPoints.length; mm++ ) {
+				if ( memPoints[ mm ].mem < memMin ) { memMin = memPoints[ mm ].mem; }
+				if ( memPoints[ mm ].mem > memMax ) { memMax = memPoints[ mm ].mem; }
+			}
+			// Only render if there's meaningful range (>1% variation).
+			var memRange = memMax - memMin;
+			if ( memRange > memMax * 0.01 ) {
+				var svgH = 28;
+				var pathD = '';
+				for ( var mp = 0; mp < memPoints.length; mp++ ) {
+					var sx = memPoints[ mp ].pct;
+					var sy = svgH - 2 - ( ( memPoints[ mp ].mem - memMin ) / memRange ) * ( svgH - 4 );
+					pathD += ( mp === 0 ? 'M' : 'L' ) + sx + ',' + sy.toFixed( 1 ) + ' ';
+				}
+				var memLabel = formatBytes( memMax ) + ' peak';
+				html += '<div class="scrutinizer-memory-sparkline-wrap">';
+				html += '<span class="scrutinizer-density-label">Memory</span>';
+				html += '<div class="scrutinizer-memory-sparkline">';
+				html += '<svg viewBox="0 0 100 ' + svgH + '" preserveAspectRatio="none" class="memory-sparkline-svg">';
+				html += '<path d="' + pathD + '" fill="none" stroke="#e67e22" stroke-width="1.5" vector-effect="non-scaling-stroke"/>';
+				html += '</svg>';
+				html += '<span class="memory-sparkline-label">' + esc( memLabel ) + '</span>';
+				html += '</div></div>';
+			}
+		}
+
 		html += '</div>'; // zoom-wrapper
 		html += '</div>'; // viewport
 
@@ -2203,6 +2265,9 @@
 		// Counter-scale query density strip so bars don't stretch.
 		$wrapper.find( '.scrutinizer-query-density' ).css( 'transform', 'scaleX(' + invScale + ')' );
 		$wrapper.find( '.scrutinizer-density-label' ).css( 'transform', 'scaleX(' + invScale + ')' );
+
+		// Counter-scale memory sparkline.
+		$wrapper.find( '.scrutinizer-memory-sparkline' ).css( 'transform', 'scaleX(' + invScale + ')' );
 
 		// Update zoom label.
 		var label = timelineZoom <= 1 ? '1\u00d7' : timelineZoom.toFixed( 1 ) + '\u00d7';
@@ -2784,6 +2849,10 @@
 		entry._callback = callback;
 		entry._hook     = hookTag;
 		entry._priority = priority;
+
+		// Strip spl_object_id hashes (e.g. "ClassName#12345::method" → "ClassName::method").
+		entry._callbackDisplay = callback.replace( /#\d+/g, '' );
+
 		return entry;
 	}
 
@@ -2897,7 +2966,12 @@
 			entry.source_name = srcInfo.name;
 
 			entry.query_count = queryMap[ entry._callback ] || 0;
-			entry.http_count  = httpMap[ entry._callback ] || 0;
+
+			// HTTP count: try direct callback match first, then fall back to source slug.
+			entry.http_count  = httpMap.byCallback[ entry._callback ] || 0;
+			if ( 0 === entry.http_count && srcInfo.slug ) {
+				entry.http_count = httpMap.bySource[ srcInfo.slug ] || 0;
+			}
 
 			entries.push( entry );
 		}
@@ -2905,7 +2979,7 @@
 		return entries;
 	}
 
-	/** Build a map: callback_name to { type, name } from sources array. */
+	/** Build a map: callback_name to { type, name, slug } from sources array. */
 	function buildSourceMap( sources ) {
 		var map = {};
 		for ( var i = 0; i < sources.length; i++ ) {
@@ -2914,7 +2988,8 @@
 			for ( var j = 0; j < cbs.length; j++ ) {
 				map[ cbs[ j ].callback ] = {
 					type: src.type || 'unknown',
-					name: src.name || src.slug || 'unknown'
+					name: src.name || src.slug || 'unknown',
+					slug: src.slug || ''
 				};
 			}
 		}
@@ -2941,23 +3016,29 @@
 
 	/** Build a map: callback_name to HTTP call count from http_calls array. */
 	function buildHttpCountMap( httpCalls ) {
-		var map = {};
+		// Two maps: direct callback match + source-based fallback.
+		var map = { byCallback: {}, bySource: {} };
 		for ( var i = 0; i < httpCalls.length; i++ ) {
 			var raw = httpCalls[ i ].caller || '';
-			// caller can be a string or an object with .caller string.
+			// caller can be a string or an object with .caller string + .attribution.
 			var caller = 'string' === typeof raw ? raw : ( raw.caller || '' );
+			var slug   = ( 'object' === typeof raw && raw.attribution ) ? ( raw.attribution.slug || '' ) : '';
 			caller = caller.trim();
-			if ( ! caller ) {
-				continue;
-			}
-			// caller is a call-stack string like "wp_remote_get, do_action, require_once".
-			// Match each function in the stack against trace callbacks.
-			var parts = caller.split( /,\s*/ );
-			for ( var p = 0; p < parts.length; p++ ) {
-				var fn = parts[ p ].trim();
-				if ( fn ) {
-					map[ fn ] = ( map[ fn ] || 0 ) + 1;
+
+			// Direct callback match: each function in the caller stack.
+			if ( caller ) {
+				var parts = caller.split( /,\s*/ );
+				for ( var p = 0; p < parts.length; p++ ) {
+					var fn = parts[ p ].trim();
+					if ( fn ) {
+						map.byCallback[ fn ] = ( map.byCallback[ fn ] || 0 ) + 1;
+					}
 				}
+			}
+
+			// Source-based fallback: count HTTP calls per source slug.
+			if ( slug ) {
+				map.bySource[ slug ] = ( map.bySource[ slug ] || 0 ) + 1;
 			}
 		}
 		return map;
@@ -3162,7 +3243,7 @@
 
 			html += '<tr>';
 			html += '<td class="scrutinizer-trace-dur' + durCls + '">' + esc( durMs ) + ' ms</td>';
-			html += '<td class="scrutinizer-trace-cb"><code>' + esc( e._callback ) + '</code>';
+			html += '<td class="scrutinizer-trace-cb"><code>' + esc( e._callbackDisplay || e._callback ) + '</code>';
 			if ( e._priority ) {
 				html += ' <span class="scrutinizer-muted">:' + esc( e._priority ) + '</span>';
 			}
@@ -3269,6 +3350,7 @@
 		$( '#scrutinizer-route-detail' ).hide();
 		$( '#scrutinizer-history-view' ).hide();
 		$( '#scrutinizer-compare-view' ).remove();
+		$( '#scrutinizer-activation' ).hide();
 		$( '#scrutinizer-detail' ).show();
 
 		// Adjust back button based on where we came from.
@@ -3507,8 +3589,10 @@
 
 	function fetchHistory() {
 		var params = {
-			action: 'scrutinizer_get_history',
-			nonce:  scrutinizerAdmin.nonce
+			action:   'scrutinizer_get_history',
+			nonce:    scrutinizerAdmin.nonce,
+			paged:    historyPage,
+			per_page: 50
 		};
 
 		var route = $( '#scrutinizer-history-route' ).val();
@@ -3535,7 +3619,10 @@
 
 		$.get( scrutinizerAdmin.ajaxUrl, params, function( response ) {
 			if ( response.success ) {
-				historyData = response.data.profiles || [];
+				historyData  = response.data.profiles || [];
+				historyTotal = response.data.total || historyData.length;
+				historyPages = response.data.pages || 1;
+				historyPage  = response.data.page || 1;
 				renderHistoryTable( historyData );
 			}
 		} );
