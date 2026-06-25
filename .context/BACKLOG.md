@@ -78,12 +78,12 @@ Full spec at `workspace/your_files/scrutineer-api-spec.md`. Panel review at `wor
 
 Comparison infrastructure exists (M2 compare view). This milestone improves the workflow — making it easy to pick comparison targets and adding guardrails to the language used.
 
-- [ ] Comparison target picker — select any pinned profile as the "compare against" reference from the detail view
-- [ ] Route-matched suggestions — when viewing a profile, suggest pinned profiles on the same route as comparison candidates
-- [ ] Inline comparison — expand delta view within the profile detail, not just side-by-side
-- [ ] Regression language enforcement — "slower" not "slow," "associated with" not "caused by," "correlated" not "caused"
-- [ ] Delta thresholds — highlight meaningful changes (>20% and >100ms), downplay noise (<5% or <10ms)
-- [ ] Schema cleanup — drop `is_baseline` and `baseline_name` columns (cruft from an earlier design that was never implemented)
+- [x] Comparison target picker — select any pinned profile as the "compare against" reference from the detail view
+- [x] Route-matched suggestions — when viewing a profile, suggest pinned profiles on the same route as comparison candidates
+- [x] Inline comparison — expand delta view within the profile detail, not just side-by-side
+- [x] Regression language enforcement — "slower" not "slow," "associated with" not "caused by," "correlated" not "caused"
+- [x] Delta thresholds — highlight meaningful changes (>20% and >100ms), downplay noise (<5% or <10ms)
+- [x] Schema cleanup — drop `is_baseline` and `baseline_name` columns (cruft from an earlier design that was never implemented)
 
 ## M4 — Report Sharing (ABSORBED into M2.5)
 
