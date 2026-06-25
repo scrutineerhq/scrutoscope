@@ -100,6 +100,54 @@
 	color: #50575e;
 }
 
+.scrutinizer-card-hint {
+	font-size: 11px !important;
+	color: #787c82 !important;
+	font-style: italic;
+	margin-top: 2px;
+}
+
+/* Visitor incognito guidance */
+.scrutinizer-visitor-guidance {
+	padding: 16px 20px;
+	border: 1px solid #c3c4c7;
+	border-left: 4px solid #dba617;
+	background: #fcf9e8;
+	border-radius: 0 4px 4px 0;
+}
+
+.scrutinizer-visitor-guidance h3 {
+	margin: 0 0 8px;
+	font-size: 14px;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.scrutinizer-visitor-guidance h3 .dashicons {
+	color: #dba617;
+}
+
+.scrutinizer-visitor-guidance p {
+	margin: 0 0 8px;
+	font-size: 13px;
+}
+
+.scrutinizer-visitor-guidance .scrutinizer-url-box {
+	margin-top: 0;
+}
+
+.scrutinizer-visitor-guidance kbd {
+	display: inline-block;
+	padding: 2px 6px;
+	font-size: 11px;
+	font-family: monospace;
+	background: #f6f7f7;
+	border: 1px solid #c3c4c7;
+	border-radius: 3px;
+	box-shadow: 0 1px 0 #c3c4c7;
+}
+
 /* Activation URL */
 .scrutinizer-url-box {
 	display: flex;
@@ -262,12 +310,34 @@
 .scrutinizer-timeline-viewport {
 	position: relative;
 	overflow: hidden;
+	cursor: crosshair;
+}
+
+.scrutinizer-timeline-viewport.is-zoomed {
+	cursor: grab;
+}
+
+.scrutinizer-timeline-viewport.is-dragging {
+	cursor: grabbing;
 }
 
 .scrutinizer-timeline-zoom-wrapper {
 	position: relative;
 	transform-origin: 0 0;
 	will-change: transform;
+}
+
+/* Rubber band selection overlay */
+.scrutinizer-rubber-band {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	background: rgba(34, 113, 177, 0.15);
+	border-left: 2px solid var(--wp-admin-theme-color, #2271b1);
+	border-right: 2px solid var(--wp-admin-theme-color, #2271b1);
+	pointer-events: none;
+	z-index: 5;
+	display: none;
 }
 
 /* Zoom controls bar */
@@ -654,11 +724,47 @@
 .scrutinizer-queries-table .scrutinizer-caller-cell,
 .scrutinizer-http-table .scrutinizer-caller-cell {
 	max-width: 250px;
+	font-size: 11px;
+	color: #787c82;
+	cursor: pointer;
+	position: relative;
+}
+
+.scrutinizer-caller-cell .caller-short {
+	display: block;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
+}
+
+.scrutinizer-caller-cell .caller-full {
+	display: none;
+}
+
+.scrutinizer-caller-cell.is-expanded .caller-short {
+	display: none;
+}
+
+.scrutinizer-caller-cell.is-expanded .caller-full {
+	display: block;
+}
+
+.scrutinizer-caller-cell.is-expanded {
+	max-width: none;
+	white-space: normal;
+}
+
+.caller-frame {
+	padding: 2px 0;
+	font-family: monospace;
 	font-size: 11px;
-	color: #787c82;
+	line-height: 1.5;
+	white-space: nowrap;
+	user-select: text;
+}
+
+.caller-frame + .caller-frame {
+	border-top: 1px solid #f0f0f1;
 }
 
 .scrutinizer-slow-query {
@@ -1451,11 +1557,27 @@
 
 /* ----- Query density strip (below timeline bar) ----- */
 
+.scrutinizer-query-density-wrap {
+	display: flex;
+	align-items: flex-end;
+	gap: 6px;
+	margin-top: 6px;
+}
+
+.scrutinizer-density-label {
+	font-size: 10px;
+	color: #787c82;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	white-space: nowrap;
+	line-height: 16px;
+}
+
 .scrutinizer-query-density {
 	display: flex;
 	align-items: flex-end;
 	height: 16px;
-	margin-top: 4px;
+	flex: 1;
 	gap: 1px;
 	border-radius: 2px;
 	overflow: hidden;
@@ -2605,7 +2727,7 @@
 #scrutinizer-settings-panel > .scrutinizer-controls,
 #scrutinizer-settings-panel > .scrutinizer-bg-controls,
 #scrutinizer-settings-panel > .scrutinizer-qp-controls {
-	margin-top: 20px;
+	margin-top: 24px;
 	margin-bottom: 0;
 }
 
@@ -2616,7 +2738,7 @@
 #scrutinizer-settings-panel > .scrutinizer-controls {
 	border: 1px solid #c3c4c7;
 	border-left: 4px solid var(--wp-admin-theme-color, #2271b1);
-	padding: 16px 20px;
+	padding: 20px 24px;
 	background: #fff;
 }
 
@@ -2624,7 +2746,7 @@
 #scrutinizer-settings-panel > .scrutinizer-qp-controls {
 	border: 1px solid #c3c4c7;
 	border-left: 4px solid var(--wp-admin-theme-color, #2271b1);
-	padding: 16px 20px;
+	padding: 20px 24px;
 }
 
 #scrutinizer-settings-panel {
@@ -2636,7 +2758,7 @@
 
 #scrutinizer-settings-panel h3 {
 	margin-top: 0;
-	margin-bottom: 12px;
+	margin-bottom: 16px;
 	font-size: 14px;
 }
 

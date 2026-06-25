@@ -201,9 +201,14 @@
 			}
 		} );
 
+		// Caller cell click-to-expand.
+		$( document ).on( 'click', '.scrutinizer-caller-cell', function() {
+			$( this ).toggleClass( 'is-expanded' );
+		} );
+
 		// Decision cards — start profiling.
 		$( document ).on( 'click', '.scrutinizer-decision-card', function() {
-			startProfiling( $( this ).data( 'target' ) || '' );
+			startProfiling( $( this ).data( 'target' ) || '', $( this ).data( 'mode' ) || '' );
 		} );
 
 		// Settings gear — open modal.
@@ -918,7 +923,8 @@
 	/*  Session start / stop                                               */
 	/* ------------------------------------------------------------------ */
 
-	function startProfiling( target ) {
+	function startProfiling( target, mode ) {
+		var isVisitor = ( mode === 'visitor' );
 		$.post( scrutinizerAdmin.ajaxUrl, {
 			action: 'scrutinizer_start_profiling',
 			nonce:  scrutinizerAdmin.nonce,
@@ -927,13 +933,40 @@
 			if ( response.success ) {
 				$( '#scrutinizer-activation-url' ).val( response.data.activation_url );
 				$( '#scrutinizer-activation' ).show();
-				window.location.href = response.data.activation_url;
+				if ( isVisitor ) {
+					// Show incognito guidance instead of navigating.
+					showVisitorGuidance( response.data.activation_url );
+				} else {
+					// Open in new tab so the dashboard stays visible.
+					window.open( response.data.activation_url, '_blank' );
+					showNotice( 'Profiling started — measuring in the new tab. Results will appear here.', 'success' );
+				}
+				// Start polling for results.
+				showStopButton();
+				startPolling();
 			} else {
 				showNotice( response.data.message || scrutinizerAdmin.i18n.error, 'error' );
 			}
 		} ).fail( function() {
 			showNotice( scrutinizerAdmin.i18n.error, 'error' );
 		} );
+	}
+
+	function showVisitorGuidance( url ) {
+		var $modal = $( '#scrutinizer-settings-modal' );
+		if ( $modal.is( ':visible' ) ) {
+			$modal.fadeOut( 150 );
+		}
+		var html = '<div class="scrutinizer-visitor-guidance">';
+		html += '<h3><span class="dashicons dashicons-privacy"></span> Open in an Incognito Window</h3>';
+		html += '<p>To measure what logged-out visitors experience, open this URL in an <strong>incognito/private window</strong> so no login cookies persist:</p>';
+		html += '<div class="scrutinizer-url-box">';
+		html += '<input type="text" readonly class="widefat" id="scrutinizer-visitor-url" value="' + esc( url ) + '" />';
+		html += '<button type="button" class="button" onclick="var u=document.getElementById(\'scrutinizer-visitor-url\');u.select();navigator.clipboard.writeText(u.value);this.textContent=\'Copied!\';var b=this;setTimeout(function(){b.textContent=\'Copy\';},2000);">Copy</button>';
+		html += '</div>';
+		html += '<p class="description" style="margin-top:8px;">Keyboard shortcut: <kbd>Ctrl+Shift+N</kbd> (Chrome/Edge) or <kbd>Cmd+Shift+N</kbd> (Safari).</p>';
+		html += '</div>';
+		$( '#scrutinizer-controls' ).html( html );
 	}
 
 	function stopProfiling() {
@@ -1063,9 +1096,9 @@
 				'<h3>No measurements yet</h3>' +
 				'<p>Start a profiling session to see where your server time goes, or turn on background measurement to capture requests automatically.</p>' +
 				'<div class="scrutinizer-empty-actions">' +
-				'<button type="button" class="button button-primary scrutinizer-decision-card" data-target="admin">Admin Dashboard</button> ' +
-				'<button type="button" class="button scrutinizer-decision-card" data-target="frontend">Logged-in Frontend</button> ' +
-				'<button type="button" class="button scrutinizer-decision-card" data-target="visitor">Visitor View</button>' +
+				'<button type="button" class="button button-primary scrutinizer-decision-card" data-target="admin" data-mode="admin">Admin Dashboard</button> ' +
+				'<button type="button" class="button scrutinizer-decision-card" data-target="frontend" data-mode="frontend">Logged-in Frontend</button> ' +
+				'<button type="button" class="button scrutinizer-decision-card" data-target="visitor" data-mode="visitor">Visitor View</button>' +
 				'</div>' +
 				'</div>'
 			);
@@ -1498,7 +1531,8 @@
 		if ( queries.length > 0 ) {
 			html += '<div class="scrutinizer-tab-content" id="scrutinizer-tab-queries" style="display:none">';
 			html += renderQueriesTable( queries );
-			html += '</div>';
+			html += '</div>'; // query-density
+			html += '</div>'; // density-wrap
 		}
 
 		// Tab: HTTP Calls.
@@ -1781,6 +1815,8 @@
 			for ( var mc = 0; mc < buckets.length; mc++ ) {
 				if ( buckets[ mc ] > maxCount ) { maxCount = buckets[ mc ]; }
 			}
+			html += '<div class="scrutinizer-query-density-wrap">';
+			html += '<span class="scrutinizer-density-label">Queries</span>';
 			html += '<div class="scrutinizer-query-density">';
 			for ( var db = 0; db < bucketCount; db++ ) {
 				var fillPct = ( buckets[ db ] / maxCount ) * 100;
@@ -1845,6 +1881,9 @@
 	var timelineDragStartX = 0;
 	var timelineDragStartPan = 0;
 	var $timelineTooltip = null;
+	var rubberBanding = false;
+	var rubberBandStartX = 0;
+	var $rubberBand = null;
 
 	function initTimelineInteractivity() {
 		// Create persistent tooltip element if not exists.
@@ -1870,8 +1909,16 @@
 		timelinePanX = 0;
 		applyTimelineZoom( $container, $wrapper );
 
+		// Add rubber band element if not present.
+		$rubberBand = $viewport.find( '.scrutinizer-rubber-band' );
+		if ( ! $rubberBand.length ) {
+			$rubberBand = $( '<div class="scrutinizer-rubber-band"></div>' );
+			$viewport.append( $rubberBand );
+		}
+
 		// --- Tooltip on segment hover ---
 		$viewport.off( 'mouseenter.scrtl' ).on( 'mouseenter.scrtl', '.timeline-segment', function( e ) {
+			if ( rubberBanding ) { return; }
 			var $seg = $( this );
 			var callback = $seg.data( 'callback' ) || '';
 			var source   = $seg.data( 'source' )   || 'unknown';
@@ -1892,6 +1939,7 @@
 		} );
 
 		$viewport.off( 'mousemove.scrtl' ).on( 'mousemove.scrtl', '.timeline-segment', function( e ) {
+			if ( rubberBanding ) { return; }
 			positionTooltip( e );
 		} );
 
@@ -1899,7 +1947,23 @@
 			$timelineTooltip.hide();
 		} );
 
-		// --- Scroll to zoom ---
+		// --- Tooltip on density bar hover ---
+		$viewport.off( 'mouseenter.scrtld' ).on( 'mouseenter.scrtld', '.density-bar', function( e ) {
+			var title = $( this ).attr( 'title' );
+			if ( ! title ) { return; }
+			$timelineTooltip.html( '<div class="tt-callback">' + esc( title ) + '</div>' ).show();
+			positionTooltip( e );
+		} );
+
+		$viewport.off( 'mousemove.scrtld' ).on( 'mousemove.scrtld', '.density-bar', function( e ) {
+			positionTooltip( e );
+		} );
+
+		$viewport.off( 'mouseleave.scrtld' ).on( 'mouseleave.scrtld', '.density-bar', function() {
+			$timelineTooltip.hide();
+		} );
+
+		// --- Scroll to zoom (cursor-anchored) ---
 		$viewport[0].addEventListener( 'wheel', function( e ) {
 			e.preventDefault();
 			var rect = $viewport[0].getBoundingClientRect();
@@ -1922,27 +1986,44 @@
 
 			clampPan( viewportW );
 			applyTimelineZoom( $container, $wrapper );
+			$viewport.toggleClass( 'is-zoomed', timelineZoom > 1 );
 		}, { passive: false } );
 
-		// --- Drag to pan ---
+		// --- Mouse interactions: rubber band select (zoom=1) or drag to pan (zoomed) ---
 		$viewport.off( 'mousedown.scrtlpan' ).on( 'mousedown.scrtlpan', function( e ) {
-			if ( timelineZoom <= 1 ) {
-				return;
-			}
-			if ( e.button !== 0 ) {
-				return;
-			}
+			if ( e.button !== 0 ) { return; }
+			// Don't start rubber band if clicking on a segment (let tooltip work).
+			if ( $( e.target ).hasClass( 'timeline-segment' ) ) { return; }
+
 			e.preventDefault();
-			timelineDragging = true;
-			timelineDragStartX = e.clientX;
-			timelineDragStartPan = timelinePanX;
-			$viewport.css( 'cursor', 'grabbing' );
+			var rect = $viewport[0].getBoundingClientRect();
+
+			if ( timelineZoom <= 1 ) {
+				// Rubber band selection.
+				rubberBanding = true;
+				rubberBandStartX = e.clientX - rect.left;
+				$rubberBand.css( { left: rubberBandStartX + 'px', width: '0px' } ).show();
+				$timelineTooltip.hide();
+				$viewport.addClass( 'is-dragging' );
+			} else {
+				// Drag to pan when zoomed.
+				timelineDragging = true;
+				timelineDragStartX = e.clientX;
+				timelineDragStartPan = timelinePanX;
+				$viewport.addClass( 'is-dragging' );
+			}
 		} );
 
 		$( document ).off( 'mousemove.scrtlpan' ).on( 'mousemove.scrtlpan', function( e ) {
-			if ( ! timelineDragging ) {
+			if ( rubberBanding ) {
+				var rect = $viewport[0].getBoundingClientRect();
+				var currentX = Math.max( 0, Math.min( e.clientX - rect.left, rect.width ) );
+				var left  = Math.min( rubberBandStartX, currentX );
+				var width = Math.abs( currentX - rubberBandStartX );
+				$rubberBand.css( { left: left + 'px', width: width + 'px' } );
 				return;
 			}
+			if ( ! timelineDragging ) { return; }
 			var dx = e.clientX - timelineDragStartX;
 			timelinePanX = timelineDragStartPan + dx;
 			var viewportW = $viewport[0].getBoundingClientRect().width;
@@ -1950,10 +2031,38 @@
 			applyTimelineZoom( $container, $wrapper );
 		} );
 
-		$( document ).off( 'mouseup.scrtlpan' ).on( 'mouseup.scrtlpan', function() {
+		$( document ).off( 'mouseup.scrtlpan' ).on( 'mouseup.scrtlpan', function( e ) {
+			if ( rubberBanding ) {
+				rubberBanding = false;
+				$rubberBand.hide();
+				$viewport.removeClass( 'is-dragging' );
+
+				var rect  = $viewport[0].getBoundingClientRect();
+				var endX  = Math.max( 0, Math.min( e.clientX - rect.left, rect.width ) );
+				var left  = Math.min( rubberBandStartX, endX );
+				var width = Math.abs( endX - rubberBandStartX );
+
+				// Minimum drag of 10px to avoid accidental micro-selections.
+				if ( width < 10 ) { return; }
+
+				var viewportW = rect.width;
+				var selStartPct = left / viewportW;
+				var selEndPct   = ( left + width ) / viewportW;
+				var selWidthPct = selEndPct - selStartPct;
+
+				// Calculate zoom to fill viewport with selection.
+				timelineZoom = Math.min( 1 / selWidthPct, 40 );
+				// Pan so the selection's left edge aligns with viewport left.
+				timelinePanX = -selStartPct * viewportW * timelineZoom;
+
+				clampPan( viewportW );
+				applyTimelineZoom( $container, $wrapper );
+				$viewport.toggleClass( 'is-zoomed', timelineZoom > 1 );
+				return;
+			}
 			if ( timelineDragging ) {
 				timelineDragging = false;
-				$viewport.css( 'cursor', timelineZoom > 1 ? 'grab' : '' );
+				$viewport.removeClass( 'is-dragging' );
 			}
 		} );
 
@@ -1963,6 +2072,7 @@
 			var viewportW = $viewport[0].getBoundingClientRect().width;
 			clampPan( viewportW );
 			applyTimelineZoom( $container, $wrapper );
+			$viewport.toggleClass( 'is-zoomed', timelineZoom > 1 );
 		} );
 
 		$container.find( '.zoom-out-btn' ).off( 'click' ).on( 'click', function() {
@@ -1970,12 +2080,24 @@
 			var viewportW = $viewport[0].getBoundingClientRect().width;
 			clampPan( viewportW );
 			applyTimelineZoom( $container, $wrapper );
+			$viewport.toggleClass( 'is-zoomed', timelineZoom > 1 );
 		} );
 
 		$container.find( '.zoom-reset-btn' ).off( 'click' ).on( 'click', function() {
 			timelineZoom = 1;
 			timelinePanX = 0;
 			applyTimelineZoom( $container, $wrapper );
+			$viewport.removeClass( 'is-zoomed' );
+		} );
+
+		// Double-click to reset zoom.
+		$viewport.off( 'dblclick.scrtl' ).on( 'dblclick.scrtl', function() {
+			if ( timelineZoom > 1 ) {
+				timelineZoom = 1;
+				timelinePanX = 0;
+				applyTimelineZoom( $container, $wrapper );
+				$viewport.removeClass( 'is-zoomed' );
+			}
 		} );
 	}
 
@@ -2291,7 +2413,19 @@
 			html += '<td>' + ( qSource || '<span class="scrutinizer-muted">\u2014</span>' ) + '</td>';
 			html += '<td class="scrutinizer-sql-cell"><code>' + esc( truncate( qr.sql || '', 200 ) ) + '</code></td>';
 			html += '<td class="numeric">' + qTime + ' ms</td>';
-			html += '<td class="scrutinizer-caller-cell" title="' + esc( qr.caller || '' ) + '">' + esc( truncate( qr.caller || '', 80 ) ) + '</td>';
+			var callerRaw = qr.caller || '';
+			var callerFrames = callerRaw.split( ', ' );
+			var callerShort = truncate( callerRaw, 80 );
+			html += '<td class="scrutinizer-caller-cell">';
+			html += '<span class="caller-short">' + esc( callerShort ) + '</span>';
+			if ( callerRaw.length > 80 ) {
+				html += '<div class="caller-full">';
+				for ( var cf = 0; cf < callerFrames.length; cf++ ) {
+					html += '<div class="caller-frame">' + esc( callerFrames[ cf ].trim() ) + '</div>';
+				}
+				html += '</div>';
+			}
+			html += '</td>';
 			html += '</tr>';
 		}
 
@@ -2355,7 +2489,18 @@
 			html += '<td class="numeric">' + esc( statusLabel ) + '</td>';
 			html += '<td class="numeric">' + hMs + ' ms</td>';
 			html += '<td>' + esc( sourceName ) + '</td>';
-			html += '<td class="scrutinizer-caller-cell" title="' + esc( callerStr ) + '">' + esc( truncate( callerStr, 60 ) ) + '</td>';
+			var hcFrames = callerStr.split( ', ' );
+			var hcShort = truncate( callerStr, 60 );
+			html += '<td class="scrutinizer-caller-cell">';
+			html += '<span class="caller-short">' + esc( hcShort ) + '</span>';
+			if ( callerStr.length > 60 ) {
+				html += '<div class="caller-full">';
+				for ( var hcf = 0; hcf < hcFrames.length; hcf++ ) {
+					html += '<div class="caller-frame">' + esc( hcFrames[ hcf ].trim() ) + '</div>';
+				}
+				html += '</div>';
+			}
+			html += '</td>';
 			html += '</tr>';
 		}
 
