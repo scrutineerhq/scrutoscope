@@ -4168,9 +4168,23 @@
 		html += '<p class="scrutinizer-api-desc" style="color:#50575e;font-size:12px;">Powered by <code>scrutinizer.dev</code> &mdash; zero-knowledge encrypted relay.</p>';
 		html += '</div>';
 
+		// --- Audit Log section ---
+		html += '<div class="scrutinizer-api-section">';
+		html += '<h3 class="scrutinizer-api-heading"><span class="dashicons dashicons-list-view"></span> Access Log</h3>';
+		html += '<p class="scrutinizer-api-desc">Recent API credential usage. Shows when endpoints were accessed, from which IP, and by which user agent.</p>';
+		html += '<div id="scrutinizer-api-log-content"><p class="scrutinizer-empty">Loading...</p></div>';
+		html += '<div class="scrutinizer-diag-actions">';
+		html += '<button type="button" class="button" id="scrutinizer-refresh-api-log"><span class="dashicons dashicons-update"></span> Refresh</button>';
+		html += '<button type="button" class="button button-link" id="scrutinizer-clear-api-log" style="color:#d63638;">Clear Log</button>';
+		html += '</div>';
+		html += '</div>';
+
 		$container.html( html );
 
 		bindApiEvents( $container );
+
+		// Load audit log on render.
+		loadApiAuditLog();
 	}
 
 	function bindApiEvents( $container ) {
@@ -4278,6 +4292,89 @@
 			} );
 		} );
 	}
+
+	/* ------------------------------------------------------------------ */
+	/*  API Audit Log (F17)                                                */
+	/* ------------------------------------------------------------------ */
+
+	function loadApiAuditLog() {
+		$.get( scrutinizerAdmin.ajaxUrl, {
+			action: 'scrutinizer_get_api_log',
+			nonce:  scrutinizerAdmin.nonce
+		}, function( response ) {
+			if ( response.success ) {
+				renderApiAuditLog( response.data.log || [] );
+			} else {
+				$( '#scrutinizer-api-log-content' ).html(
+					'<p class="scrutinizer-empty">Failed to load access log.</p>'
+				);
+			}
+		} ).fail( function() {
+			$( '#scrutinizer-api-log-content' ).html(
+				'<p class="scrutinizer-empty">Failed to load access log.</p>'
+			);
+		} );
+	}
+
+	function renderApiAuditLog( entries ) {
+		var $container = $( '#scrutinizer-api-log-content' );
+
+		if ( ! entries || 0 === entries.length ) {
+			$container.html( '<p class="scrutinizer-empty">No API access recorded yet.</p>' );
+			return;
+		}
+
+		var html = '<table class="scrutinizer-api-log-table widefat">';
+		html += '<thead><tr>';
+		html += '<th>Endpoint</th>';
+		html += '<th>IP</th>';
+		html += '<th>User Agent</th>';
+		html += '<th>When</th>';
+		html += '</tr></thead><tbody>';
+
+		var limit = Math.min( entries.length, 50 );
+		for ( var i = 0; i < limit; i++ ) {
+			var e = entries[ i ];
+			var ua = e.user_agent || '';
+			if ( ua.length > 60 ) {
+				ua = ua.substring( 0, 57 ) + '...';
+			}
+			html += '<tr>';
+			html += '<td><code>' + esc( e.endpoint ) + '</code></td>';
+			html += '<td class="scrutinizer-mono">' + esc( e.ip ) + '</td>';
+			html += '<td title="' + esc( e.user_agent ) + '">' + esc( ua ) + '</td>';
+			html += '<td>' + esc( e.timestamp ) + '</td>';
+			html += '</tr>';
+		}
+
+		html += '</tbody></table>';
+		if ( entries.length > 50 ) {
+			html += '<p class="scrutinizer-api-desc" style="margin-top:8px">Showing 50 of ' + entries.length + ' entries.</p>';
+		}
+		$container.html( html );
+	}
+
+	// Bind audit log buttons (outside bindApiEvents to avoid duplicate binding).
+	$( document ).on( 'click', '#scrutinizer-refresh-api-log', function() {
+		$( '#scrutinizer-api-log-content' ).html( '<p class="scrutinizer-empty">Loading...</p>' );
+		loadApiAuditLog();
+	} );
+
+	$( document ).on( 'click', '#scrutinizer-clear-api-log', function() {
+		if ( ! confirm( 'Clear the entire API access log?' ) ) {
+			return;
+		}
+		$.post( scrutinizerAdmin.ajaxUrl, {
+			action: 'scrutinizer_clear_api_log',
+			nonce:  scrutinizerAdmin.nonce
+		}, function( response ) {
+			if ( response.success ) {
+				$( '#scrutinizer-api-log-content' ).html(
+					'<p class="scrutinizer-empty">No API access recorded yet.</p>'
+				);
+			}
+		} );
+	} );
 
 	/* ================================================================== */
 	/*  Export JSON — Download raw profile data                           */

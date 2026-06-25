@@ -129,6 +129,74 @@ class RestApi {
 	}
 
 	/**
+	 * Log an API access event.
+	 *
+	 * Stores the last 100 access events as a WP option.
+	 *
+	 * @param string $endpoint  Endpoint path (e.g. '/v1/prompt').
+	 * @return void
+	 */
+	private static function log_access( $endpoint ) {
+		$log   = get_option( 'scrutinizer_api_log', array() );
+		$entry = array(
+			'endpoint'   => $endpoint,
+			'ip'         => self::get_client_ip(),
+			'user_agent' => isset( $_SERVER['HTTP_USER_AGENT'] ) ? substr( sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ), 0, 200 ) : '',
+			'user_id'    => get_current_user_id(),
+			'timestamp'  => gmdate( 'Y-m-d H:i:s' ),
+		);
+
+		$log[] = $entry;
+
+		// Keep last 100 entries.
+		if ( count( $log ) > 100 ) {
+			$log = array_slice( $log, -100 );
+		}
+
+		update_option( 'scrutinizer_api_log', $log, false );
+	}
+
+	/**
+	 * Get client IP, respecting common proxy headers.
+	 *
+	 * @return string
+	 */
+	private static function get_client_ip() {
+		$headers = array( 'HTTP_CF_CONNECTING_IP', 'HTTP_X_FORWARDED_FOR', 'HTTP_X_REAL_IP', 'REMOTE_ADDR' );
+		foreach ( $headers as $header ) {
+			if ( ! empty( $_SERVER[ $header ] ) ) {
+				$ip = sanitize_text_field( wp_unslash( $_SERVER[ $header ] ) );
+				// X-Forwarded-For can be comma-separated; take the first.
+				if ( strpos( $ip, ',' ) !== false ) {
+					$ip = trim( explode( ',', $ip )[0] );
+				}
+				if ( filter_var( $ip, FILTER_VALIDATE_IP ) ) {
+					return $ip;
+				}
+			}
+		}
+		return 'unknown';
+	}
+
+	/**
+	 * Get the API access log.
+	 *
+	 * @return array
+	 */
+	public static function get_access_log() {
+		return get_option( 'scrutinizer_api_log', array() );
+	}
+
+	/**
+	 * Clear the API access log.
+	 *
+	 * @return void
+	 */
+	public static function clear_access_log() {
+		delete_option( 'scrutinizer_api_log' );
+	}
+
+	/**
 	 * Handle GET /v1/prompt.
 	 *
 	 * Returns raw text/plain — not JSON-wrapped.
@@ -137,6 +205,7 @@ class RestApi {
 	 * @return void
 	 */
 	public static function handle_prompt( $request ) {
+		self::log_access( '/v1/prompt' );
 		$prompt = Prompt::build();
 
 		// Bypass WP REST JSON encoding — send raw text.
@@ -153,6 +222,7 @@ class RestApi {
 	 * @return \WP_REST_Response
 	 */
 	public static function handle_diagnostics( $request ) {
+		self::log_access( '/v1/diagnostics' );
 		$data = Diagnostics::collect();
 
 		return new \WP_REST_Response( $data, 200 );
@@ -165,6 +235,7 @@ class RestApi {
 	 * @return \WP_REST_Response
 	 */
 	public static function handle_routes( $request ) {
+		self::log_access( '/v1/routes' );
 		$groups = Storage::get_profiles_grouped();
 
 		$routes = array();
@@ -198,6 +269,7 @@ class RestApi {
 	 * @return \WP_REST_Response|\WP_Error
 	 */
 	public static function handle_profile( $request ) {
+		self::log_access( '/v1/profile/' . $request->get_param( 'id' ) );
 		$id      = $request->get_param( 'id' );
 		$profile = Storage::get_profile( $id );
 
@@ -299,6 +371,7 @@ class RestApi {
 	 * @return \WP_REST_Response|\WP_Error
 	 */
 	public static function handle_compare( $request ) {
+		self::log_access( '/v1/compare/' . $request->get_param( 'id_a' ) . '/' . $request->get_param( 'id_b' ) );
 		$id_a = $request->get_param( 'id_a' );
 		$id_b = $request->get_param( 'id_b' );
 

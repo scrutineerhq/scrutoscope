@@ -38,6 +38,8 @@ class Ajax {
 		add_action( 'wp_ajax_scrutinizer_create_api_password', array( __CLASS__, 'create_api_password' ) );
 		add_action( 'wp_ajax_scrutinizer_revoke_api_password', array( __CLASS__, 'revoke_api_password' ) );
 		add_action( 'wp_ajax_scrutinizer_toggle_query_profiling', array( __CLASS__, 'toggle_query_profiling' ) );
+		add_action( 'wp_ajax_scrutinizer_get_api_log', array( __CLASS__, 'get_api_log' ) );
+		add_action( 'wp_ajax_scrutinizer_clear_api_log', array( __CLASS__, 'clear_api_log' ) );
 		add_action( 'wp_ajax_scrutinizer_get_profile_trace', array( __CLASS__, 'get_profile_trace' ) );
 		add_action( 'wp_ajax_scrutinizer_get_profile_timeline', array( __CLASS__, 'get_profile_timeline' ) );
 	}
@@ -824,5 +826,41 @@ class Ajax {
 		$revoked = \Scrutinizer\Api\ApplicationPassword::revoke_all_for_user( get_current_user_id() );
 
 		wp_send_json_success( array( 'revoked' => $revoked ) );
+	}
+
+	/**
+	 * AJAX: Get the API access audit log.
+	 */
+	public static function get_api_log() {
+		check_ajax_referer( 'scrutinizer_nonce', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error(
+				array( 'message' => __( 'Permission denied.', 'scrutinizer' ) ),
+				403
+			);
+		}
+
+		$log = \Scrutinizer\Api\RestApi::get_access_log();
+
+		wp_send_json_success( array( 'log' => array_reverse( $log ) ) );
+	}
+
+	/**
+	 * AJAX: Clear the API access audit log.
+	 */
+	public static function clear_api_log() {
+		check_ajax_referer( 'scrutinizer_nonce', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error(
+				array( 'message' => __( 'Permission denied.', 'scrutinizer' ) ),
+				403
+			);
+		}
+
+		\Scrutinizer\Api\RestApi::clear_access_log();
+
+		wp_send_json_success();
 	}
 }
