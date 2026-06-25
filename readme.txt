@@ -2,7 +2,7 @@
 Contributors: scrutineerhq
 Tags: performance, profiling, debug, optimization, profiler
 Requires at least: 6.0
-Tested up to: 6.8
+Tested up to: 7.0
 Stable tag: 1.0.0
 Requires PHP: 7.4
 License: GPLv2 or later
@@ -34,10 +34,10 @@ Scrutinizer is a read-only profiling plugin for WordPress. It instruments every 
 * Pin & annotate profiles with notes and tags
 * Automatic retention — TTL + per-route cap, pinned profiles exempt
 * Cron inventory — all registered WordPress cron events at a glance
-* REST API — five read-only endpoints for AI agent integration
+* REST API — six read-only endpoints for AI agent integration
 * Send to Agent — one-click prompt with short-lived credentials
 * Send to Support — zero-knowledge encrypted sharing
-* WP-CLI — `wp scrutinizer status|list|view|purge|compare|export`
+* WP-CLI — `wp scrutinizer status|list|show|delete|export|clear|mu-plugin`
 
 = Design Philosophy =
 
@@ -90,10 +90,10 @@ Yes, with a low sample rate (0.1% or 1%). Scrutinizer is designed for background
 * Pin & annotate with notes and tags
 * Profile retention with TTL and per-route cap
 * Cron inventory
-* REST API (5 endpoints)
+* REST API (6 endpoints)
 * Send to Agent with Application Password credentials
 * Send to Support with zero-knowledge encrypted sharing
-* WP-CLI integration (6 commands)
+* WP-CLI integration (7 commands)
 
 == Screenshots ==
 
