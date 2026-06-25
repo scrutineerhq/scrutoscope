@@ -1025,13 +1025,25 @@
 		$.get( scrutinizerAdmin.ajaxUrl, {
 			action: 'scrutinizer_get_profiles_grouped',
 			nonce:  scrutinizerAdmin.nonce
-		}, function( response ) {
+		} ).done( function( response ) {
 			if ( response.success ) {
 				groupedData = response.data.groups || [];
 				if ( 'grouped' === currentView ) {
 					renderGroupedTable( groupedData );
 				}
+			} else {
+				$( '#scrutinizer-profile-list' ).html(
+					'<p class="scrutinizer-empty">Failed to load routes. Try refreshing the page.</p>'
+				);
 			}
+		} ).fail( function( xhr ) {
+			var msg = 'Could not load routes.';
+			if ( xhr.status === 403 || xhr.responseText === '-1' || xhr.responseText === '0' ) {
+				msg = 'Session expired. Please <a href="' + window.location.href + '">reload the page</a>.';
+			}
+			$( '#scrutinizer-profile-list' ).html(
+				'<p class="scrutinizer-empty">' + msg + '</p>'
+			);
 		} );
 	}
 

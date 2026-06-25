@@ -809,12 +809,12 @@
 	background: #fff;
 	border: 1px solid #c3c4c7;
 	border-left: 4px solid var(--wp-admin-theme-color, #2271b1);
-	padding: 12px 16px;
-	margin: 16px 0;
+	padding: 16px 20px;
+	margin: 20px 0 0;
 }
 
 .scrutinizer-bg-controls h3 {
-	margin: 0 0 8px;
+	margin: 0 0 12px;
 	font-size: 14px;
 }
 
@@ -852,8 +852,8 @@
 	background: #fff;
 	border: 1px solid #c3c4c7;
 	border-left: 4px solid var(--wp-admin-theme-color, #2271b1);
-	padding: 12px 16px;
-	margin: 0 0 16px;
+	padding: 16px 20px;
+	margin: 20px 0 0;
 }
 
 .scrutinizer-qp-header {
@@ -2600,6 +2600,33 @@
 	padding: 20px 24px;
 }
 
+/* Section spacing inside settings modal */
+#scrutinizer-settings-panel > .scrutinizer-status-card,
+#scrutinizer-settings-panel > .scrutinizer-controls,
+#scrutinizer-settings-panel > .scrutinizer-bg-controls,
+#scrutinizer-settings-panel > .scrutinizer-qp-controls {
+	margin-top: 20px;
+	margin-bottom: 0;
+}
+
+#scrutinizer-settings-panel > .scrutinizer-status-card:first-child {
+	margin-top: 0;
+}
+
+#scrutinizer-settings-panel > .scrutinizer-controls {
+	border: 1px solid #c3c4c7;
+	border-left: 4px solid var(--wp-admin-theme-color, #2271b1);
+	padding: 16px 20px;
+	background: #fff;
+}
+
+#scrutinizer-settings-panel > .scrutinizer-bg-controls,
+#scrutinizer-settings-panel > .scrutinizer-qp-controls {
+	border: 1px solid #c3c4c7;
+	border-left: 4px solid var(--wp-admin-theme-color, #2271b1);
+	padding: 16px 20px;
+}
+
 #scrutinizer-settings-panel {
 	margin: 0;
 	border: none;
@@ -2690,7 +2717,7 @@
 }
 
 .scrutinizer-overhead-note {
-	margin: 8px 0 0;
+	margin: 12px 0 0;
 	font-size: 12px;
 	color: #787c82;
 	font-style: italic;
