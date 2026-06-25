@@ -591,6 +591,18 @@ class Storage {
 		$unattr_a     = $dur_a - $total_excl_a;
 		$unattr_b     = $dur_b - $total_excl_b;
 
+		// Compute callback count.
+		$cb_a = isset( $sum_a['callback_count'] ) ? (int) $sum_a['callback_count'] : 0;
+		$cb_b = isset( $sum_b['callback_count'] ) ? (int) $sum_b['callback_count'] : 0;
+
+		// HTTP call counts.
+		$http_a = isset( $a['profile_data']['http_calls'] ) ? count( $a['profile_data']['http_calls'] ) : 0;
+		$http_b = isset( $b['profile_data']['http_calls'] ) ? count( $b['profile_data']['http_calls'] ) : 0;
+
+		// Compute query time totals.
+		$qt_a = self::sum_query_time( isset( $a['profile_data']['queries'] ) ? $a['profile_data']['queries'] : array() );
+		$qt_b = self::sum_query_time( isset( $b['profile_data']['queries'] ) ? $b['profile_data']['queries'] : array() );
+
 		return array(
 			'a'     => $a,
 			'b'     => $b,
@@ -601,6 +613,9 @@ class Storage {
 				'query_count_a'         => $qc_a,
 				'query_count_b'         => $qc_b,
 				'query_count_delta'     => $qc_b - $qc_a,
+				'query_time_a_ms'       => $qt_a,
+				'query_time_b_ms'       => $qt_b,
+				'query_time_delta_ms'   => $qt_b - $qt_a,
 				'memory_peak_a'         => $mem_peak_a,
 				'memory_peak_b'         => $mem_peak_b,
 				'memory_peak_delta'     => $mem_peak_b - $mem_peak_a,
@@ -610,6 +625,12 @@ class Storage {
 				'unattributed_a_ns'     => $unattr_a,
 				'unattributed_b_ns'     => $unattr_b,
 				'unattributed_delta_ns' => $unattr_b - $unattr_a,
+				'callback_count_a'      => $cb_a,
+				'callback_count_b'      => $cb_b,
+				'callback_count_delta'  => $cb_b - $cb_a,
+				'http_count_a'          => $http_a,
+				'http_count_b'          => $http_b,
+				'http_count_delta'      => $http_b - $http_a,
 				'sources'               => $source_deltas,
 			),
 		);
@@ -628,6 +649,22 @@ class Storage {
 			$indexed[ $key ] = $src;
 		}
 		return $indexed;
+	}
+
+	/**
+	 * Sum query time in milliseconds.
+	 *
+	 * @param array $queries  Queries array from profile data.
+	 * @return float
+	 */
+	private static function sum_query_time( $queries ) {
+		$total = 0.0;
+		foreach ( $queries as $q ) {
+			if ( isset( $q['time_ms'] ) ) {
+				$total += (float) $q['time_ms'];
+			}
+		}
+		return round( $total, 2 );
 	}
 
 	/**

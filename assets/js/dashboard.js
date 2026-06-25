@@ -2652,6 +2652,275 @@
 	/*  Compare view                                                       */
 	/* ------------------------------------------------------------------ */
 
+	/**
+	 * Toggle the compare picker panel on profile detail view.
+	 */
+	function toggleComparePicker( profileId ) {
+		var $existing = $( '#scrutinizer-compare-picker' );
+		if ( $existing.length ) {
+			$existing.slideUp( 200, function() { $existing.remove(); } );
+			return;
+		}
+
+		var routeKey = currentProfileData ? ( currentProfileData.route_key || '' ) : '';
+
+		var html = '<div id="scrutinizer-compare-picker" style="display:none">';
+		html += '<div class="scrutinizer-picker-header">';
+		html += '<h4>Compare with&hellip;</h4>';
+		html += '<button type="button" class="button button-link scrutinizer-picker-close" title="Close">&times;</button>';
+		html += '</div>';
+		html += '<div class="scrutinizer-picker-body"><p class="description">Loading pinned profiles&hellip;</p></div>';
+		html += '</div>';
+
+		$( '.scrutinizer-pin-toolbar' ).after( html );
+		$( '#scrutinizer-compare-picker' ).slideDown( 200 );
+
+		// Close button inside picker header.
+		$( '.scrutinizer-picker-close' ).on( 'click', function() {
+			$( '#scrutinizer-compare-picker' ).slideUp( 200, function() { $( this ).remove(); } );
+		} );
+
+		// Fetch compare targets.
+		$.get( scrutinizerAdmin.ajaxUrl, {
+			action:     'scrutinizer_compare_targets',
+			nonce:      scrutinizerAdmin.nonce,
+			profile_id: profileId,
+			route_key:  routeKey
+		}, function( response ) {
+			if ( ! response.success ) {
+				$( '.scrutinizer-picker-body' ).html( '<p class="description">No targets found.</p>' );
+				return;
+			}
+
+			var routeMatches = response.data.route_matches || [];
+			var otherPinned  = response.data.other_pinned || [];
+			var body = '';
+
+			if ( 0 === routeMatches.length && 0 === otherPinned.length ) {
+				body = '<p class="description">No pinned profiles to compare with. Pin some profiles first.</p>';
+			} else {
+				if ( routeMatches.length > 0 ) {
+					body += '<div class="scrutinizer-picker-section">';
+					body += '<h5>Same route</h5>';
+					body += renderPickerList( routeMatches );
+					body += '</div>';
+				}
+				if ( otherPinned.length > 0 ) {
+					body += '<div class="scrutinizer-picker-section">';
+					body += '<h5>Other pinned profiles</h5>';
+					body += renderPickerList( otherPinned );
+					body += '</div>';
+				}
+			}
+
+			$( '.scrutinizer-picker-body' ).html( body );
+		} );
+	}
+
+	/**
+	 * Render a list of compare target profiles.
+	 */
+	function renderPickerList( profiles ) {
+		var html = '<ul class="scrutinizer-picker-list">';
+		for ( var i = 0; i < profiles.length; i++ ) {
+			var p = profiles[ i ];
+			var durMs = p.duration_ns ? ( p.duration_ns / 1e6 ).toFixed( 1 ) + ' ms' : '?';
+			var label = ( p.request_method || 'GET' ) + ' ' + truncate( p.request_url || p.route_key || '', 50 );
+			html += '<li class="scrutinizer-compare-target" data-id="' + parseInt( p.id, 10 ) + '">';
+			html += '<span class="picker-route">' + esc( label ) + '</span>';
+			html += '<span class="picker-meta">' + esc( durMs ) + ' · ' + esc( p.captured_at || '' ) + '</span>';
+			if ( p.note ) {
+				html += '<span class="picker-note">' + esc( p.note ) + '</span>';
+			}
+			html += '</li>';
+		}
+		html += '</ul>';
+		return html;
+	}
+
+	/**
+	 * Load comparison inline within the profile detail view.
+	 */
+	function loadInlineComparison( profileIdA, profileIdB ) {
+		// Close picker.
+		$( '#scrutinizer-compare-picker' ).slideUp( 200, function() { $( this ).remove(); } );
+
+		// Show loading state.
+		$( '#scrutinizer-inline-compare' ).remove();
+		var loadHtml = '<div id="scrutinizer-inline-compare">';
+		loadHtml += '<p class="description"><span class="dashicons dashicons-update spin"></span> Loading comparison&hellip;</p>';
+		loadHtml += '</div>';
+		$( '.scrutinizer-metric-cards' ).after( loadHtml );
+
+		$.get( scrutinizerAdmin.ajaxUrl, {
+			action:    'scrutinizer_compare_profiles',
+			nonce:     scrutinizerAdmin.nonce,
+			profile_a: profileIdA,
+			profile_b: profileIdB
+		}, function( response ) {
+			if ( response.success ) {
+				renderInlineComparison( response.data.comparison );
+			} else {
+				$( '#scrutinizer-inline-compare' ).html(
+					'<p class="scrutinizer-share-error">' + esc( response.data.message || 'Compare failed.' ) + '</p>'
+				);
+			}
+		} );
+	}
+
+	/**
+	 * Render comparison inline below the metric cards.
+	 */
+	function renderInlineComparison( comparison ) {
+		var delta = comparison.delta;
+		var b     = comparison.b;
+		var reqB  = ( b.profile_data && b.profile_data.request ) ? b.profile_data.request : {};
+
+		// Build verdict.
+		var durDelta   = delta.duration_ns;
+		var durBase    = delta.duration_a_ns || 1;
+		var durPct     = ( ( durDelta / durBase ) * 100 );
+		var durDeltaMs = durDelta / 1e6;
+		var verdict    = classifyDelta( durDeltaMs, durPct );
+
+		var html = '<div id="scrutinizer-inline-compare">';
+		html += '<div class="scrutinizer-inline-compare-header">';
+		html += '<span class="scrutinizer-verdict-badge ' + verdict.cls + '">' + verdict.label + '</span>';
+		html += '<span class="scrutinizer-compare-summary">';
+		html += 'Compared to <strong>' + esc( ( reqB.method || '' ) + ' ' + truncate( reqB.url || b.request_url || '', 40 ) ) + '</strong>';
+		html += ' <small>(' + esc( b.captured_at || '' ) + ')</small>';
+		html += '</span>';
+		html += '<button type="button" class="button button-link" id="scrutinizer-inline-compare-close" title="Dismiss">✕</button>';
+		html += '</div>';
+
+		// Summary table.
+		html += '<table class="scrutinizer-source-table scrutinizer-compare-table widefat">';
+		html += '<thead><tr><th>Metric</th><th class="numeric">This Profile</th><th class="numeric">Reference</th><th class="numeric">Change</th></tr></thead>';
+		html += '<tbody>';
+
+		html += compareRow( 'Server Request Duration',
+			( delta.duration_a_ns / 1e6 ).toFixed( 1 ) + ' ms',
+			( delta.duration_b_ns / 1e6 ).toFixed( 1 ) + ' ms',
+			delta.duration_ns, delta.duration_a_ns, 'time'
+		);
+
+		html += compareRow( 'Unattributed Time',
+			( delta.unattributed_a_ns / 1e6 ).toFixed( 1 ) + ' ms',
+			( delta.unattributed_b_ns / 1e6 ).toFixed( 1 ) + ' ms',
+			delta.unattributed_delta_ns, delta.unattributed_a_ns, 'time'
+		);
+
+		html += compareRow( 'DB Queries',
+			String( delta.query_count_a ),
+			String( delta.query_count_b ),
+			delta.query_count_delta, delta.query_count_a || 1, 'count'
+		);
+
+		if ( delta.query_time_a_ms !== undefined ) {
+			html += compareRow( 'Query Time',
+				delta.query_time_a_ms.toFixed( 1 ) + ' ms',
+				delta.query_time_b_ms.toFixed( 1 ) + ' ms',
+				( delta.query_time_delta_ms || 0 ) * 1e6, ( delta.query_time_a_ms || 1 ) * 1e6, 'time'
+			);
+		}
+
+		if ( delta.memory_peak_a || delta.memory_peak_b ) {
+			html += compareRow( 'Peak Memory',
+				formatBytes( delta.memory_peak_a ),
+				formatBytes( delta.memory_peak_b ),
+				delta.memory_peak_delta, delta.memory_peak_a || 1, 'memory'
+			);
+		}
+
+		if ( delta.memory_alloc_a || delta.memory_alloc_b ) {
+			html += compareRow( 'Memory Used by Hooks',
+				formatBytes( delta.memory_alloc_a ),
+				formatBytes( delta.memory_alloc_b ),
+				delta.memory_alloc_delta, delta.memory_alloc_a || 1, 'memory'
+			);
+		}
+
+		if ( delta.callback_count_a !== undefined ) {
+			html += compareRow( 'Callbacks',
+				String( delta.callback_count_a ),
+				String( delta.callback_count_b ),
+				delta.callback_count_delta, delta.callback_count_a || 1, 'count'
+			);
+		}
+
+		if ( delta.http_count_a !== undefined ) {
+			html += compareRow( 'HTTP Calls',
+				String( delta.http_count_a ),
+				String( delta.http_count_b ),
+				delta.http_count_delta, delta.http_count_a || 1, 'count'
+			);
+		}
+
+		html += '</tbody></table>';
+
+		// Per-source breakdown.
+		var sources = delta.sources || {};
+		var sourceKeys = Object.keys( sources );
+		if ( sourceKeys.length > 0 ) {
+			html += '<h4>Per-Source Changes</h4>';
+			html += '<table class="scrutinizer-source-table scrutinizer-compare-table widefat">';
+			html += '<thead><tr><th>Source</th><th class="numeric">This Profile</th><th class="numeric">Reference</th><th class="numeric">Change</th></tr></thead>';
+			html += '<tbody>';
+
+			sourceKeys.sort( function( x, y ) {
+				return Math.abs( sources[ y ].delta_ns ) - Math.abs( sources[ x ].delta_ns );
+			} );
+
+			for ( var si = 0; si < sourceKeys.length; si++ ) {
+				var sk = sourceKeys[ si ];
+				var sd = sources[ sk ];
+
+				// Format source label: strip type prefix for display.
+				var sourceLabel = sk.indexOf( ':' ) !== -1 ? sk.split( ':' ).slice( 1 ).join( ':' ) : sk;
+
+				html += compareRow( sourceLabel,
+					( sd.a_ns / 1e6 ).toFixed( 2 ) + ' ms',
+					( sd.b_ns / 1e6 ).toFixed( 2 ) + ' ms',
+					sd.delta_ns, sd.a_ns || 1, 'time'
+				);
+			}
+
+			html += '</tbody></table>';
+		}
+
+		html += '</div>';
+
+		$( '#scrutinizer-inline-compare' ).replaceWith( html );
+	}
+
+	/**
+	 * Classify a delta into regression / improvement / noise.
+	 *
+	 * Thresholds: >20% AND >100ms = regression. <-20% AND <-100ms = improvement.
+	 * Everything else is within noise.
+	 */
+	function classifyDelta( deltaMs, pctChange ) {
+		if ( deltaMs > 100 && pctChange > 20 ) {
+			return { cls: 'verdict-regression', label: '⚠ Regression' };
+		}
+		if ( deltaMs < -100 && pctChange < -20 ) {
+			return { cls: 'verdict-improvement', label: '✓ Improvement' };
+		}
+		if ( Math.abs( deltaMs ) < 10 && Math.abs( pctChange ) < 5 ) {
+			return { cls: 'verdict-noise', label: '≈ Within noise' };
+		}
+		if ( deltaMs > 0 ) {
+			return { cls: 'verdict-slower', label: '↑ Slower' };
+		}
+		if ( deltaMs < 0 ) {
+			return { cls: 'verdict-faster', label: '↓ Faster' };
+		}
+		return { cls: 'verdict-noise', label: '≈ No change' };
+	}
+
+	/**
+	 * Load comparison from history view checkboxes (legacy flow).
+	 */
 	function loadComparison( idA, idB ) {
 		$.get( scrutinizerAdmin.ajaxUrl, {
 			action:    'scrutinizer_compare_profiles',
@@ -2680,9 +2949,14 @@
 		var reqA   = ( a.profile_data && a.profile_data.request ) ? a.profile_data.request : {};
 		var reqB   = ( b.profile_data && b.profile_data.request ) ? b.profile_data.request : {};
 
+		// Overall verdict.
+		var durDeltaMs = delta.duration_ns / 1e6;
+		var durPct     = delta.duration_a_ns ? ( ( delta.duration_ns / delta.duration_a_ns ) * 100 ) : 0;
+		var verdict    = classifyDelta( durDeltaMs, durPct );
+
 		var html = '<div id="scrutinizer-compare-view">';
 		html += '<button type="button" class="button button-link" id="scrutinizer-back-to-history">' + esc( scrutinizerAdmin.i18n.backToHistory || '← Back to history' ) + '</button>';
-		html += '<h2>' + esc( scrutinizerAdmin.i18n.compare || 'Compare' ) + '</h2>';
+		html += '<h2>' + esc( scrutinizerAdmin.i18n.compare || 'Compare' ) + ' <span class="scrutinizer-verdict-badge ' + verdict.cls + '">' + verdict.label + '</span></h2>';
 
 		// Header: Profile A vs Profile B.
 		html += '<div class="scrutinizer-compare-header">';
@@ -2696,47 +2970,53 @@
 		html += '<thead><tr><th>Metric</th><th class="numeric">Profile A</th><th class="numeric">Profile B</th><th class="numeric">Change</th></tr></thead>';
 		html += '<tbody>';
 
-		// Duration.
-		html += compareRow( 'Total Duration',
+		html += compareRow( 'Server Request Duration',
 			( delta.duration_a_ns / 1e6 ).toFixed( 1 ) + ' ms',
 			( delta.duration_b_ns / 1e6 ).toFixed( 1 ) + ' ms',
-			delta.duration_ns,
-			delta.duration_a_ns
+			delta.duration_ns, delta.duration_a_ns, 'time'
 		);
 
-		// Unattributed.
-		html += compareRow( 'Unattributed',
+		html += compareRow( 'Unattributed Time',
 			( delta.unattributed_a_ns / 1e6 ).toFixed( 1 ) + ' ms',
 			( delta.unattributed_b_ns / 1e6 ).toFixed( 1 ) + ' ms',
-			delta.unattributed_delta_ns,
-			delta.unattributed_a_ns
+			delta.unattributed_delta_ns, delta.unattributed_a_ns, 'time'
 		);
 
-		// Query count.
 		html += compareRow( 'DB Queries',
 			String( delta.query_count_a ),
 			String( delta.query_count_b ),
-			delta.query_count_delta * 1e6, // Scale to ns-like for delta display.
-			delta.query_count_a || 1
+			delta.query_count_delta, delta.query_count_a || 1, 'count'
 		);
 
-		// Peak memory.
+		if ( delta.query_time_a_ms !== undefined ) {
+			html += compareRow( 'Query Time',
+				delta.query_time_a_ms.toFixed( 1 ) + ' ms',
+				delta.query_time_b_ms.toFixed( 1 ) + ' ms',
+				( delta.query_time_delta_ms || 0 ) * 1e6, ( delta.query_time_a_ms || 1 ) * 1e6, 'time'
+			);
+		}
+
 		if ( delta.memory_peak_a || delta.memory_peak_b ) {
 			html += compareRow( 'Peak Memory',
 				formatBytes( delta.memory_peak_a ),
 				formatBytes( delta.memory_peak_b ),
-				delta.memory_peak_delta,
-				delta.memory_peak_a || 1
+				delta.memory_peak_delta, delta.memory_peak_a || 1, 'memory'
 			);
 		}
 
-		// Allocated memory.
 		if ( delta.memory_alloc_a || delta.memory_alloc_b ) {
-			html += compareRow( 'Allocated by Hooks',
+			html += compareRow( 'Memory Used by Hooks',
 				formatBytes( delta.memory_alloc_a ),
 				formatBytes( delta.memory_alloc_b ),
-				delta.memory_alloc_delta,
-				delta.memory_alloc_a || 1
+				delta.memory_alloc_delta, delta.memory_alloc_a || 1, 'memory'
+			);
+		}
+
+		if ( delta.callback_count_a !== undefined ) {
+			html += compareRow( 'Callbacks',
+				String( delta.callback_count_a ),
+				String( delta.callback_count_b ),
+				delta.callback_count_delta, delta.callback_count_a || 1, 'count'
 			);
 		}
 
@@ -2746,24 +3026,24 @@
 		var sources = delta.sources || {};
 		var sourceKeys = Object.keys( sources );
 		if ( sourceKeys.length > 0 ) {
-			html += '<h3>Per-Source Breakdown</h3>';
+			html += '<h3>Per-Source Changes</h3>';
 			html += '<table class="scrutinizer-source-table scrutinizer-compare-table widefat">';
 			html += '<thead><tr><th>Source</th><th class="numeric">Profile A</th><th class="numeric">Profile B</th><th class="numeric">Change</th></tr></thead>';
 			html += '<tbody>';
 
-			// Sort by absolute delta descending.
-			sourceKeys.sort( function( a, b ) {
-				return Math.abs( sources[ b ].delta_ns ) - Math.abs( sources[ a ].delta_ns );
+			sourceKeys.sort( function( x, y ) {
+				return Math.abs( sources[ y ].delta_ns ) - Math.abs( sources[ x ].delta_ns );
 			} );
 
 			for ( var si = 0; si < sourceKeys.length; si++ ) {
 				var sk  = sourceKeys[ si ];
 				var sd  = sources[ sk ];
-				html += compareRow( sk,
+				var sourceLabel = sk.indexOf( ':' ) !== -1 ? sk.split( ':' ).slice( 1 ).join( ':' ) : sk;
+
+				html += compareRow( sourceLabel,
 					( sd.a_ns / 1e6 ).toFixed( 2 ) + ' ms',
 					( sd.b_ns / 1e6 ).toFixed( 2 ) + ' ms',
-					sd.delta_ns,
-					sd.a_ns || 1
+					sd.delta_ns, sd.a_ns || 1, 'time'
 				);
 			}
 
@@ -2775,22 +3055,73 @@
 		$( '#scrutinizer-results' ).after( html );
 	}
 
-	function compareRow( label, valA, valB, deltaNs, baseNs ) {
-		var deltaMs  = ( deltaNs / 1e6 ).toFixed( 1 );
-		var pctChange = baseNs ? ( ( deltaNs / baseNs ) * 100 ).toFixed( 1 ) : '0.0';
+	/**
+	 * Render a single comparison row with threshold-aware language.
+	 *
+	 * @param {string} label    Row label.
+	 * @param {string} valA     Formatted value for profile A.
+	 * @param {string} valB     Formatted value for profile B.
+	 * @param {number} deltaNs  Delta in nanoseconds (or raw delta for counts).
+	 * @param {number} baseNs   Base value in nanoseconds (or raw for counts).
+	 * @param {string} kind     'time' | 'memory' | 'count' — controls formatting.
+	 */
+	function compareRow( label, valA, valB, deltaNs, baseNs, kind ) {
+		kind = kind || 'time';
+		var pctChange = baseNs ? ( ( deltaNs / baseNs ) * 100 ) : 0;
 		var cls = '';
-		var suffix = '';
-		if ( deltaNs < 0 ) {
-			cls = 'scrutinizer-delta-negative'; // Green — faster.
-			suffix = ' ' + esc( scrutinizerAdmin.i18n.faster || 'faster' );
-		} else if ( deltaNs > 0 ) {
-			cls = 'scrutinizer-delta-positive'; // Red — slower.
-			suffix = ' ' + esc( scrutinizerAdmin.i18n.slower || 'slower' );
-		} else {
-			suffix = ' ' + esc( scrutinizerAdmin.i18n.noChange || 'no change' );
-		}
+		var deltaStr = '';
 
-		var deltaStr = ( deltaNs >= 0 ? '+' : '' ) + deltaMs + ' ms (' + ( deltaNs >= 0 ? '+' : '' ) + pctChange + '%)' + suffix;
+		if ( 'count' === kind ) {
+			// For counts, show raw delta.
+			var rawDelta = deltaNs;
+			var rawPct   = pctChange;
+			if ( 0 === rawDelta ) {
+				deltaStr = 'no change';
+				cls = 'scrutinizer-delta-neutral';
+			} else {
+				cls = rawDelta < 0 ? 'scrutinizer-delta-negative' : 'scrutinizer-delta-positive';
+				deltaStr = ( rawDelta > 0 ? '+' : '' ) + rawDelta;
+				if ( Math.abs( rawPct ) > 0.5 ) {
+					deltaStr += ' (' + ( rawPct > 0 ? '+' : '' ) + rawPct.toFixed( 0 ) + '%)';
+				}
+			}
+		} else if ( 'memory' === kind ) {
+			// For memory, show formatted bytes delta.
+			if ( 0 === deltaNs ) {
+				deltaStr = 'no change';
+				cls = 'scrutinizer-delta-neutral';
+			} else {
+				cls = deltaNs < 0 ? 'scrutinizer-delta-negative' : 'scrutinizer-delta-positive';
+				deltaStr = formatMemoryDelta( deltaNs );
+				if ( Math.abs( pctChange ) > 0.5 ) {
+					deltaStr += ' (' + ( pctChange > 0 ? '+' : '' ) + pctChange.toFixed( 1 ) + '%)';
+				}
+			}
+		} else {
+			// Time-based delta.
+			var deltaMs = deltaNs / 1e6;
+			if ( 0 === deltaNs ) {
+				deltaStr = 'no change';
+				cls = 'scrutinizer-delta-neutral';
+			} else if ( Math.abs( deltaMs ) < 10 && Math.abs( pctChange ) < 5 ) {
+				// Within noise threshold.
+				deltaStr = ( deltaMs > 0 ? '+' : '' ) + deltaMs.toFixed( 1 ) + ' ms';
+				deltaStr += ' (' + ( pctChange > 0 ? '+' : '' ) + pctChange.toFixed( 1 ) + '%)';
+				deltaStr += ' · within noise';
+				cls = 'scrutinizer-delta-neutral';
+			} else {
+				cls = deltaNs < 0 ? 'scrutinizer-delta-negative' : 'scrutinizer-delta-positive';
+				deltaStr = ( deltaMs > 0 ? '+' : '' ) + deltaMs.toFixed( 1 ) + ' ms';
+				deltaStr += ' (' + ( pctChange > 0 ? '+' : '' ) + pctChange.toFixed( 1 ) + '%)';
+				if ( deltaMs > 100 && pctChange > 20 ) {
+					deltaStr += ' · regression';
+				} else if ( deltaMs < -100 && pctChange < -20 ) {
+					deltaStr += ' · improved';
+				} else {
+					deltaStr += deltaNs > 0 ? ' slower' : ' faster';
+				}
+			}
+		}
 
 		var html = '<tr>';
 		html += '<td>' + esc( label ) + '</td>';
@@ -2801,7 +3132,6 @@
 		return html;
 	}
 
-	/* ------------------------------------------------------------------ */
 	/*  Utilities                                                          */
 	/* ------------------------------------------------------------------ */
 

@@ -31,6 +31,7 @@ class Ajax {
 		add_action( 'wp_ajax_scrutinizer_unpin_profile', array( __CLASS__, 'unpin_profile' ) );
 		add_action( 'wp_ajax_scrutinizer_update_annotation', array( __CLASS__, 'update_annotation' ) );
 		add_action( 'wp_ajax_scrutinizer_compare_profiles', array( __CLASS__, 'compare_profiles' ) );
+		add_action( 'wp_ajax_scrutinizer_compare_targets', array( __CLASS__, 'compare_targets' ) );
 		add_action( 'wp_ajax_scrutinizer_get_history', array( __CLASS__, 'get_history' ) );
 		add_action( 'wp_ajax_scrutinizer_get_cron_inventory', array( __CLASS__, 'get_cron_inventory' ) );
 		add_action( 'wp_ajax_scrutinizer_save_diagnostics_fields', array( __CLASS__, 'save_diagnostics_fields' ) );
@@ -517,6 +518,70 @@ class Ajax {
 		}
 
 		wp_send_json_success( array( 'comparison' => $comparison ) );
+	}
+
+	/**
+	 * Get compare target candidates for a profile.
+	 *
+	 * Returns pinned profiles on the same route (first) and all other pinned profiles.
+	 */
+	public static function compare_targets() {
+		check_ajax_referer( 'scrutinizer_nonce', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error(
+				array( 'message' => __( 'Permission denied.', 'scrutinizer' ) ),
+				403
+			);
+		}
+
+		$profile_id = 0;
+		if ( isset( $_GET['profile_id'] ) ) {
+			$profile_id = absint( $_GET['profile_id'] );
+		}
+
+		$route_key = '';
+		if ( isset( $_GET['route_key'] ) ) {
+			$route_key = sanitize_text_field( wp_unslash( $_GET['route_key'] ) );
+		}
+
+		// Get pinned profiles on the same route.
+		$route_pinned = array();
+		if ( ! empty( $route_key ) ) {
+			$route_pinned = Storage::search_profiles(
+				array(
+					'route_key'  => $route_key,
+					'pinned_only' => true,
+					'limit'      => 20,
+				)
+			);
+		}
+
+		// Get all other pinned profiles.
+		$all_pinned = Storage::get_pinned_profiles( 30 );
+
+		// Exclude the current profile from both lists.
+		$route_pinned = array_filter(
+			$route_pinned,
+			function ( $p ) use ( $profile_id ) {
+				return (int) $p['id'] !== $profile_id;
+			}
+		);
+		$all_pinned = array_filter(
+			$all_pinned,
+			function ( $p ) use ( $profile_id, $route_key ) {
+				// Exclude self and anything already in the route list.
+				return (int) $p['id'] !== $profile_id
+					&& ( empty( $route_key ) || $p['route_key'] !== $route_key );
+			}
+		);
+
+		wp_send_json_success(
+			array(
+				'route_matches' => array_values( $route_pinned ),
+				'other_pinned'  => array_values( $all_pinned ),
+			)
+		);
 	}
 
 	/**
