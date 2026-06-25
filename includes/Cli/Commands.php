@@ -473,6 +473,72 @@ class Commands {
 	}
 
 	/**
+	 * Manage the early boot mu-plugin.
+	 *
+	 * Installs or removes the Scrutinizer mu-plugin that captures
+	 * pre-plugin bootstrap timing.
+	 *
+	 * ## OPTIONS
+	 *
+	 * <action>
+	 * : install, remove, or status.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp scrutinizer mu-plugin install
+	 *     wp scrutinizer mu-plugin status
+	 *     wp scrutinizer mu-plugin remove
+	 *
+	 * @subcommand mu-plugin
+	 */
+	public function mu_plugin( $args ) {
+		$action  = $args[0];
+		$mu_dir  = WPMU_PLUGIN_DIR;
+		$mu_file = $mu_dir . '/scrutinizer-early.php';
+		$source  = SCRUTINIZER_DIR . 'assets/mu-plugin/scrutinizer-early.php';
+
+		switch ( $action ) {
+			case 'status':
+				if ( file_exists( $mu_file ) ) {
+					$active = defined( 'SCRUTINIZER_BOOT_NS' );
+					\WP_CLI::success( "Installed at {$mu_file}" . ( $active ? ' (active this request)' : '' ) );
+				} else {
+					\WP_CLI::log( 'Not installed. Run: wp scrutinizer mu-plugin install' );
+				}
+				break;
+
+			case 'install':
+				if ( ! file_exists( $source ) ) {
+					\WP_CLI::error( 'Source mu-plugin not found in plugin assets.' );
+				}
+				if ( ! is_dir( $mu_dir ) ) {
+					if ( ! wp_mkdir_p( $mu_dir ) ) {
+						\WP_CLI::error( "Could not create mu-plugins directory: {$mu_dir}" );
+					}
+				}
+				if ( ! copy( $source, $mu_file ) ) {
+					\WP_CLI::error( "Failed to copy mu-plugin to {$mu_file}" );
+				}
+				\WP_CLI::success( 'Early boot timer installed. New profiles will include bootstrap timing.' );
+				break;
+
+			case 'remove':
+				if ( ! file_exists( $mu_file ) ) {
+					\WP_CLI::log( 'Already removed.' );
+					return;
+				}
+				if ( ! unlink( $mu_file ) ) {
+					\WP_CLI::error( "Failed to remove {$mu_file}" );
+				}
+				\WP_CLI::success( 'Early boot timer removed.' );
+				break;
+
+			default:
+				\WP_CLI::error( "Unknown action: {$action}. Use install, remove, or status." );
+		}
+	}
+
+	/**
 	 * Format bytes into a human-readable string.
 	 *
 	 * @param int $bytes  Byte count.

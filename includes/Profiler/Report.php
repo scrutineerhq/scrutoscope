@@ -101,7 +101,8 @@ class Report {
 		unset( $source );
 
 		// Compute breakdown percentages by type.
-		$breakdown = self::compute_breakdown( $by_source, $total_excl_ns, $duration_ns );
+		$bootstrap_ns = isset( $request_metadata['bootstrap_ns'] ) ? (int) $request_metadata['bootstrap_ns'] : 0;
+		$breakdown    = self::compute_breakdown( $by_source, $total_excl_ns, $duration_ns, $bootstrap_ns );
 
 		$unattributed_ns = max( 0, $duration_ns - $total_excl_ns );
 
@@ -121,6 +122,8 @@ class Report {
 			'summary'            => array(
 				'duration_ns'        => $duration_ns,
 				'duration_ms'        => round( $duration_ns / 1e6, 2 ),
+				'bootstrap_ns'       => $bootstrap_ns,
+				'bootstrap_ms'       => round( $bootstrap_ns / 1e6, 2 ),
 				'total_exclusive_ns' => $total_excl_ns,
 				'unattributed_ns'    => $unattributed_ns,
 				'breakdown'          => $breakdown,
@@ -164,12 +167,17 @@ class Report {
 	/**
 	 * Compute a percentage breakdown by attribution type.
 	 *
+	 * When bootstrap_ns is non-zero (mu-plugin installed), the total
+	 * denominator expands to include pre-plugin boot time so percentages
+	 * reflect the full request lifecycle.
+	 *
 	 * @param array $by_source      Sources keyed by type:slug.
 	 * @param int   $total_excl_ns  Total exclusive nanoseconds.
-	 * @param int   $duration_ns    Total request duration nanoseconds.
+	 * @param int   $duration_ns    Total request duration nanoseconds (profiler_start → shutdown).
+	 * @param int   $bootstrap_ns   Pre-plugin boot time (mu-plugin → profiler_start). 0 when not available.
 	 * @return array
 	 */
-	private static function compute_breakdown( $by_source, $total_excl_ns, $duration_ns ) {
+	private static function compute_breakdown( $by_source, $total_excl_ns, $duration_ns, $bootstrap_ns = 0 ) {
 		$types = array(
 			'plugin'    => 0,
 			'theme'     => 0,
@@ -188,12 +196,19 @@ class Report {
 			}
 		}
 
+		// Bootstrap is pre-plugin overhead; unattributed is between-hook gaps.
+		if ( $bootstrap_ns > 0 ) {
+			$types['bootstrap'] = $bootstrap_ns;
+		}
 		$unattributed_ns       = max( 0, $duration_ns - $total_excl_ns );
 		$types['unattributed'] = $unattributed_ns;
 
+		// Total denominator includes bootstrap so all segments sum to 100%.
+		$total_ns = $duration_ns + $bootstrap_ns;
+
 		$breakdown = array();
 		foreach ( $types as $type => $ns ) {
-			$pct = ( $duration_ns > 0 ) ? round( ( $ns / $duration_ns ) * 100, 1 ) : 0;
+			$pct = ( $total_ns > 0 ) ? round( ( $ns / $total_ns ) * 100, 1 ) : 0;
 			if ( $ns > 0 || 'unattributed' === $type ) {
 				$breakdown[ $type ] = array(
 					'ns'      => $ns,

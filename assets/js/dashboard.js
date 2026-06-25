@@ -102,6 +102,7 @@
 		'mu-plugin':  '#e67e22',
 		'drop-in':    '#27ae60',
 		unknown:      '#d4a017',
+		bootstrap:    '#95a5a6',
 		unattributed: '#dcdcde'
 	};
 
@@ -2079,6 +2080,7 @@
 			'mu-plugin': 'Must-Use',
 			'drop-in': 'Drop-in',
 			'unknown': 'Unknown',
+			'bootstrap': 'Bootstrap',
 			'unattributed': 'Unattributed'
 		};
 		html += '<div class="scrutinizer-breakdown-legend">';
@@ -2091,7 +2093,11 @@
 				html += esc( displayLabel ) + ': ' + breakdown[ lt ].ms + ' ms (' + breakdown[ lt ].percent + '%)';
 				if ( 'unattributed' === lt ) {
 					html += ' <button type="button" class="scrutinizer-info-toggle" aria-label="What is unattributed time?">ⓘ</button>';
-					html += '<span class="scrutinizer-info-bubble">Time outside hook callbacks \u2014 PHP bootstrap, autoloaders, database connections, and core initialization. Could not be profiled. <a href="https://xdebug.org/docs/profiler" target="_blank" rel="noopener">Learn about full profiling with Xdebug</a>.</span>';
+					html += '<span class="scrutinizer-info-bubble">Time between hook callbacks \u2014 WordPress core dispatching, template rendering, autoloaders, and direct function calls that bypass the hook system.</span>';
+				}
+				if ( 'bootstrap' === lt ) {
+					html += ' <button type="button" class="scrutinizer-info-toggle" aria-label="What is bootstrap time?">ⓘ</button>';
+					html += '<span class="scrutinizer-info-bubble">Time before any hooks fire \u2014 PHP startup, wp-config loading, database connection, reading all plugin/theme files into memory. Captured by the Scrutinizer mu-plugin.</span>';
 				}
 				html += '</span>';
 			}

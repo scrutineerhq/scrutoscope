@@ -44,6 +44,15 @@ class Profiler {
 	private $call_stack = null;
 
 	/**
+	 * Pre-plugin boot timestamp from the mu-plugin (nanoseconds, monotonic).
+	 *
+	 * Zero when the mu-plugin is not installed.
+	 *
+	 * @var int
+	 */
+	private $boot_ns = 0;
+
+	/**
 	 * Request start time in nanoseconds (monotonic).
 	 *
 	 * @var int
@@ -190,6 +199,11 @@ class Profiler {
 		// produces garbage durations.
 		$this->request_start_ns        = hrtime( true );
 		$this->request_start_microtime = microtime( true );
+
+		// Capture pre-plugin boot timestamp from the mu-plugin.
+		if ( defined( 'SCRUTINIZER_BOOT_NS' ) && SCRUTINIZER_BOOT_NS > 0 ) {
+			$this->boot_ns = (int) SCRUTINIZER_BOOT_NS;
+		}
 
 		// Record the start as the first phase marker.
 		$this->phase_markers['profiler_start'] = $this->request_start_ns;
@@ -368,6 +382,7 @@ class Profiler {
 			'url'                => $request_url,
 			'method'             => $request_method,
 			'duration_ns'        => $duration_ns,
+			'bootstrap_ns'       => ( $this->boot_ns > 0 ) ? max( 0, $this->request_start_ns - $this->boot_ns ) : 0,
 			'route_class'        => $this->route_class,
 			'wp_version'         => get_bloginfo( 'version' ),
 			'timestamp'          => time(),
