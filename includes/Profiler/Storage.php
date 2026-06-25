@@ -271,7 +271,7 @@ class Storage {
 		$table        = self::table_name();
 		$placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
 		$sql = $wpdb->prepare( "DELETE FROM {$table} WHERE id IN ({$placeholders})", $ids );
 
 		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
@@ -331,7 +331,7 @@ class Storage {
 		$table        = self::table_name();
 		$placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
 		$sql = $wpdb->prepare( "UPDATE {$table} SET is_pinned = 1 WHERE id IN ({$placeholders})", $ids );
 
 		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
@@ -377,7 +377,7 @@ class Storage {
 		$table        = self::table_name();
 		$placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
 		$sql = $wpdb->prepare( "UPDATE {$table} SET is_pinned = 0 WHERE id IN ({$placeholders})", $ids );
 
 		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
