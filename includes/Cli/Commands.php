@@ -490,6 +490,8 @@ class Commands {
 	 *     wp scrutinizer mu-plugin remove
 	 *
 	 * @subcommand mu-plugin
+	 *
+	 * @param array $args Positional arguments.
 	 */
 	public function mu_plugin( $args ) {
 		$action  = $args[0];

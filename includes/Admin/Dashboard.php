@@ -200,13 +200,15 @@ class Dashboard {
 					</div>
 					<div class="scrutinizer-faq-item">
 						<strong><?php echo esc_html__( 'Need help?', 'scrutinizer' ); ?></strong>
-						<p><?php
+						<p>
+							<?php
 							printf(
 								/* translators: %s: GitHub Issues URL */
 								esc_html__( 'File an issue at %s — bug reports, feature requests, and questions are all welcome.', 'scrutinizer' ),
 								'<a href="https://github.com/scrutineerhq/scrutinizer/issues" target="_blank" rel="noopener">GitHub Issues</a>'
 							);
-						?></p>
+						?>
+						</p>
 					</div>
 				</div>
 			</div>
