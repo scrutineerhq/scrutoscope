@@ -1761,6 +1761,7 @@
 	gap: 1px;
 	border-radius: 2px;
 	overflow: hidden;
+	transform-origin: left center;
 }
 
 .density-bar {

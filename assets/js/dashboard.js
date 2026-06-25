@@ -298,6 +298,8 @@
 				renderGroupedTable( groupedData );
 			} else if ( 'route' === currentView ) {
 				renderRouteTable( routeData );
+			} else if ( 'history' === currentView ) {
+				renderHistoryTable( historyData );
 			}
 		} );
 
@@ -1584,7 +1586,8 @@
 			html += renderTimeline( timeline, phaseMarkers, summary, sources, httpCalls, queries );
 			timelineLoaded = true;
 		} else if ( timelineCount > 0 ) {
-			html += '<p class="scrutinizer-empty">Loading timeline data...</p>';
+			html += '<p class="scrutinizer-empty"><span class="spinner is-active" style="float:none;margin:0 8px 0 0;"></span>Loading timeline data...</p>';
+			// Will be loaded after render — see bottom of this function.
 		} else {
 			html += '<p class="scrutinizer-empty">No timeline data available.</p>';
 		}
@@ -1657,6 +1660,10 @@
 		// Init timeline interactivity if timeline was rendered inline.
 		if ( timelineLoaded ) {
 			initTimelineInteractivity();
+		} else if ( ! timelineLoaded && currentProfileId ) {
+			// Timeline is the default visible tab but wasn't included in
+			// the lightweight response — load it immediately.
+			loadTimelineData( currentProfileId );
 		}
 	}
 
@@ -2190,6 +2197,10 @@
 		var invScale = 1 / timelineZoom;
 		$wrapper.find( '.milestone' ).css( 'transform', 'translateX(-50%) scaleX(' + invScale + ')' );
 		$wrapper.find( '.http-lollipop' ).css( 'transform', 'translateX(-50%) scaleX(' + invScale + ')' );
+
+		// Counter-scale query density strip so bars don't stretch.
+		$wrapper.find( '.scrutinizer-query-density' ).css( 'transform', 'scaleX(' + invScale + ')' );
+		$wrapper.find( '.scrutinizer-density-label' ).css( 'transform', 'scaleX(' + invScale + ')' );
 
 		// Update zoom label.
 		var label = timelineZoom <= 1 ? '1\u00d7' : timelineZoom.toFixed( 1 ) + '\u00d7';
@@ -3284,8 +3295,11 @@
 	/*  Sorting                                                            */
 	/* ------------------------------------------------------------------ */
 
-	function sortHeader( label, field ) {
+	function sortHeader( label, field, extraClass ) {
 		var cls   = 'scrutinizer-sortable';
+		if ( extraClass ) {
+			cls += ' ' + extraClass;
+		}
 		var arrow = '';
 		if ( sortField === field ) {
 			cls  += ' sorted';
@@ -3517,20 +3531,21 @@
 			return;
 		}
 
+		var sorted = sortRows( profiles.slice() );
 		var html = '<table class="scrutinizer-profile-table scrutinizer-history-table widefat">';
 		html += '<thead><tr>';
 		html += '<th class="scrutinizer-check-col"><input type="checkbox" id="scrutinizer-select-all" title="Select all" /></th>';
-		html += '<th>Captured</th>';
-		html += '<th>Route</th>';
-		html += '<th class="numeric">Duration</th>';
+		html += sortHeader( 'Captured', 'captured_at' );
+		html += sortHeader( 'Route', 'route_key' );
+		html += sortHeader( 'Duration', 'duration_ns', 'numeric' );
 		html += '<th><span class="dashicons dashicons-sticky" title="Pinned"></span></th>';
 		html += '<th>Note</th>';
 		html += '<th>Tags</th>';
 		html += '<th>Actions</th>';
 		html += '</tr></thead><tbody>';
 
-		for ( var i = 0; i < profiles.length; i++ ) {
-			var p     = profiles[ i ];
+		for ( var i = 0; i < sorted.length; i++ ) {
+			var p     = sorted[ i ];
 			var durMs = ( parseInt( p.duration_ns, 10 ) / 1e6 ).toFixed( 1 );
 			var pinIcon = parseInt( p.is_pinned, 10 ) === 1 ? '<span class="dashicons dashicons-sticky"></span>' : '';
 			var notePrev = truncate( p.note || '', 40 );
