@@ -123,13 +123,13 @@ class QueryReducer {
 			$upper = strtoupper( $tok );
 
 			if ( '(' === $tok ) {
-				$depth++;
-				$i++;
+				++$depth;
+				++$i;
 				continue;
 			}
 			if ( ')' === $tok ) {
 				$depth = max( 0, $depth - 1 );
-				$i++;
+				++$i;
 				continue;
 			}
 
@@ -146,7 +146,7 @@ class QueryReducer {
 				$cte_names[ strtolower( self::strip_quotes( $tok ) ) ] = true;
 			}
 
-			$i++;
+			++$i;
 		}
 
 		return array(
@@ -179,7 +179,7 @@ class QueryReducer {
 			$upper = strtoupper( $tok );
 
 			if ( '(' === $tok ) {
-				$depth++;
+				++$depth;
 				continue;
 			}
 			if ( ')' === $tok ) {
@@ -253,14 +253,14 @@ class QueryReducer {
 
 			// Whitespace.
 			if ( ctype_space( $ch ) ) {
-				$i++;
+				++$i;
 				continue;
 			}
 
 			// Single or double quoted string — collapse to placeholder.
 			if ( '\'' === $ch || '"' === $ch ) {
 				$quote = $ch;
-				$i++;
+				++$i;
 				while ( $i < $len ) {
 					if ( '\\' === $sql[ $i ] ) {
 						$i += 2;
@@ -271,10 +271,10 @@ class QueryReducer {
 							$i += 2; // Doubled-quote escape.
 							continue;
 						}
-						$i++;
+						++$i;
 						break;
 					}
-					$i++;
+					++$i;
 				}
 				$tokens[] = '%s';
 				continue;
@@ -283,12 +283,12 @@ class QueryReducer {
 			// Backtick-quoted identifier.
 			if ( '`' === $ch ) {
 				$start = $i;
-				$i++;
+				++$i;
 				while ( $i < $len && '`' !== $sql[ $i ] ) {
-					$i++;
+					++$i;
 				}
 				if ( $i < $len ) {
-					$i++;
+					++$i;
 				}
 				$tokens[] = substr( $sql, $start, $i - $start );
 				continue;
@@ -297,12 +297,12 @@ class QueryReducer {
 			// Bracket-quoted identifier.
 			if ( '[' === $ch ) {
 				$start = $i;
-				$i++;
+				++$i;
 				while ( $i < $len && ']' !== $sql[ $i ] ) {
-					$i++;
+					++$i;
 				}
 				if ( $i < $len ) {
-					$i++;
+					++$i;
 				}
 				$tokens[] = substr( $sql, $start, $i - $start );
 				continue;
@@ -311,15 +311,15 @@ class QueryReducer {
 			// Structural punctuation — parentheses, commas, semicolons.
 			if ( '(' === $ch || ')' === $ch || ',' === $ch || ';' === $ch ) {
 				$tokens[] = $ch;
-				$i++;
+				++$i;
 				continue;
 			}
 
 			// Operators — discard.
 			if ( false !== strpos( '=<>!+-*/%&|^~.@', $ch ) ) {
-				$i++;
+				++$i;
 				while ( $i < $len && false !== strpos( '=<>!', $sql[ $i ] ) ) {
-					$i++;
+					++$i;
 				}
 				continue;
 			}
@@ -328,7 +328,7 @@ class QueryReducer {
 			if ( ctype_alpha( $ch ) || '_' === $ch ) {
 				$start = $i;
 				while ( $i < $len && ( ctype_alnum( $sql[ $i ] ) || '_' === $sql[ $i ] ) ) {
-					$i++;
+					++$i;
 				}
 				$tokens[] = substr( $sql, $start, $i - $start );
 				continue;
@@ -338,14 +338,14 @@ class QueryReducer {
 			if ( ctype_digit( $ch ) ) {
 				$start = $i;
 				while ( $i < $len && ( ctype_digit( $sql[ $i ] ) || '.' === $sql[ $i ] ) ) {
-					$i++;
+					++$i;
 				}
 				$tokens[] = substr( $sql, $start, $i - $start );
 				continue;
 			}
 
 			// Unknown character — skip.
-			$i++;
+			++$i;
 		}
 
 		return $tokens;
@@ -383,20 +383,87 @@ class QueryReducer {
 
 		self::$keyword_set = array_flip(
 			array(
-				'SELECT', 'FROM', 'WHERE', 'AND', 'OR', 'NOT', 'IN', 'ON',
-				'AS', 'JOIN', 'INNER', 'OUTER', 'LEFT', 'RIGHT', 'CROSS',
-				'NATURAL', 'FULL', 'SET', 'VALUES', 'INTO', 'INSERT',
-				'UPDATE', 'DELETE', 'CREATE', 'DROP', 'ALTER', 'INDEX',
-				'TABLE', 'ORDER', 'BY', 'GROUP', 'HAVING', 'LIMIT',
-				'OFFSET', 'UNION', 'ALL', 'DISTINCT', 'EXISTS', 'BETWEEN',
-				'LIKE', 'IS', 'NULL', 'TRUE', 'FALSE', 'CASE', 'WHEN',
-				'THEN', 'ELSE', 'END', 'ASC', 'DESC', 'IF', 'USING',
-				'FORCE', 'IGNORE', 'STRAIGHT_JOIN', 'WITH', 'RECURSIVE',
-				'SQL_CALC_FOUND_ROWS', 'LOW_PRIORITY', 'DELAYED',
-				'HIGH_PRIORITY', 'SQL_NO_CACHE', 'SQL_CACHE', 'REPLACE',
-				'DUPLICATE', 'KEY', 'SHOW', 'COLUMNS', 'TABLES', 'STATUS',
-				'TEMPORARY', 'CASCADE', 'RESTRICT', 'LATERAL', 'ROLLUP',
-				'OPTIMIZE', 'ANALYZE', 'CHECK', 'REPAIR', 'TRUNCATE',
+				'SELECT',
+				'FROM',
+				'WHERE',
+				'AND',
+				'OR',
+				'NOT',
+				'IN',
+				'ON',
+				'AS',
+				'JOIN',
+				'INNER',
+				'OUTER',
+				'LEFT',
+				'RIGHT',
+				'CROSS',
+				'NATURAL',
+				'FULL',
+				'SET',
+				'VALUES',
+				'INTO',
+				'INSERT',
+				'UPDATE',
+				'DELETE',
+				'CREATE',
+				'DROP',
+				'ALTER',
+				'INDEX',
+				'TABLE',
+				'ORDER',
+				'BY',
+				'GROUP',
+				'HAVING',
+				'LIMIT',
+				'OFFSET',
+				'UNION',
+				'ALL',
+				'DISTINCT',
+				'EXISTS',
+				'BETWEEN',
+				'LIKE',
+				'IS',
+				'NULL',
+				'TRUE',
+				'FALSE',
+				'CASE',
+				'WHEN',
+				'THEN',
+				'ELSE',
+				'END',
+				'ASC',
+				'DESC',
+				'IF',
+				'USING',
+				'FORCE',
+				'IGNORE',
+				'STRAIGHT_JOIN',
+				'WITH',
+				'RECURSIVE',
+				'SQL_CALC_FOUND_ROWS',
+				'LOW_PRIORITY',
+				'DELAYED',
+				'HIGH_PRIORITY',
+				'SQL_NO_CACHE',
+				'SQL_CACHE',
+				'REPLACE',
+				'DUPLICATE',
+				'KEY',
+				'SHOW',
+				'COLUMNS',
+				'TABLES',
+				'STATUS',
+				'TEMPORARY',
+				'CASCADE',
+				'RESTRICT',
+				'LATERAL',
+				'ROLLUP',
+				'OPTIMIZE',
+				'ANALYZE',
+				'CHECK',
+				'REPAIR',
+				'TRUNCATE',
 			)
 		);
 	}

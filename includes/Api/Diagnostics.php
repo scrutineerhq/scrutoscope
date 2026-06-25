@@ -29,17 +29,17 @@ class Diagnostics {
 	 * @var array
 	 */
 	const OPT_IN_FIELDS = array(
-		'php_memory_limit'       => 'PHP memory limit',
-		'php_max_execution_time' => 'PHP max execution time',
-		'opcache_enabled'        => 'OPcache status',
-		'opcache_memory'         => 'OPcache memory allocation',
-		'upload_max_filesize'    => 'Upload max filesize',
-		'web_server'             => 'Web server identity',
-		'https'                  => 'HTTPS status',
-		'wp_debug'               => 'WP_DEBUG state',
-		'cron_transport'         => 'Cron transport',
+		'php_memory_limit'        => 'PHP memory limit',
+		'php_max_execution_time'  => 'PHP max execution time',
+		'opcache_enabled'         => 'OPcache status',
+		'opcache_memory'          => 'OPcache memory allocation',
+		'upload_max_filesize'     => 'Upload max filesize',
+		'web_server'              => 'Web server identity',
+		'https'                   => 'HTTPS status',
+		'wp_debug'                => 'WP_DEBUG state',
+		'cron_transport'          => 'Cron transport',
 		'autoloaded_options_size' => 'Autoloaded options size',
-		'scale'                  => 'Post/user/comment counts',
+		'scale'                   => 'Post/user/comment counts',
 	);
 
 	/**
@@ -99,12 +99,12 @@ class Diagnostics {
 		global $wpdb;
 
 		$site = array(
-			'wordpress_version'  => get_bloginfo( 'version' ),
-			'php_version'        => PHP_VERSION,
-			'mysql_version'      => $wpdb->db_version(),
-			'multisite'          => is_multisite(),
+			'wordpress_version'   => get_bloginfo( 'version' ),
+			'php_version'         => PHP_VERSION,
+			'mysql_version'       => $wpdb->db_version(),
+			'multisite'           => is_multisite(),
 			'permalink_structure' => get_option( 'permalink_structure', '' ),
-			'object_cache'       => self::detect_object_cache(),
+			'object_cache'        => self::detect_object_cache(),
 			'page_cache_detected' => self::detect_page_cache(),
 		);
 
@@ -172,7 +172,7 @@ class Diagnostics {
 
 		foreach ( $active as $plugin_file ) {
 			// Plugin file is "slug/slug.php" or "slug.php".
-			$parts  = explode( '/', $plugin_file );
+			$parts   = explode( '/', $plugin_file );
 			$slugs[] = $parts[0];
 		}
 

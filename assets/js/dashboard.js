@@ -25,6 +25,7 @@
 	var historyData   = [];
 	var compareChecked = {};       // { profileId: true }
 	var currentProfileId = 0;     // currently viewed profile detail
+	var currentProfileData = null; // full profile object for the current detail view
 
 	/* ------------------------------------------------------------------ */
 	/*  Color palette                                                      */
@@ -272,6 +273,13 @@
 		$( document ).on( 'click', '#scrutinizer-share-btn', function() {
 			if ( currentProfileId ) {
 				showSharePanel( currentProfileId );
+			}
+		} );
+
+		// Export JSON button on detail view.
+		$( document ).on( 'click', '#scrutinizer-export-btn', function() {
+			if ( currentProfileData && currentProfileData.profile_data ) {
+				exportProfileJSON( currentProfileData );
 			}
 		} );
 
@@ -909,6 +917,7 @@
 		var profileTags  = profile.tags || '';
 
 		currentProfileId = parseInt( profile.id, 10 );
+		currentProfileData = profile;
 
 		var html = '';
 
@@ -922,6 +931,7 @@
 		html += '<label class="scrutinizer-pin-field"><span>' + esc( scrutinizerAdmin.i18n.tags || 'Tags' ) + ':</span>';
 		html += '<input type="text" id="scrutinizer-tags-input" value="' + esc( profileTags ) + '" placeholder="before-update, opcache, v2.1" /></label>';
 		html += '<button type="button" class="button" id="scrutinizer-share-btn" title="Share this report"><span class="dashicons dashicons-share-alt2"></span> Share</button>';
+		html += '<button type="button" class="button" id="scrutinizer-export-btn" title="Download raw profile as JSON"><span class="dashicons dashicons-download"></span> Export</button>';
 		html += '</div>';
 
 		// Header with role pill.
@@ -3241,6 +3251,10 @@
 		var keyBytes = crypto.getRandomValues( new Uint8Array( 32 ) );
 		var iv = crypto.getRandomValues( new Uint8Array( 12 ) );
 
+		// The key fragment for the share URL. For plain shares this is the raw key;
+		// for passphrase shares it becomes the wrapped key material.
+		var urlFragment = base64urlEncode( keyBytes );
+
 		crypto.subtle.importKey( 'raw', keyBytes, { name: 'AES-GCM' }, true, [ 'encrypt' ] )
 			.then( function( key ) {
 				return crypto.subtle.encrypt( { name: 'AES-GCM', iv: iv }, key, plaintext );
@@ -3251,11 +3265,12 @@
 				var keyB64 = base64urlEncode( keyBytes );
 				var hasPassphrase = false;
 
-				// If passphrase, wrap the key
+				// If passphrase, wrap the key and use wrapped material in URL fragment
 				if ( passphrase ) {
 					hasPassphrase = true;
 					return wrapKeyWithPassphrase( keyBytes, iv, passphrase ).then( function( wrapped ) {
 						keyB64 = base64urlEncode( new Uint8Array( wrapped ) );
+						urlFragment = keyB64;
 						return uploadToRelay( ciphertextB64, ivB64, keyB64, ttlDays, burnAfterReading, hasPassphrase );
 					} );
 				}
@@ -3266,7 +3281,7 @@
 				$btn.hide();
 				$( '.scrutinizer-share-options, .scrutinizer-share-sections, #scrutinizer-share-cancel' ).hide();
 
-				var shareUrl = resp.url + '#' + base64urlEncode( keyBytes );
+				var shareUrl = resp.url + '#' + urlFragment;
 
 				var html = '<div class="scrutinizer-share-success">';
 				html += '<p><span class="dashicons dashicons-yes-alt" style="color:#4ab866;"></span> Report encrypted and shared.</p>';
@@ -3403,11 +3418,13 @@
 	 * Base64url encode a Uint8Array.
 	 */
 	function base64urlEncode( bytes ) {
-		var binary = '';
-		for ( var i = 0; i < bytes.length; i++ ) {
-			binary += String.fromCharCode( bytes[ i ] );
+		// Process in chunks to avoid O(n²) string concatenation OOM on large buffers.
+		var CHUNK = 32768;
+		var parts = [];
+		for ( var i = 0; i < bytes.length; i += CHUNK ) {
+			parts.push( String.fromCharCode.apply( null, bytes.subarray( i, Math.min( i + CHUNK, bytes.length ) ) ) );
 		}
-		return btoa( binary ).replace( /\+/g, '-' ).replace( /\//g, '_' ).replace( /=+$/, '' );
+		return btoa( parts.join( '' ) ).replace( /\+/g, '-' ).replace( /\//g, '_' ).replace( /=+$/, '' );
 	}
 
 	/**

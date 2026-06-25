@@ -98,7 +98,7 @@ class Commands {
 			$duration_ms = round( $p['duration_ns'] / 1e6, 1 );
 			$rows[]      = array(
 				'ID'       => $p['id'],
-				'Route'    => $p['route_key'] ?: $p['route_class'],
+				'Route'    => $p['route_key'] ? $p['route_key'] : $p['route_class'],
 				'Method'   => $p['request_method'],
 				'Duration' => $duration_ms . ' ms',
 				'Captured' => $p['captured_at'],
@@ -160,25 +160,67 @@ class Commands {
 
 		// Summary.
 		$summary_rows = array(
-			array( 'Key' => 'URL', 'Value' => $profile['request_url'] ),
-			array( 'Key' => 'Method', 'Value' => $profile['request_method'] ),
-			array( 'Key' => 'Route', 'Value' => $profile['route_key'] ?: $profile['route_class'] ),
-			array( 'Key' => 'Duration', 'Value' => round( isset( $summary['duration_ms'] ) ? $summary['duration_ms'] : 0, 1 ) . ' ms' ),
-			array( 'Key' => 'Peak Memory', 'Value' => self::format_bytes( isset( $summary['memory_peak'] ) ? $summary['memory_peak'] : 0 ) ),
-			array( 'Key' => 'DB Queries', 'Value' => isset( $summary['query_count'] ) ? $summary['query_count'] : 'n/a' ),
-			array( 'Key' => 'HTTP Calls', 'Value' => isset( $summary['http_call_count'] ) ? $summary['http_call_count'] : 0 ),
-			array( 'Key' => 'Callbacks', 'Value' => isset( $summary['callback_count'] ) ? $summary['callback_count'] : 0 ),
-			array( 'Key' => 'Sources', 'Value' => isset( $summary['source_count'] ) ? $summary['source_count'] : 0 ),
-			array( 'Key' => 'Role', 'Value' => $profile['user_role'] ),
-			array( 'Key' => 'Captured', 'Value' => $profile['captured_at'] ),
-			array( 'Key' => 'Pinned', 'Value' => $profile['is_pinned'] ? 'Yes' : 'No' ),
+			array(
+				'Key'   => 'URL',
+				'Value' => $profile['request_url'],
+			),
+			array(
+				'Key'   => 'Method',
+				'Value' => $profile['request_method'],
+			),
+			array(
+				'Key'   => 'Route',
+				'Value' => $profile['route_key'] ? $profile['route_key'] : $profile['route_class'],
+			),
+			array(
+				'Key'   => 'Duration',
+				'Value' => round( isset( $summary['duration_ms'] ) ? $summary['duration_ms'] : 0, 1 ) . ' ms',
+			),
+			array(
+				'Key'   => 'Peak Memory',
+				'Value' => self::format_bytes( isset( $summary['memory_peak'] ) ? $summary['memory_peak'] : 0 ),
+			),
+			array(
+				'Key'   => 'DB Queries',
+				'Value' => isset( $summary['query_count'] ) ? $summary['query_count'] : 'n/a',
+			),
+			array(
+				'Key'   => 'HTTP Calls',
+				'Value' => isset( $summary['http_call_count'] ) ? $summary['http_call_count'] : 0,
+			),
+			array(
+				'Key'   => 'Callbacks',
+				'Value' => isset( $summary['callback_count'] ) ? $summary['callback_count'] : 0,
+			),
+			array(
+				'Key'   => 'Sources',
+				'Value' => isset( $summary['source_count'] ) ? $summary['source_count'] : 0,
+			),
+			array(
+				'Key'   => 'Role',
+				'Value' => $profile['user_role'],
+			),
+			array(
+				'Key'   => 'Captured',
+				'Value' => $profile['captured_at'],
+			),
+			array(
+				'Key'   => 'Pinned',
+				'Value' => $profile['is_pinned'] ? 'Yes' : 'No',
+			),
 		);
 
 		if ( ! empty( $profile['note'] ) ) {
-			$summary_rows[] = array( 'Key' => 'Note', 'Value' => $profile['note'] );
+			$summary_rows[] = array(
+				'Key'   => 'Note',
+				'Value' => $profile['note'],
+			);
 		}
 		if ( ! empty( $profile['tags'] ) ) {
-			$summary_rows[] = array( 'Key' => 'Tags', 'Value' => $profile['tags'] );
+			$summary_rows[] = array(
+				'Key'   => 'Tags',
+				'Value' => $profile['tags'],
+			);
 		}
 
 		Utils\format_items( 'table', $summary_rows, array( 'Key', 'Value' ) );
@@ -197,16 +239,16 @@ class Commands {
 
 			$source_rows = array();
 			foreach ( $sources as $s ) {
-				$excl_ns  = isset( $s['exclusive_ns'] ) ? $s['exclusive_ns'] : 0;
-				$excl_ms  = round( $excl_ns / 1e6, 2 );
-				$weight   = $total_excl_ns > 0 ? round( ( $excl_ns / $total_excl_ns ) * 100, 1 ) : 0;
+				$excl_ns = isset( $s['exclusive_ns'] ) ? $s['exclusive_ns'] : 0;
+				$excl_ms = round( $excl_ns / 1e6, 2 );
+				$weight  = $total_excl_ns > 0 ? round( ( $excl_ns / $total_excl_ns ) * 100, 1 ) : 0;
 
 				$source_rows[] = array(
-					'Source'    => isset( $s['name'] ) ? $s['name'] : '(unknown)',
-					'Type'     => isset( $s['type'] ) ? $s['type'] : '',
-					'Excl.'    => $excl_ms . ' ms',
-					'Weight'   => $weight . '%',
-					'Calls'    => isset( $s['call_count'] ) ? $s['call_count'] : '',
+					'Source' => isset( $s['name'] ) ? $s['name'] : '(unknown)',
+					'Type'   => isset( $s['type'] ) ? $s['type'] : '',
+					'Excl.'  => $excl_ms . ' ms',
+					'Weight' => $weight . '%',
+					'Calls'  => isset( $s['call_count'] ) ? $s['call_count'] : '',
 				);
 			}
 
@@ -375,15 +417,42 @@ class Commands {
 		}
 
 		$rows = array(
-			array( 'Key' => 'Active Session', 'Value' => Session::get_session_id() ?: 'None' ),
-			array( 'Key' => 'Background Profiling', 'Value' => get_option( 'scrutinizer_background_profiling', false ) ? 'Enabled' : 'Disabled' ),
-			array( 'Key' => 'Sample Rate', 'Value' => get_option( 'scrutinizer_sample_rate', 5 ) . '%' ),
-			array( 'Key' => 'Query Profiling', 'Value' => $qp_label ),
-			array( 'Key' => 'Total Profiles', 'Value' => $stats['rows'] ),
-			array( 'Key' => 'Table Size', 'Value' => self::format_bytes( $stats['size_bytes'] ) ),
-			array( 'Key' => 'PHP', 'Value' => PHP_VERSION ),
-			array( 'Key' => 'WordPress', 'Value' => get_bloginfo( 'version' ) ),
-			array( 'Key' => 'Plugin Version', 'Value' => SCRUTINIZER_VERSION ),
+			array(
+				'Key'   => 'Active Session',
+				'Value' => Session::get_session_id() ? Session::get_session_id() : 'None',
+			),
+			array(
+				'Key'   => 'Background Profiling',
+				'Value' => get_option( 'scrutinizer_background_profiling', false ) ? 'Enabled' : 'Disabled',
+			),
+			array(
+				'Key'   => 'Sample Rate',
+				'Value' => get_option( 'scrutinizer_sample_rate', 5 ) . '%',
+			),
+			array(
+				'Key'   => 'Query Profiling',
+				'Value' => $qp_label,
+			),
+			array(
+				'Key'   => 'Total Profiles',
+				'Value' => $stats['rows'],
+			),
+			array(
+				'Key'   => 'Table Size',
+				'Value' => self::format_bytes( $stats['size_bytes'] ),
+			),
+			array(
+				'Key'   => 'PHP',
+				'Value' => PHP_VERSION,
+			),
+			array(
+				'Key'   => 'WordPress',
+				'Value' => get_bloginfo( 'version' ),
+			),
+			array(
+				'Key'   => 'Plugin Version',
+				'Value' => SCRUTINIZER_VERSION,
+			),
 		);
 
 		$format = Utils\get_flag_value( $assoc_args, 'format', 'table' );

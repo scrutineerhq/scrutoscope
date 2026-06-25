@@ -26,7 +26,7 @@ class Report {
 		// Group timings by attribution.
 		$by_source           = array();
 		$total_excl_ns       = 0;
-		$total_mem_allocated  = 0;
+		$total_mem_allocated = 0;
 
 		foreach ( $raw_timings as $timing ) {
 			$attr = $timing['attribution'];
@@ -106,7 +106,7 @@ class Report {
 		$unattributed_ns = max( 0, $duration_ns - $total_excl_ns );
 
 		// HTTP call summary.
-		$http_calls = isset( $request_metadata['http_calls'] ) ? $request_metadata['http_calls'] : array();
+		$http_calls    = isset( $request_metadata['http_calls'] ) ? $request_metadata['http_calls'] : array();
 		$http_total_ms = 0;
 		foreach ( $http_calls as $hc ) {
 			$http_total_ms += isset( $hc['duration_ms'] ) ? (float) $hc['duration_ms'] : 0;
@@ -118,46 +118,46 @@ class Report {
 			: self::classify_route( $request_metadata );
 
 		return array(
-			'summary'       => array(
-				'duration_ns'          => $duration_ns,
-				'duration_ms'          => round( $duration_ns / 1e6, 2 ),
-				'total_exclusive_ns'   => $total_excl_ns,
-				'unattributed_ns'      => $unattributed_ns,
-				'breakdown'            => $breakdown,
-				'callback_count'       => count( $raw_timings ),
-				'source_count'         => count( $by_source ),
-				'query_count'          => isset( $request_metadata['query_count'] ) ? (int) $request_metadata['query_count'] : 0,
-				'http_call_count'      => count( $http_calls ),
-				'http_total_ms'        => round( $http_total_ms, 2 ),
-				'memory_peak'          => memory_get_peak_usage(),
-				'memory_allocated'     => $total_mem_allocated,
-				'asset_count'          => isset( $request_metadata['enqueued_assets']['counts'] )
+			'summary'            => array(
+				'duration_ns'        => $duration_ns,
+				'duration_ms'        => round( $duration_ns / 1e6, 2 ),
+				'total_exclusive_ns' => $total_excl_ns,
+				'unattributed_ns'    => $unattributed_ns,
+				'breakdown'          => $breakdown,
+				'callback_count'     => count( $raw_timings ),
+				'source_count'       => count( $by_source ),
+				'query_count'        => isset( $request_metadata['query_count'] ) ? (int) $request_metadata['query_count'] : 0,
+				'http_call_count'    => count( $http_calls ),
+				'http_total_ms'      => round( $http_total_ms, 2 ),
+				'memory_peak'        => memory_get_peak_usage(),
+				'memory_allocated'   => $total_mem_allocated,
+				'asset_count'        => isset( $request_metadata['enqueued_assets']['counts'] )
 					? ( $request_metadata['enqueued_assets']['counts']['scripts'] + $request_metadata['enqueued_assets']['counts']['styles'] )
 					: 0,
-				'asset_total_size'     => isset( $request_metadata['enqueued_assets']['total_size'] )
+				'asset_total_size'   => isset( $request_metadata['enqueued_assets']['total_size'] )
 					? (int) $request_metadata['enqueued_assets']['total_size']
 					: 0,
 			),
-			'sources'       => array_values( $by_source ),
-			'trace'         => $call_stack_trace,
-			'request'       => array(
-				'url'          => isset( $request_metadata['url'] ) ? $request_metadata['url'] : '',
-				'method'       => isset( $request_metadata['method'] ) ? $request_metadata['method'] : 'GET',
-				'route_class'  => $route_class,
-				'php_version'  => PHP_VERSION,
-				'wp_version'   => isset( $request_metadata['wp_version'] ) ? $request_metadata['wp_version'] : '',
-				'timestamp'    => isset( $request_metadata['timestamp'] ) ? $request_metadata['timestamp'] : time(),
-				'memory_peak'  => memory_get_peak_usage(),
-				'user_role'    => isset( $request_metadata['user_role'] ) ? $request_metadata['user_role'] : 'anonymous',
-				'referer'      => isset( $request_metadata['referer'] ) ? $request_metadata['referer'] : '',
-				'ajax_action'  => isset( $request_metadata['ajax_action'] ) ? $request_metadata['ajax_action'] : '',
+			'sources'            => array_values( $by_source ),
+			'trace'              => $call_stack_trace,
+			'request'            => array(
+				'url'         => isset( $request_metadata['url'] ) ? $request_metadata['url'] : '',
+				'method'      => isset( $request_metadata['method'] ) ? $request_metadata['method'] : 'GET',
+				'route_class' => $route_class,
+				'php_version' => PHP_VERSION,
+				'wp_version'  => isset( $request_metadata['wp_version'] ) ? $request_metadata['wp_version'] : '',
+				'timestamp'   => isset( $request_metadata['timestamp'] ) ? $request_metadata['timestamp'] : time(),
+				'memory_peak' => memory_get_peak_usage(),
+				'user_role'   => isset( $request_metadata['user_role'] ) ? $request_metadata['user_role'] : 'anonymous',
+				'referer'     => isset( $request_metadata['referer'] ) ? $request_metadata['referer'] : '',
+				'ajax_action' => isset( $request_metadata['ajax_action'] ) ? $request_metadata['ajax_action'] : '',
 			),
-			'phase_markers' => isset( $request_metadata['phase_markers'] ) ? $request_metadata['phase_markers'] : array(),
-			'queries'       => isset( $request_metadata['queries'] ) ? $request_metadata['queries'] : array(),
-			'http_calls'    => $http_calls,
+			'phase_markers'      => isset( $request_metadata['phase_markers'] ) ? $request_metadata['phase_markers'] : array(),
+			'queries'            => isset( $request_metadata['queries'] ) ? $request_metadata['queries'] : array(),
+			'http_calls'         => $http_calls,
 			'autoloaded_options' => isset( $request_metadata['autoloaded_options'] ) ? $request_metadata['autoloaded_options'] : array(),
 			'enqueued_assets'    => isset( $request_metadata['enqueued_assets'] ) ? $request_metadata['enqueued_assets'] : array(),
-			'timeline'      => self::build_timeline( $raw_timings, $duration_ns ),
+			'timeline'           => self::build_timeline( $raw_timings, $duration_ns ),
 		);
 	}
 

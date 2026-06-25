@@ -675,8 +675,8 @@ class Profiler {
 		$total   = 0;
 		$options = array();
 		foreach ( $results as $row ) {
-			$size    = (int) $row['size_bytes'];
-			$total  += $size;
+			$size      = (int) $row['size_bytes'];
+			$total    += $size;
 			$options[] = array(
 				'name' => $row['option_name'],
 				'size' => $size,
@@ -857,8 +857,8 @@ class Profiler {
 			return array();
 		}
 
-		$assets   = array();
-		$abspath  = wp_normalize_path( ABSPATH );
+		$assets  = array();
+		$abspath = wp_normalize_path( ABSPATH );
 
 		foreach ( $deps->done as $handle ) {
 			if ( ! isset( $deps->registered[ $handle ] ) ) {
@@ -866,7 +866,7 @@ class Profiler {
 			}
 
 			$obj = $deps->registered[ $handle ];
-			$src = $obj->src ?: '';
+			$src = $obj->src ? $obj->src : '';
 
 			// Resolve local path for file size and attribution.
 			$local_path = '';
@@ -917,7 +917,7 @@ class Profiler {
 						$attribution = array(
 							'type' => 'theme',
 							'slug' => $hm[1],
-							'name' => $theme->get( 'Name' ) ?: $hm[1],
+							'name' => $theme->get( 'Name' ) ? $theme->get( 'Name' ) : $hm[1],
 						);
 					}
 				}
@@ -926,8 +926,8 @@ class Profiler {
 			$assets[] = array(
 				'handle'      => $handle,
 				'src'         => $src,
-				'version'     => $obj->ver ?: '',
-				'deps'        => $obj->deps ?: array(),
+				'version'     => $obj->ver ? $obj->ver : '',
+				'deps'        => $obj->deps ? $obj->deps : array(),
 				'size'        => $size,
 				'location'    => $location,
 				'attribution' => $attribution,
@@ -1008,7 +1008,7 @@ class Profiler {
 			$result['name'] = $m[1];
 		} elseif ( preg_match( '#/wp-(?:admin|includes)/#', $src ) ) {
 			$result['type'] = 'core';
-			$result['slug'] = 'wordpress';
+			$result['slug'] = 'WordPress';
 			$result['name'] = 'WordPress Core';
 		}
 

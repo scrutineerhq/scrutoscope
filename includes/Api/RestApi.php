@@ -134,7 +134,7 @@ class RestApi {
 	 * Returns raw text/plain — not JSON-wrapped.
 	 *
 	 * @param \WP_REST_Request $request  Request object.
-	 * @return \WP_REST_Response
+	 * @return void
 	 */
 	public static function handle_prompt( $request ) {
 		$prompt = Prompt::build();
@@ -176,15 +176,15 @@ class RestApi {
 			$latest_id      = ! empty( $route_profiles ) ? (int) $route_profiles[0]['id'] : null;
 
 			$routes[] = array(
-				'route'              => $route_label,
-				'route_label'        => isset( $group['route_label'] ) ? $group['route_label'] : null,
-				'profile_count'      => (int) $group['request_count'],
-				'latest_profile_id'  => $latest_id,
-				'avg_duration_ms'    => round( (float) $group['avg_duration_ns'] / 1e6, 1 ),
-				'avg_query_count'    => null !== $group['avg_query_count'] ? (int) round( (float) $group['avg_query_count'] ) : null,
-				'count_2xx'          => isset( $group['count_2xx'] ) ? (int) $group['count_2xx'] : 0,
-				'count_4xx'          => isset( $group['count_4xx'] ) ? (int) $group['count_4xx'] : 0,
-				'count_5xx'          => isset( $group['count_5xx'] ) ? (int) $group['count_5xx'] : 0,
+				'route'             => $route_label,
+				'route_label'       => isset( $group['route_label'] ) ? $group['route_label'] : null,
+				'profile_count'     => (int) $group['request_count'],
+				'latest_profile_id' => $latest_id,
+				'avg_duration_ms'   => round( (float) $group['avg_duration_ns'] / 1e6, 1 ),
+				'avg_query_count'   => null !== $group['avg_query_count'] ? (int) round( (float) $group['avg_query_count'] ) : null,
+				'count_2xx'         => isset( $group['count_2xx'] ) ? (int) $group['count_2xx'] : 0,
+				'count_4xx'         => isset( $group['count_4xx'] ) ? (int) $group['count_4xx'] : 0,
+				'count_5xx'         => isset( $group['count_5xx'] ) ? (int) $group['count_5xx'] : 0,
 			);
 		}
 
@@ -330,10 +330,10 @@ class RestApi {
 		$sources = array();
 		if ( ! empty( $delta['sources'] ) ) {
 			foreach ( $delta['sources'] as $key => $s ) {
-				$parts = explode( ':', $key, 2 );
+				$parts     = explode( ':', $key, 2 );
 				$sources[] = array(
-					'source'              => isset( $parts[1] ) ? $parts[1] : $key,
-					'exclusive_ms_delta'  => round( (float) $s['delta_ns'] / 1e6, 1 ),
+					'source'             => isset( $parts[1] ) ? $parts[1] : $key,
+					'exclusive_ms_delta' => round( (float) $s['delta_ns'] / 1e6, 1 ),
 				);
 			}
 		}
@@ -342,9 +342,9 @@ class RestApi {
 			'profile_a' => $format_brief( $comparison['a'] ),
 			'profile_b' => $format_brief( $comparison['b'] ),
 			'deltas'    => array(
-				'duration_ms'  => round( (float) $delta['duration_ns'] / 1e6, 1 ),
-				'query_count'  => $delta['query_count_delta'],
-				'sources'      => $sources,
+				'duration_ms' => round( (float) $delta['duration_ns'] / 1e6, 1 ),
+				'query_count' => $delta['query_count_delta'],
+				'sources'     => $sources,
 			),
 		);
 

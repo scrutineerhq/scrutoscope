@@ -12,6 +12,12 @@ namespace Scrutinizer\Diagnostics;
 
 use Scrutinizer\Profiler\Attribution;
 
+/**
+ * Cron inventory diagnostic.
+ *
+ * Collects information about all registered WordPress cron events
+ * for display in the Scrutineer dashboard.
+ */
 class Cron {
 
 	/**
@@ -53,9 +59,9 @@ class Cron {
 				}
 
 				foreach ( $hook_events as $hash => $event ) {
-					$schedule = ! empty( $event['schedule'] ) ? $event['schedule'] : false;
-					$interval = ! empty( $event['interval'] ) ? (int) $event['interval'] : 0;
-					$args     = ! empty( $event['args'] ) ? $event['args'] : array();
+					$schedule   = ! empty( $event['schedule'] ) ? $event['schedule'] : false;
+					$interval   = ! empty( $event['interval'] ) ? (int) $event['interval'] : 0;
+					$args       = ! empty( $event['args'] ) ? $event['args'] : array();
 					$is_overdue = ( $timestamp <= $now );
 
 					// Attribution: try to find who registered this hook.
@@ -65,7 +71,7 @@ class Cron {
 						'hook'        => $hook,
 						'timestamp'   => (int) $timestamp,
 						'time_human'  => gmdate( 'Y-m-d H:i:s', $timestamp ) . ' UTC',
-						'schedule'    => $schedule ?: 'once',
+						'schedule'    => $schedule ? $schedule : 'once',
 						'interval'    => $interval,
 						'args'        => $args,
 						'args_hash'   => $hash,
@@ -80,7 +86,7 @@ class Cron {
 					if ( ! isset( $hooks[ $hook ] ) ) {
 						$hooks[ $hook ] = 0;
 					}
-					$hooks[ $hook ]++;
+					++$hooks[ $hook ];
 
 					if ( $is_overdue && $schedule ) {
 						$warnings[] = array(
@@ -115,9 +121,12 @@ class Cron {
 		}
 
 		// Sort events by timestamp.
-		usort( $events, function ( $a, $b ) {
-			return $a['timestamp'] - $b['timestamp'];
-		});
+		usort(
+			$events,
+			function ( $a, $b ) {
+				return $a['timestamp'] - $b['timestamp'];
+			}
+		);
 
 		return array(
 			'events'    => $events,
@@ -145,13 +154,13 @@ class Cron {
 
 		foreach ( $events as $ev ) {
 			if ( 'once' === $ev['schedule'] ) {
-				$oneshot++;
+				++$oneshot;
 			} else {
-				$recurring++;
+				++$recurring;
 			}
 
 			if ( $ev['overdue'] ) {
-				$overdue++;
+				++$overdue;
 			}
 
 			if ( $ev['timestamp'] > $now && $ev['timestamp'] < $next_ts ) {
@@ -165,13 +174,16 @@ class Cron {
 					'count'       => 0,
 				);
 			}
-			$by_source[ $source_key ]['count']++;
+			++$by_source[ $source_key ]['count'];
 		}
 
 		// Sort sources by count descending.
-		usort( $by_source, function ( $a, $b ) {
-			return $b['count'] - $a['count'];
-		});
+		usort(
+			$by_source,
+			function ( $a, $b ) {
+				return $b['count'] - $a['count'];
+			}
+		);
 
 		return array(
 			'total'      => $total,
@@ -198,9 +210,12 @@ class Cron {
 				'display'  => $data['display'],
 			);
 		}
-		usort( $out, function ( $a, $b ) {
-			return $a['interval'] - $b['interval'];
-		});
+		usort(
+			$out,
+			function ( $a, $b ) {
+				return $a['interval'] - $b['interval'];
+			}
+		);
 		return $out;
 	}
 
