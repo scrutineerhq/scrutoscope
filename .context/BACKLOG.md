@@ -92,7 +92,10 @@ Sharing architecture redesigned June 23, 2026. Zero-knowledge relay pulled into 
 - [x] Gzip before encryption (CompressionStream/DecompressionStream)
 - [x] KV → R2 migration for report storage (10MB limit)
 - [x] File upload drop zone at scrutinizer.dev/view (D39)
-- [x] Viewer branding: "Scrutinizer Report" + mono wordmark
+- [x] Viewer branding: "Scrutinizer Report" + mono wordmark + Scrutineer teal
+- [x] HTTP Calls, Autoloaded Options, and Enqueued Assets tabs in viewer
+- [x] Timeline segment tooltips with callback name and duration
+- [x] Share data enrichment: timeline ms conversion, trace parsing, HTTP calls flattening
 
 ## M5 — External Diagnostics and WP-CLI
 
@@ -104,6 +107,7 @@ Sharing architecture redesigned June 23, 2026. Zero-knowledge relay pulled into 
 - [x] WP-CLI: `wp scrutinizer export <id>` — export profile as JSON
 - [x] WP-CLI: `wp scrutinizer clear` — delete all profiles
 - [x] WP-CLI: `wp scrutinizer status` — profiler state summary
+- [x] WP-CLI: `wp scrutinizer mu-plugin` — install/remove/status early boot mu-plugin
 
 ## M6 — Polish and wp.org Submission
 
