@@ -469,6 +469,19 @@
 }
 
 .scrutinizer-source-table th {
+	position: relative;
+}
+
+.scrutinizer-source-table th .scrutinizer-info-bubble {
+	position: absolute;
+	z-index: 10;
+	top: 100%;
+	right: 0;
+	min-width: 240px;
+	white-space: normal;
+}
+
+.scrutinizer-source-table th {
 	font-weight: 600;
 	background: #f6f7f7;
 }

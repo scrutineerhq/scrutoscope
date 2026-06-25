@@ -283,6 +283,28 @@
 			}
 		} );
 
+		// Compare picker button on detail view.
+		$( document ).on( 'click', '#scrutinizer-compare-pick-btn', function() {
+			if ( currentProfileId ) {
+				toggleComparePicker( currentProfileId );
+			}
+		} );
+
+		// Compare picker: select a target.
+		$( document ).on( 'click', '.scrutinizer-compare-target', function() {
+			var targetId = parseInt( $( this ).data( 'id' ), 10 );
+			if ( currentProfileId && targetId ) {
+				loadInlineComparison( currentProfileId, targetId );
+			}
+		} );
+
+		// Dismiss inline comparison.
+		$( document ).on( 'click', '#scrutinizer-inline-compare-close', function() {
+			$( '#scrutinizer-inline-compare' ).slideUp( 200, function() {
+				$( this ).remove();
+			} );
+		} );
+
 		// Save annotation on blur.
 		$( document ).on( 'blur', '#scrutinizer-note-input', saveAnnotation );
 		$( document ).on( 'blur', '#scrutinizer-tags-input', saveAnnotation );
@@ -932,6 +954,7 @@
 		html += '<input type="text" id="scrutinizer-tags-input" value="' + esc( profileTags ) + '" placeholder="before-update, opcache, v2.1" /></label>';
 		html += '<button type="button" class="button" id="scrutinizer-share-btn" title="Share this report"><span class="dashicons dashicons-share-alt2"></span> Share</button>';
 		html += '<button type="button" class="button" id="scrutinizer-export-btn" title="Download raw profile as JSON"><span class="dashicons dashicons-download"></span> Export</button>';
+		html += '<button type="button" class="button" id="scrutinizer-compare-pick-btn" title="Compare with another profile"><span class="dashicons dashicons-randomize"></span> Compare</button>';
 		html += '</div>';
 
 		// Header with role pill.
@@ -952,7 +975,7 @@
 		html += '<div class="scrutinizer-metric-cards">';
 		html += renderMetricCard( durMs + ' ms', scrutinizerAdmin.i18n.serverDuration, 'primary' );
 		html += renderMetricCard( formatBytes( summary.memory_peak || request.memory_peak || 0 ), 'Peak Memory', 'default' );
-		html += renderMetricCard( formatBytes( summary.memory_allocated || 0 ), 'Allocated', summary.memory_allocated > 10485760 ? 'warning' : 'default' );
+		html += renderMetricCard( formatBytes( summary.memory_allocated || 0 ), 'Memory Used', summary.memory_allocated > 10485760 ? 'warning' : 'default' );
 		html += renderMetricCard( String( queryCount ), 'DB Queries', queryCount > 100 ? 'warning' : 'default' );
 		html += renderMetricCard( String( httpCount ), 'HTTP Calls', httpCount > 0 ? 'warning' : 'default' );
 		html += renderMetricCard( String( summary.callback_count || 0 ), 'Callbacks', 'default' );
@@ -1140,7 +1163,7 @@
 			if ( seg.pct_width < 0.05 ) {
 				continue;
 			}
-			html += '<div class="timeline-segment" style="left:' + seg.pct_start.toFixed( 3 ) + '%;width:' + Math.max( seg.pct_width, 0.15 ).toFixed( 3 ) + '%;background:' + color + '" title="' + esc( seg.callback ) + ' (' + seg.source + ')\n' + ( seg.wall_ns / 1e6 ).toFixed( 2 ) + ' ms wall"></div>';
+			html += '<div class="timeline-segment" style="left:' + seg.pct_start.toFixed( 3 ) + '%;width:' + Math.max( seg.pct_width, 0.15 ).toFixed( 3 ) + '%;background:' + color + '" title="' + esc( seg.callback ) + ' (' + seg.source + ')\n' + ( seg.wall_ns / 1e6 ).toFixed( 2 ) + ' ms"></div>';
 		}
 
 		html += '</div>'; // timeline-bar
@@ -1341,7 +1364,7 @@
 	function renderBreakdown( summary ) {
 		var breakdown = summary.breakdown || {};
 		var html = '<div class="scrutinizer-breakdown">';
-		html += '<p class="scrutinizer-tab-subtitle">How request time splits across code types \u2014 plugins, theme, core, and time not mapped to any callback.</p>';
+		html += '<p class="scrutinizer-tab-subtitle">How server request duration splits across source types \u2014 plugins, theme, core, and time before any hooks fire.</p>';
 		html += '<div class="scrutinizer-breakdown-bar">';
 
 		var barTypes = [ 'plugin', 'theme', 'core', 'mu-plugin', 'unknown', 'unattributed' ];
@@ -1356,16 +1379,26 @@
 		html += '</div>'; // breakdown-bar
 
 		// Legend with unattributed tooltip.
+		var sourceLabels = {
+			'plugin': 'Plugins',
+			'theme': 'Theme',
+			'core': 'Core',
+			'mu-plugin': 'Must-Use',
+			'drop-in': 'Drop-in',
+			'unknown': 'Unknown',
+			'unattributed': 'Unattributed'
+		};
 		html += '<div class="scrutinizer-breakdown-legend">';
 		for ( var lt in breakdown ) {
 			if ( breakdown.hasOwnProperty( lt ) && breakdown[ lt ].ms > 0 ) {
 				var color = sourceColors[ lt ] || '#888';
+				var displayLabel = sourceLabels[ lt ] || lt;
 				html += '<span class="legend-item">';
 				html += '<span class="legend-swatch" style="background:' + color + '"></span>';
-				html += esc( lt ) + ': ' + breakdown[ lt ].ms + ' ms (' + breakdown[ lt ].percent + '%)';
+				html += esc( displayLabel ) + ': ' + breakdown[ lt ].ms + ' ms (' + breakdown[ lt ].percent + '%)';
 				if ( 'unattributed' === lt ) {
 					html += ' <button type="button" class="scrutinizer-info-toggle" aria-label="What is unattributed time?">ⓘ</button>';
-					html += '<span class="scrutinizer-info-bubble">Time spent in PHP bootstrap, autoloaders, database connections, WordPress core initialization, and opcode compilation — before hooks fire. This is normal overhead, not a problem to solve.</span>';
+					html += '<span class="scrutinizer-info-bubble">Time spent in PHP bootstrap, autoloaders, database connections, WordPress core initialization, and opcode compilation \u2014 before hooks fire. This is normal overhead, not a problem to solve.</span>';
 				}
 				html += '</span>';
 			}
@@ -1387,15 +1420,15 @@
 
 		var totalExclNs = summary.total_exclusive_ns || 1;
 
-		var html = '<p class="scrutinizer-tab-subtitle">Time in each individual plugin and theme, ranked by exclusive callback time.</p>';
+		var html = '<p class="scrutinizer-tab-subtitle">Each plugin and theme\u2019s contribution to server request duration, sorted by the time spent in their own callbacks.</p>';
 		html += '<table class="scrutinizer-source-table widefat">';
 		html += '<thead><tr>';
 		html += '<th>Source</th>';
 		html += '<th>Type</th>';
-		html += '<th class="numeric">' + scrutinizerAdmin.i18n.exclusiveTime + '</th>';
+		html += '<th class="numeric">' + scrutinizerAdmin.i18n.exclusiveTime + ' <button type="button" class="scrutinizer-info-toggle" aria-label="What is exclusive time?">ⓘ</button><span class="scrutinizer-info-bubble">Time spent directly in this source\u2019s own callbacks, excluding time in callbacks it triggers from other sources. This is the most useful number for identifying what\u2019s slow.</span></th>';
 		html += '<th class="numeric">Weight</th>';
 		html += '<th class="numeric">Memory</th>';
-		html += '<th class="numeric">' + scrutinizerAdmin.i18n.inclusiveTime + '</th>';
+		html += '<th class="numeric">' + scrutinizerAdmin.i18n.inclusiveTime + ' <button type="button" class="scrutinizer-info-toggle" aria-label="What is inclusive time?">ⓘ</button><span class="scrutinizer-info-bubble">Total time spent in this source\u2019s callbacks including any nested callbacks from other sources that it triggers.</span></th>';
 		html += '<th class="numeric">' + scrutinizerAdmin.i18n.callCount + '</th>';
 		html += '</tr></thead><tbody>';
 
@@ -1984,7 +2017,7 @@
 		var inclusiveMs = ( ( node.inclusive_ns || 0 ) / 1e6 ).toFixed( 2 );
 		var timing = exclusiveMs + ' ms';
 		if ( node.children && node.children.length > 0 && node.exclusive_ns !== node.inclusive_ns ) {
-			timing += ' <span class="scrutinizer-muted">(incl: ' + inclusiveMs + ' ms)</span>';
+			timing += ' <span class="scrutinizer-muted">(total with children: ' + inclusiveMs + ' ms)</span>';
 		}
 		var priority = node._priority ? ':' + esc( node._priority ) : '';
 
@@ -2660,7 +2693,7 @@
 
 		// Summary comparison.
 		html += '<table class="scrutinizer-source-table scrutinizer-compare-table widefat">';
-		html += '<thead><tr><th>Metric</th><th class="numeric">Profile A</th><th class="numeric">Profile B</th><th class="numeric">Delta</th></tr></thead>';
+		html += '<thead><tr><th>Metric</th><th class="numeric">Profile A</th><th class="numeric">Profile B</th><th class="numeric">Change</th></tr></thead>';
 		html += '<tbody>';
 
 		// Duration.
@@ -2715,7 +2748,7 @@
 		if ( sourceKeys.length > 0 ) {
 			html += '<h3>Per-Source Breakdown</h3>';
 			html += '<table class="scrutinizer-source-table scrutinizer-compare-table widefat">';
-			html += '<thead><tr><th>Source</th><th class="numeric">Profile A</th><th class="numeric">Profile B</th><th class="numeric">Delta</th></tr></thead>';
+			html += '<thead><tr><th>Source</th><th class="numeric">Profile A</th><th class="numeric">Profile B</th><th class="numeric">Change</th></tr></thead>';
 			html += '<tbody>';
 
 			// Sort by absolute delta descending.
@@ -2900,11 +2933,11 @@
 		html += '<table class="scrutinizer-api-endpoints">';
 		html += '<thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead>';
 		html += '<tbody>';
-		html += '<tr><td><code>GET</code></td><td><code>/v1/prompt</code></td><td>System prompt (text/plain) — the API contract</td></tr>';
-		html += '<tr><td><code>GET</code></td><td><code>/v1/diagnostics</code></td><td>Site fingerprint with opt-in fields</td></tr>';
-		html += '<tr><td><code>GET</code></td><td><code>/v1/routes</code></td><td>Profiled routes with summary stats</td></tr>';
-		html += '<tr><td><code>GET</code></td><td><code>/v1/profile/{id}</code></td><td>Compiled profile detail</td></tr>';
-		html += '<tr><td><code>GET</code></td><td><code>/v1/compare/{a}/{b}</code></td><td>Two profiles with deltas</td></tr>';
+		html += '<tr><td><code>GET</code></td><td><code>/v1/prompt</code></td><td>System prompt (text/plain) \u2014 the API contract</td></tr>';
+		html += '<tr><td><code>GET</code></td><td><code>/v1/diagnostics</code></td><td>Server environment details (opt-in fields only)</td></tr>';
+		html += '<tr><td><code>GET</code></td><td><code>/v1/routes</code></td><td>All profiled routes with summary statistics</td></tr>';
+		html += '<tr><td><code>GET</code></td><td><code>/v1/profile/{id}</code></td><td>Full profile detail for one request</td></tr>';
+		html += '<tr><td><code>GET</code></td><td><code>/v1/compare/{a}/{b}</code></td><td>Side-by-side comparison of two profiles</td></tr>';
 		html += '</tbody></table>';
 		if ( apiBase ) {
 			html += '<p class="scrutinizer-api-base">Base URL: <code>' + esc( apiBase ) + '</code></p>';
@@ -2914,7 +2947,7 @@
 		// --- Send to Support section ---
 		html += '<div class="scrutinizer-api-section">';
 		html += '<h3 class="scrutinizer-api-heading"><span class="dashicons dashicons-lock"></span> Send to Support</h3>';
-		html += '<p class="scrutinizer-api-desc">Share a performance report with your support team or plugin developer via an encrypted, self-destructing link. '
+		html += '<p class="scrutinizer-api-desc">Share a performance report with your support team or plugin developer via an encrypted, self-destructing link. ';
 		html += 'Data is encrypted in your browser before upload &mdash; the relay server never sees your report contents.</p>';
 		html += '<p class="scrutinizer-api-desc">To share: open a profile from the <strong>History</strong> tab, then click <strong>Share</strong> in the toolbar.</p>';
 		html += '<p class="scrutinizer-api-desc" style="color:#50575e;font-size:12px;">Powered by <code>scrutinizer.dev</code> &mdash; zero-knowledge encrypted relay.</p>';
