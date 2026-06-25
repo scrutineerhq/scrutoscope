@@ -4930,7 +4930,30 @@
 				} );
 			}
 			if ( sections.indexOf( 'http_calls' ) !== -1 && profileData.http_calls ) {
-				shareData.http_calls = profileData.http_calls;
+				shareData.http_calls = profileData.http_calls.map( function( h ) {
+					var callerStr = '';
+					var sourceType = 'unknown';
+					var sourceName = '';
+					if ( typeof h.caller === 'object' && h.caller ) {
+						callerStr = h.caller.caller || '';
+						if ( h.caller.attribution ) {
+							sourceType = h.caller.attribution.type || 'unknown';
+							sourceName = h.caller.attribution.name || h.caller.attribution.slug || '';
+						}
+					} else if ( typeof h.caller === 'string' ) {
+						callerStr = h.caller;
+					}
+					return {
+						url: h.url || '',
+						method: h.method || 'GET',
+						status: h.status || 0,
+						duration_ms: h.duration_ms || ( ( h.duration_ns || 0 ) / 1e6 ),
+						caller: callerStr,
+						source_type: sourceType,
+						source_name: sourceName,
+						is_error: h.is_error || false
+					};
+				} );
 			}
 			if ( sections.indexOf( 'autoloaded_options' ) !== -1 && profileData.autoloaded_options ) {
 				shareData.autoloaded_options = profileData.autoloaded_options;
