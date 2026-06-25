@@ -2,72 +2,82 @@
 
 > Volatile snapshot of the project. Updated after significant sessions.
 
-**Last updated:** 2026-06-24 (morning session)
+**Last updated:** 2026-06-24 (evening session — UX panel implementation)
 
 ## Version
 
 - Plugin: `0.1.0-dev`
 - Phase: 1 (Scrutinizer — profiler only)
-- Milestone: M2.5 (AI Agent API) — **COMPLETE**
+- Milestone: UX Panel findings implemented — pre-M3
 
 ## Codebase
 
 | Component | Status |
 |-----------|--------|
-| Plugin bootstrap (`scrutinizer.php`) | ✅ Functional — autoloader, activation/deactivation hooks, admin bar indicator |
-| Profiler engine (`includes/Profiler/`) | ✅ Complete — Profiler, Session, CallStack, Attribution, Instrumentor, Report, Storage |
+| Plugin bootstrap (`scrutinizer.php`) | ✅ Functional — autoloader, activation/deactivation hooks, admin bar indicator, cron registration |
+| Profiler engine (`includes/Profiler/`) | ✅ Complete — Profiler, Session, CallStack, Attribution, Instrumentor, Report, Storage, QueryReducer |
 | API (`includes/Api/`) | ✅ Complete — RestApi (5 endpoints), Sanitizer, Diagnostics (opt-in fields), Prompt, ApplicationPassword (TTL/scope/GC) |
-| Admin UI (`includes/Admin/`) | ✅ Functional — Dashboard page, AJAX handlers (17 total), tabbed detail view, API tab |
-| CSS/JS (`assets/`) | ✅ Functional — dashboard.css, dashboard.js with timeline, metric cards, query table |
-| WP-CLI (`includes/CLI/`) | ⬜ Empty — M5 scope |
+| Admin UI (`includes/Admin/`) | ✅ Functional — Dashboard page, AJAX handlers (18 total), tabbed detail view, API tab |
+| CSS/JS (`assets/`) | ✅ UX panel implemented — WP admin cards, collapsed trace, snap rate buttons, filter bar, route labels, contextual help |
+| WP-CLI (`includes/CLI/`) | ✅ Complete — 6 commands (list, show, delete, export, clear, status) |
 | Report sharing (`includes/Share/`) | ⬜ Empty — M4 scope |
 | Tests (`tests/`) | ⬜ Empty |
 | Languages (`languages/`) | ⬜ Empty — i18n scaffolded but no .pot yet |
 
+## What Changed This Session (June 24 evening)
+
+### UX Panel Review → Implementation (D30–D36)
+
+Design panel (Lena/Derek/Sophie/Raj/Nina) reviewed all 18 findings. Solutions locked as D30–D36, CONSTITUTION #7 added.
+
+**Implemented and deployed:**
+
+| Finding | Change | Status |
+|---------|--------|--------|
+| F1 (top section) | Data-first layout, controls behind ⚙️ gear panel | ✅ |
+| F2 (scanner noise) | Route filter: "Pages that loaded" default, response_status per profile | ✅ |
+| F3 (dark styling) | WP admin cards, --wp-admin-theme-color for 8 color schemes | ✅ |
+| F4 (sortable) | Clickable column headers, default Avg Duration ▼ | ✅ |
+| F5 (unknown source) | Expandable `<details>` on Unknown row | ✅ |
+| F7 (trace crash) | Collapsed tree by lifecycle phase, search filter | ✅ |
+| F8 (subtitles) | Breakdown + Sources tab subtitles | ✅ |
+| F9 (route labels) | Two-line cells, label captured at profile time | ✅ |
+| F14 (query badges) | Source attribution per query row | ✅ |
+| F16 (privacy) | Advisory below Copy Prompt | ✅ |
+| D30 (sample rate) | Snap buttons + custom numeric, float precision | ✅ |
+| D31 (retention) | TTL 30d + max 100/route, pinned exempt, cron cleanup | ✅ |
+
+**Copy decisions:** labels are light/moderate/detailed/every request. Overhead TBD pending shared hosting benchmarks.
+
+### POC State
+- All profiles purged, background capture at 100%, fresh profiles accumulating with response_status + route labels
+
 ## Current Features
 
 ### Profiling Engine
-- Hook callback instrumentation via `Instrumentor` with exclusive/inclusive time tracking
-- `CallStack` for nested callback depth and exclusive time calculation
-- `Attribution` for callback → plugin/theme/core/mu-plugin classification
-- Background sampling with configurable rate (1-100%)
-- By-reference parameter detection to skip unsafe callback wrapping
-- **Lifecycle phase markers** — `hrtime(true)` snapshots at 25 WP hooks across early boot, core init, front-end template lifecycle, admin, and terminal (shutdown)
-- **Deep mode query logging** — captures `$wpdb->queries` when `SAVEQUERIES` is enabled (sql, time_ms, caller)
-- **Query count** — always captured via `$wpdb->num_queries`
-- **User role capture** — `wp_get_current_user()->roles` per request (administrator/editor/subscriber/anonymous)
-- **Timeline data** — per-callback position/width computed in `Report::build_timeline()`
+- Hook callback instrumentation with exclusive/inclusive time tracking
+- Background sampling with configurable float rate (0.0–100.0%)
+- Lifecycle phase markers at 25 WP hooks
+- Deep mode query logging with QueryReducer
+- Response status capture, route label generation
+- Profile retention — TTL + max per route + pinned exemption + scheduled cleanup
 
 ### Dashboard UI
-- Three-level drill-down: grouped routes → route profiles → single profile detail
-- **Four top-level tabs**: Routes, History, Cron, **API**
-- **Tabbed detail view**: Timeline, Breakdown, Sources, Queries, Metadata, History
-- **Timeline visualization** — horizontal bar with callback segments, lollipop milestone markers (vertical stem + dot + label, tiered to prevent overlap), time axis, source legend
-- **Breakdown bar** — inline colors from `sourceColors` map (not CSS classes), consistent between bar segments and legend. Unknown/unattributed shown in amber.
-- **Metric cards** — Server Request Duration, Peak Memory, DB Queries, Callbacks
-- **Role pills** — color-coded badges (🔒 admin red, editor blue, subscriber gray, 👤 anonymous outline)
-- **Weight glyphs** — thin inline progress bars on source table rows, proportional to % of total execution time
-- **Unattributed time tooltip** — tap-toggle `<button>` + `<span>` bubble (mobile-friendly, replaces old `title` attribute)
-- **Query table** — sortable by time, slow query highlighting (>10ms), caller trace, structure-preserving sanitized SQL
-- **Pin/Annotate/Prune** — toolbar per profile: pin important profiles, add text annotations, delete unneeded profiles
-- **History tab** — filter profiles by route, tag, date range, pinned-only
-- **Compare view** — side-by-side profile comparison with delta summary
-- Background profiling toggle with sample rate slider
-- Sortable column headers, route grouping, profile deletion
-- Cache-busting version string via `filemtime()` on dashboard.js
+- **Data-first layout** — routes above-fold, controls behind ⚙️ gear
+- **Route filter** — "Pages that loaded" (2xx default), "Not found", "All"
+- **Sortable columns**, two-line route cells, snap button capture rate
+- **Collapsed trace tree** — phase-grouped, search filter, no mass DOM
+- **WP admin card styling** — no dark backgrounds, all 8 color schemes
+- **Tab subtitles**, expandable Unknown, query source badges, privacy advisory
+- Timeline, breakdown bar, metric cards, role pills, weight glyphs
+- Pin/Annotate/Prune, History, Compare view
 
 ### REST API (M2.5)
-- 5 authenticated endpoints: `/v1/prompt`, `/v1/diagnostics`, `/v1/routes`, `/v1/profile/{id}`, `/v1/compare/{a}/{b}`
-- **Application Password lifecycle** — auto-create, auto-rotate (one credential max), plugin-enforced TTL (1hr default, 24hr max), hourly GC, full cleanup on deactivation
-- **Scope enforcement** — Scrutineer passwords (matched by `app_id`) restricted to `scrutinizer/v1/*` routes only; non-scrutineer endpoints return 403
-- **Diagnostics opt-in** — 12 environment fields selectable via admin UI checkboxes, saved to `wp_options`
-- **Send to Agent** — one-click button creates scoped Application Password, formats one-liner prompt with credentials, copies to clipboard
-- **Prompt endpoint** — self-bootstrapping `text/plain` system prompt for AI agents
-- **Hard sanitization** — paths, credentials, IPs scrubbed from all API output via `Sanitizer`
+- 5 endpoints with response_status counts and route_label per group
+- Application Password lifecycle, scope enforcement, hard sanitization
 
-### Storage
-- Custom DB table with auto-upgrade (`maybe_upgrade_table`)
-- Columns: session_id, profile_type, request_url, request_method, route_class, route_key, duration_ns, user_role, profile_data (JSON), captured_at, is_baseline, baseline_name
+### WP-CLI (M5)
+- 6 commands: list, show, delete, export, clear, status
 
 ## Requirements
 
@@ -104,21 +114,22 @@
 |-----------|-------|--------|
 | M0 — Foundation | Scaffold, CI, accounts, dev env | ✅ Complete |
 | M1 — Core Instrumentation | Profiler engine, Standard mode, basic dashboard | ✅ Complete |
-| M2 — Deep Mode & Timeline | Deep mode, request timeline visualization, full diagnostics | 🔨 Near complete (4 items remaining) |
-| M2.5 — AI Agent API & Sharing | REST API, prompt endpoint, diagnostics panel, zero-knowledge relay, Studio viewer | ✅ Core API complete (5 endpoints, scope enforcement, UI) |
-| M3 — Baselines & Regression | Named baselines, route-matched comparison, regression language | ⬜ Not started |
-| M4 — Report Sharing | ~~Absorbed into M2.5~~ | ✅ Redesigned |
-| M5 — External Diagnostics & CLI | Yoke integration, 11 WP-CLI commands | ⬜ Not started |
-| M6 — Polish & wp.org | Submission readiness, hosted infra live | ⬜ Not started |
+| M2 — Deep Mode & Timeline | Deep mode, request timeline visualization, full diagnostics | ✅ Complete |
+| M2.5 — AI Agent API | REST API, prompt endpoint, diagnostics panel | ✅ Complete |
+| UX Panel | Design review findings (F1–F18) | ✅ 14 of 18 findings implemented |
+| M5 — WP-CLI | 6 subcommands | ✅ Complete |
+| M3 — Compare Workflow | Route-matched comparison, regression language | ⬜ Not started |
+| M4 — Report Sharing | Zero-knowledge relay, capability URLs | ⬜ Not started |
+| M6 — Polish & wp.org | Submission readiness, hosted infra | ⬜ Not started |
 
-## Phase Roadmap
+## Next Up
 
-| Phase | Name | Scope |
-|-------|------|-------|
-| 1 | Scrutinizer | Profiler + sharing + Yoke integration (M1–M6) |
-| 2 | Triage (Secure DX) | E2E encrypted diagnostic handoff, key model, Studio |
-| 3 | Scrutiny (Analytics) | SDK for plugin devs, HITL consent, feature counters |
+- **Shared hosting benchmarking** — GoDaddy shared/managed WP (Felix hookup) or Site5 fallback. Qualify overhead number for capture rate descriptions.
+- **M3 Compare Workflow** — pin profiles, pick comparison target from saved, compare inline with regression language
+- **Remaining UX findings** — F10 (trend sparkline), F13 (jargon audit), F15 (MCP manifest), F17 (API audit log), F18 (measured overhead display)
+- **Contextual help terms** — wire `<details><summary>` content to all terminology (CSS ready, content not yet applied)
 
 ## Open Issues
 
-_None tracked yet._
+- `scrutinizer_debug.php` mu-plugin has permission errors writing to `/tmp/scrutinizer_debug.log` — noisy but non-blocking
+- `is_baseline` / `baseline_name` columns are schema cruft — scheduled for cleanup
