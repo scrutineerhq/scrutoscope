@@ -3555,10 +3555,10 @@
 		} );
 
 		// Fetch compiled profile via AJAX
-		$.post( scrutinizerAdmin.ajaxUrl, {
-			action: 'scrutinizer_get_profile_detail',
-			nonce:  scrutinizerAdmin.nonce,
-			id:     profileId
+		$.get( scrutinizerAdmin.ajaxUrl, {
+			action:     'scrutinizer_get_profile_detail',
+			nonce:      scrutinizerAdmin.nonce,
+			profile_id: profileId
 		}, function( response ) {
 			if ( ! response.success || ! response.data || ! response.data.profile ) {
 				$btn.prop( 'disabled', false ).html( '<span class="dashicons dashicons-lock"></span> Encrypt &amp; Share' );
