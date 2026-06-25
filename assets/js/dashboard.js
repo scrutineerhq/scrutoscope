@@ -4874,7 +4874,18 @@
 				} );
 			}
 			if ( sections.indexOf( 'timeline' ) !== -1 && profileData.timeline ) {
-				shareData.timeline = profileData.timeline;
+				shareData.timeline = profileData.timeline.map( function( t ) {
+					return {
+						callback: t.callback || '',
+						tag: t.tag || '',
+						source: t.source || '',
+						source_type: t.type || 'unknown',
+						offset_ms: ( t.offset_ns || 0 ) / 1e6,
+						duration_ms: ( t.wall_ns || t.excl_ns || 0 ) / 1e6,
+						pct_start: t.pct_start || 0,
+						pct_width: t.pct_width || 0
+					};
+				} );
 			}
 			if ( sections.indexOf( 'timeline' ) !== -1 && profileData.phase_markers ) {
 				shareData.phase_markers = profileData.phase_markers.map( function( m ) {
@@ -4886,7 +4897,37 @@
 				} );
 			}
 			if ( sections.indexOf( 'trace' ) !== -1 && profileData.trace ) {
-				shareData.trace = profileData.trace;
+				// Build source lookup from sources data.
+				var shareSrcMap = {};
+				if ( profileData.sources ) {
+					for ( var si = 0; si < profileData.sources.length; si++ ) {
+						var shareSrc = profileData.sources[ si ];
+						var shareCbs = shareSrc.callbacks || [];
+						for ( var ci = 0; ci < shareCbs.length; ci++ ) {
+							shareSrcMap[ shareCbs[ ci ].callback ] = {
+								type: shareSrc.type || 'unknown',
+								name: shareSrc.name || shareSrc.slug || 'unknown'
+							};
+						}
+					}
+				}
+				shareData.trace = profileData.trace.map( function( t ) {
+					var tid      = t.id || '';
+					var atIdx    = tid.lastIndexOf( '@' );
+					var cbName   = atIdx > 0 ? tid.substring( 0, atIdx ) : tid;
+					var hookPart = atIdx > 0 ? tid.substring( atIdx + 1 ) : '';
+					var colonIdx = hookPart.lastIndexOf( ':' );
+					var hook     = colonIdx > 0 ? hookPart.substring( 0, colonIdx ) : hookPart;
+					var srcInfo  = shareSrcMap[ cbName ] || { type: 'unknown', name: 'unknown' };
+					return {
+						callback: cbName,
+						phase: hook,
+						source: srcInfo.name,
+						source_type: srcInfo.type,
+						exclusive_ms: ( t.exclusive_ns || 0 ) / 1e6,
+						inclusive_ms: ( t.inclusive_ns || 0 ) / 1e6
+					};
+				} );
 			}
 			if ( sections.indexOf( 'http_calls' ) !== -1 && profileData.http_calls ) {
 				shareData.http_calls = profileData.http_calls;
