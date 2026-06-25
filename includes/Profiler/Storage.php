@@ -47,19 +47,28 @@ class Storage {
 			note text NOT NULL,
 			tags varchar(255) NOT NULL DEFAULT '',
 			response_status smallint(5) unsigned DEFAULT NULL,
-			is_baseline tinyint(1) NOT NULL DEFAULT 0,
-			baseline_name varchar(255) NOT NULL DEFAULT '',
 			PRIMARY KEY  (id),
 			KEY session_id (session_id),
 			KEY profile_type (profile_type),
 			KEY route_key (route_key),
 			KEY is_pinned (is_pinned),
-			KEY is_baseline (is_baseline),
 			KEY response_status (response_status)
 		) {$charset};";
 
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 		dbDelta( $sql );
+
+		// Migration: drop deprecated baseline columns (never implemented).
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$columns = $wpdb->get_col( "SHOW COLUMNS FROM {$table}" );
+		if ( in_array( 'is_baseline', $columns, true ) ) {
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->query( "ALTER TABLE {$table} DROP COLUMN is_baseline" );
+		}
+		if ( in_array( 'baseline_name', $columns, true ) ) {
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->query( "ALTER TABLE {$table} DROP COLUMN baseline_name" );
+		}
 	}
 
 	/**
@@ -85,28 +94,28 @@ class Storage {
 	public static function save_profile( $session_id, $profile_data, $profile_type = 'session', $response_status = 0 ) {
 		global $wpdb;
 
-		$url          = isset( $profile_data['request']['url'] ) ? $profile_data['request']['url'] : '';
-		$method       = isset( $profile_data['request']['method'] ) ? $profile_data['request']['method'] : 'GET';
-		$route        = isset( $profile_data['request']['route_class'] ) ? $profile_data['request']['route_class'] : '';
-		$dur_ns       = isset( $profile_data['summary']['duration_ns'] ) ? $profile_data['summary']['duration_ns'] : 0;
-		$role         = isset( $profile_data['request']['user_role'] ) ? $profile_data['request']['user_role'] : 'anonymous';
-		$ajax_action  = isset( $profile_data['request']['ajax_action'] ) ? $profile_data['request']['ajax_action'] : '';
+		$url         = isset( $profile_data['request']['url'] ) ? $profile_data['request']['url'] : '';
+		$method      = isset( $profile_data['request']['method'] ) ? $profile_data['request']['method'] : 'GET';
+		$route       = isset( $profile_data['request']['route_class'] ) ? $profile_data['request']['route_class'] : '';
+		$dur_ns      = isset( $profile_data['summary']['duration_ns'] ) ? $profile_data['summary']['duration_ns'] : 0;
+		$role        = isset( $profile_data['request']['user_role'] ) ? $profile_data['request']['user_role'] : 'anonymous';
+		$ajax_action = isset( $profile_data['request']['ajax_action'] ) ? $profile_data['request']['ajax_action'] : '';
 
 		// Normalize URL to a grouping key: method + path (no query string, no host).
 		// AJAX requests get action-specific keys: POST:ajax:heartbeat.
 		$route_key = self::normalize_route_key( $method, $url, $ajax_action );
 
-		$insert_data = array(
-			'session_id'      => $session_id,
-			'profile_type'    => $profile_type,
-			'request_url'     => $url,
-			'request_method'  => $method,
-			'route_class'     => $route,
-			'route_key'       => $route_key,
-			'duration_ns'     => $dur_ns,
-			'user_role'       => $role,
-			'profile_data'    => wp_json_encode( $profile_data ),
-			'captured_at'     => current_time( 'mysql' ),
+		$insert_data   = array(
+			'session_id'     => $session_id,
+			'profile_type'   => $profile_type,
+			'request_url'    => $url,
+			'request_method' => $method,
+			'route_class'    => $route,
+			'route_key'      => $route_key,
+			'duration_ns'    => $dur_ns,
+			'user_role'      => $role,
+			'profile_data'   => wp_json_encode( $profile_data ),
+			'captured_at'    => current_time( 'mysql' ),
 		);
 		$insert_format = array( '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s', '%s' );
 
@@ -540,18 +549,18 @@ class Storage {
 		$qc_a = isset( $sum_a['query_count'] ) ? (int) $sum_a['query_count'] : 0;
 		$qc_b = isset( $sum_b['query_count'] ) ? (int) $sum_b['query_count'] : 0;
 
-		$mem_peak_a = isset( $sum_a['memory_peak'] ) ? (int) $sum_a['memory_peak'] : 0;
-		$mem_peak_b = isset( $sum_b['memory_peak'] ) ? (int) $sum_b['memory_peak'] : 0;
+		$mem_peak_a  = isset( $sum_a['memory_peak'] ) ? (int) $sum_a['memory_peak'] : 0;
+		$mem_peak_b  = isset( $sum_b['memory_peak'] ) ? (int) $sum_b['memory_peak'] : 0;
 		$mem_alloc_a = isset( $sum_a['memory_allocated'] ) ? (int) $sum_a['memory_allocated'] : 0;
 		$mem_alloc_b = isset( $sum_b['memory_allocated'] ) ? (int) $sum_b['memory_allocated'] : 0;
 
 		// Fallback for older profiles that stored memory_peak in request.
 		if ( 0 === $mem_peak_a ) {
-			$req_a     = isset( $a['profile_data']['request'] ) ? $a['profile_data']['request'] : array();
+			$req_a      = isset( $a['profile_data']['request'] ) ? $a['profile_data']['request'] : array();
 			$mem_peak_a = isset( $req_a['memory_peak'] ) ? (int) $req_a['memory_peak'] : 0;
 		}
 		if ( 0 === $mem_peak_b ) {
-			$req_b     = isset( $b['profile_data']['request'] ) ? $b['profile_data']['request'] : array();
+			$req_b      = isset( $b['profile_data']['request'] ) ? $b['profile_data']['request'] : array();
 			$mem_peak_b = isset( $req_b['memory_peak'] ) ? (int) $req_b['memory_peak'] : 0;
 		}
 
@@ -562,17 +571,17 @@ class Storage {
 		$all_keys      = array_unique( array_merge( array_keys( $sources_a ), array_keys( $sources_b ) ) );
 		$source_deltas = array();
 		foreach ( $all_keys as $key ) {
-			$ea = isset( $sources_a[ $key ] ) ? (int) $sources_a[ $key ]['exclusive_ns'] : 0;
-			$eb = isset( $sources_b[ $key ] ) ? (int) $sources_b[ $key ]['exclusive_ns'] : 0;
-			$ma = isset( $sources_a[ $key ] ) ? (int) $sources_a[ $key ]['memory_delta'] : 0;
-			$mb = isset( $sources_b[ $key ] ) ? (int) $sources_b[ $key ]['memory_delta'] : 0;
+			$ea                    = isset( $sources_a[ $key ] ) ? (int) $sources_a[ $key ]['exclusive_ns'] : 0;
+			$eb                    = isset( $sources_b[ $key ] ) ? (int) $sources_b[ $key ]['exclusive_ns'] : 0;
+			$ma                    = isset( $sources_a[ $key ] ) ? (int) $sources_a[ $key ]['memory_delta'] : 0;
+			$mb                    = isset( $sources_b[ $key ] ) ? (int) $sources_b[ $key ]['memory_delta'] : 0;
 			$source_deltas[ $key ] = array(
-				'a_ns'       => $ea,
-				'b_ns'       => $eb,
-				'delta_ns'   => $eb - $ea,
-				'a_mem'      => $ma,
-				'b_mem'      => $mb,
-				'delta_mem'  => $mb - $ma,
+				'a_ns'      => $ea,
+				'b_ns'      => $eb,
+				'delta_ns'  => $eb - $ea,
+				'a_mem'     => $ma,
+				'b_mem'     => $mb,
+				'delta_mem' => $mb - $ma,
 			);
 		}
 
@@ -586,22 +595,22 @@ class Storage {
 			'a'     => $a,
 			'b'     => $b,
 			'delta' => array(
-				'duration_ns'      => $dur_b - $dur_a,
-				'duration_a_ns'    => $dur_a,
-				'duration_b_ns'    => $dur_b,
-				'query_count_a'    => $qc_a,
-				'query_count_b'    => $qc_b,
-				'query_count_delta' => $qc_b - $qc_a,
-				'memory_peak_a'    => $mem_peak_a,
-				'memory_peak_b'    => $mem_peak_b,
-				'memory_peak_delta' => $mem_peak_b - $mem_peak_a,
-				'memory_alloc_a'   => $mem_alloc_a,
-				'memory_alloc_b'   => $mem_alloc_b,
-				'memory_alloc_delta' => $mem_alloc_b - $mem_alloc_a,
-				'unattributed_a_ns' => $unattr_a,
-				'unattributed_b_ns' => $unattr_b,
+				'duration_ns'           => $dur_b - $dur_a,
+				'duration_a_ns'         => $dur_a,
+				'duration_b_ns'         => $dur_b,
+				'query_count_a'         => $qc_a,
+				'query_count_b'         => $qc_b,
+				'query_count_delta'     => $qc_b - $qc_a,
+				'memory_peak_a'         => $mem_peak_a,
+				'memory_peak_b'         => $mem_peak_b,
+				'memory_peak_delta'     => $mem_peak_b - $mem_peak_a,
+				'memory_alloc_a'        => $mem_alloc_a,
+				'memory_alloc_b'        => $mem_alloc_b,
+				'memory_alloc_delta'    => $mem_alloc_b - $mem_alloc_a,
+				'unattributed_a_ns'     => $unattr_a,
+				'unattributed_b_ns'     => $unattr_b,
 				'unattributed_delta_ns' => $unattr_b - $unattr_a,
-				'sources'          => $source_deltas,
+				'sources'               => $source_deltas,
 			),
 		);
 	}
@@ -615,7 +624,7 @@ class Storage {
 	private static function index_sources( $sources ) {
 		$indexed = array();
 		foreach ( $sources as $src ) {
-			$key = ( isset( $src['type'] ) ? $src['type'] : 'unknown' ) . ':' . ( isset( $src['slug'] ) ? $src['slug'] : '' );
+			$key             = ( isset( $src['type'] ) ? $src['type'] : 'unknown' ) . ':' . ( isset( $src['slug'] ) ? $src['slug'] : '' );
 			$indexed[ $key ] = $src;
 		}
 		return $indexed;
@@ -714,7 +723,7 @@ class Storage {
 							return (int) $row['count_2xx'] > 0;
 						}
 						if ( '4xx' === $status_filter ) {
-							return (int) $row['count_2xx'] === 0 && (int) $row['count_4xx'] > 0;
+							return 0 === (int) $row['count_2xx'] && (int) $row['count_4xx'] > 0;
 						}
 						return true;
 					}
@@ -794,7 +803,7 @@ class Storage {
 		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$size = $wpdb->get_row(
 			$wpdb->prepare(
-				"SELECT data_length + index_length AS size_bytes FROM information_schema.TABLES WHERE table_schema = %s AND table_name = %s",
+				'SELECT data_length + index_length AS size_bytes FROM information_schema.TABLES WHERE table_schema = %s AND table_name = %s',
 				DB_NAME,
 				$table
 			),
