@@ -837,7 +837,7 @@
 		if ( currentRate >= 50 ) {
 			html += '<p class="scrutinizer-overhead-note" style="color:#d63638;font-weight:500;">\u26a0 High capture rate. Each profile generates 2\u201310 MB of trace data. Not recommended for production sites or servers with limited disk/memory.</p>';
 		}
-		html += '<label class="scrutinizer-toggle-label" style="margin-top:8px;">';
+		html += '<label class="scrutinizer-toggle-label" style="margin-top:16px;">';
 		html += '<input type="checkbox" id="scrutinizer-only-success"' + ( scrutinizerAdmin.onlySuccessful ? ' checked' : '' ) + '> ';
 		html += 'Only capture successful requests (HTTP 200)</label>';
 		html += '</div>';
