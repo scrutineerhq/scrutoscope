@@ -87,16 +87,11 @@ Comparison infrastructure exists (M2 compare view). This milestone improves the 
 
 ## M4 — Report Sharing (ABSORBED into M2.5)
 
-Sharing architecture redesigned June 23, 2026. Zero-knowledge relay pulled into Phase 1 (was Phase 2). R2 replaced by CF KV. See M2.5 above for full breakdown.
-
-~~- [ ] Capability-link generation~~
-~~- [ ] Section include/exclude UI~~
-~~- [ ] R2 upload~~
-~~- [ ] Hosted viewer~~
-~~- [ ] Revocation~~
-~~- [ ] Report receipt~~
-~~- [ ] Secret protection~~
-~~- [ ] Size limits~~
+Sharing architecture redesigned June 23, 2026. Zero-knowledge relay pulled into Phase 1 (was Phase 2). Phase C improvements shipped June 25, 2026:
+- [x] Gzip before encryption (CompressionStream/DecompressionStream)
+- [x] KV → R2 migration for report storage (10MB limit)
+- [x] File upload drop zone at scrutinizer.dev/view (D39)
+- [x] Viewer branding: "Scrutinizer Report" + mono wordmark
 
 ## M5 — External Diagnostics and WP-CLI
 
