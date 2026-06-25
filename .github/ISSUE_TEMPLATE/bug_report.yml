@@ -1,0 +1,57 @@
+name: Bug Report
+description: Report a problem with Scrutinizer
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Please fill in the details below.
+  - type: input
+    id: wp-version
+    attributes:
+      label: WordPress Version
+      placeholder: "e.g. 6.7.1"
+    validations:
+      required: true
+  - type: input
+    id: php-version
+    attributes:
+      label: PHP Version
+      placeholder: "e.g. 8.2"
+    validations:
+      required: true
+  - type: input
+    id: plugin-version
+    attributes:
+      label: Scrutinizer Version
+      placeholder: "e.g. 1.0.0"
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Describe the bug clearly. Include steps to reproduce.
+      placeholder: |
+        1. Go to Tools → Scrutinizer
+        2. Click "Capture Profile"
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment details
+      description: Hosting provider, server software (Apache/nginx), relevant plugins
+      placeholder: "e.g. SiteGround, nginx, WooCommerce 9.x"
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots or profile export
+      description: Attach screenshots or a Scrutinizer JSON export if relevant
