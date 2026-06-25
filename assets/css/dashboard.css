@@ -1201,6 +1201,43 @@
 	color: #787c82;
 }
 
+/* ----- Bulk action bar ----- */
+
+.scrutinizer-bulk-bar {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 12px;
+	margin: 8px 0;
+	background: #f0f6fc;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+}
+
+.scrutinizer-bulk-bar #scrutinizer-bulk-count {
+	font-weight: 600;
+	color: #1d2327;
+	margin-right: 4px;
+}
+
+.scrutinizer-bulk-bar .button {
+	min-height: 28px;
+	line-height: 26px;
+	padding: 0 10px;
+	font-size: 12px;
+}
+
+#scrutinizer-bulk-delete {
+	color: #b32d2e;
+	border-color: #b32d2e;
+}
+
+#scrutinizer-bulk-delete:hover {
+	background: #b32d2e;
+	color: #fff;
+	border-color: #b32d2e;
+}
+
 /* ----- History table ----- */
 
 .scrutinizer-history-table .scrutinizer-check-col {

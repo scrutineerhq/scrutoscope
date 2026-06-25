@@ -338,6 +338,102 @@
 				delete compareChecked[ id ];
 			}
 			updateCompareButton();
+			// Sync select-all state.
+			var total = $( '.scrutinizer-compare-check' ).length;
+			var checked = $( '.scrutinizer-compare-check:checked' ).length;
+			$( '#scrutinizer-select-all' ).prop( 'checked', total > 0 && checked === total );
+		} );
+
+		// Select all checkbox.
+		$( document ).on( 'change', '#scrutinizer-select-all', function() {
+			var isChecked = $( this ).is( ':checked' );
+			$( '.scrutinizer-compare-check' ).each( function() {
+				var id = $( this ).data( 'profile-id' );
+				$( this ).prop( 'checked', isChecked );
+				if ( isChecked ) {
+					compareChecked[ id ] = true;
+				} else {
+					delete compareChecked[ id ];
+				}
+			} );
+			updateCompareButton();
+		} );
+
+		// Bulk delete.
+		$( document ).on( 'click', '#scrutinizer-bulk-delete', function() {
+			var ids = Object.keys( compareChecked );
+			if ( ! ids.length ) {
+				return;
+			}
+			if ( ! confirm( 'Delete ' + ids.length + ' profile' + ( ids.length > 1 ? 's' : '' ) + '?' ) ) {
+				return;
+			}
+			var remaining = ids.length;
+			var failed    = 0;
+			ids.forEach( function( id ) {
+				$.post( scrutinizerAdmin.ajaxUrl, {
+					action:     'scrutinizer_delete_profile',
+					nonce:      scrutinizerAdmin.nonce,
+					profile_id: id
+				} ).always( function( resp ) {
+					remaining--;
+					if ( ! resp || ! resp.success ) {
+						failed++;
+					}
+					if ( 0 === remaining ) {
+						compareChecked = {};
+						updateCompareButton();
+						fetchHistory();
+						if ( failed > 0 ) {
+							showNotice( failed + ' profile(s) could not be deleted.', 'error' );
+						} else {
+							showNotice( ids.length + ' profile(s) deleted.' );
+						}
+					}
+				} );
+			} );
+		} );
+
+		// Bulk pin.
+		$( document ).on( 'click', '#scrutinizer-bulk-pin', function() {
+			var ids = Object.keys( compareChecked );
+			var remaining = ids.length;
+			ids.forEach( function( id ) {
+				$.post( scrutinizerAdmin.ajaxUrl, {
+					action:     'scrutinizer_pin_profile',
+					nonce:      scrutinizerAdmin.nonce,
+					profile_id: id
+				} ).always( function() {
+					remaining--;
+					if ( 0 === remaining ) {
+						compareChecked = {};
+						updateCompareButton();
+						fetchHistory();
+						showNotice( ids.length + ' profile(s) pinned.' );
+					}
+				} );
+			} );
+		} );
+
+		// Bulk unpin.
+		$( document ).on( 'click', '#scrutinizer-bulk-unpin', function() {
+			var ids = Object.keys( compareChecked );
+			var remaining = ids.length;
+			ids.forEach( function( id ) {
+				$.post( scrutinizerAdmin.ajaxUrl, {
+					action:     'scrutinizer_unpin_profile',
+					nonce:      scrutinizerAdmin.nonce,
+					profile_id: id
+				} ).always( function() {
+					remaining--;
+					if ( 0 === remaining ) {
+						compareChecked = {};
+						updateCompareButton();
+						fetchHistory();
+						showNotice( ids.length + ' profile(s) unpinned.' );
+					}
+				} );
+			} );
 		} );
 
 		// Compare button.
@@ -2333,8 +2429,14 @@
 		html += '<span class="scrutinizer-history-dash">–</span>';
 		html += '<input type="date" id="scrutinizer-history-to" title="To date" />';
 
-		// Compare button (hidden until 2 selected).
+		// Bulk action bar (hidden until selections made).
+		html += '<div class="scrutinizer-bulk-bar" id="scrutinizer-bulk-bar" style="display:none">';
+		html += '<span id="scrutinizer-bulk-count">0 selected</span>';
+		html += '<button type="button" class="button" id="scrutinizer-bulk-pin" title="Pin selected profiles">📌 Pin</button>';
+		html += '<button type="button" class="button" id="scrutinizer-bulk-unpin" title="Unpin selected profiles">Unpin</button>';
+		html += '<button type="button" class="button" id="scrutinizer-bulk-delete" title="Delete selected profiles">🗑 Delete</button>';
 		html += '<button type="button" class="button" id="scrutinizer-compare-btn" style="display:none">' + esc( scrutinizerAdmin.i18n.compareSelected || 'Compare Selected' ) + '</button>';
+		html += '</div>';
 
 		html += '</div>';
 		return html;
@@ -2386,7 +2488,7 @@
 
 		var html = '<table class="scrutinizer-profile-table scrutinizer-history-table widefat">';
 		html += '<thead><tr>';
-		html += '<th class="scrutinizer-check-col"></th>';
+		html += '<th class="scrutinizer-check-col"><input type="checkbox" id="scrutinizer-select-all" title="Select all" /></th>';
 		html += '<th>Captured</th>';
 		html += '<th>Route</th>';
 		html += '<th class="numeric">Duration</th>';
@@ -2439,10 +2541,16 @@
 
 	function updateCompareButton() {
 		var count = Object.keys( compareChecked ).length;
-		if ( 2 === count ) {
-			$( '#scrutinizer-compare-btn' ).show();
+		if ( count > 0 ) {
+			$( '#scrutinizer-bulk-bar' ).show();
+			$( '#scrutinizer-bulk-count' ).text( count + ' selected' );
+			if ( 2 === count ) {
+				$( '#scrutinizer-compare-btn' ).show();
+			} else {
+				$( '#scrutinizer-compare-btn' ).hide();
+			}
 		} else {
-			$( '#scrutinizer-compare-btn' ).hide();
+			$( '#scrutinizer-bulk-bar' ).hide();
 		}
 	}
 
