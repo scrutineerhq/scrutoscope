@@ -2651,6 +2651,7 @@
 	align-items: center;
 	gap: 12px;
 	flex-wrap: wrap;
+	margin: 16px 0 12px;
 }
 
 .scrutinizer-send-agent-controls .button-primary {
