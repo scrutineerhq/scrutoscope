@@ -222,17 +222,17 @@ class Dashboard {
 								<button type="button" class="scrutinizer-decision-card" data-target="<?php echo esc_url( admin_url() ); ?>">
 									<span class="dashicons dashicons-dashboard"></span>
 									<strong><?php echo esc_html__( 'Admin Dashboard', 'scrutinizer' ); ?></strong>
-									<span><?php echo esc_html__( 'Profile wp-admin requests', 'scrutinizer' ); ?></span>
+									<span><?php echo esc_html__( 'Measure admin page performance', 'scrutinizer' ); ?></span>
 								</button>
 								<button type="button" class="scrutinizer-decision-card" data-target="<?php echo esc_url( home_url( '/' ) ); ?>">
 									<span class="dashicons dashicons-admin-users"></span>
 									<strong><?php echo esc_html__( 'Logged-in Frontend', 'scrutinizer' ); ?></strong>
-									<span><?php echo esc_html__( 'Profile as logged-in user', 'scrutinizer' ); ?></span>
+									<span><?php echo esc_html__( 'Measure pages while logged in', 'scrutinizer' ); ?></span>
 								</button>
 								<button type="button" class="scrutinizer-decision-card" data-target="<?php echo esc_url( home_url( '/' ) ); ?>">
 									<span class="dashicons dashicons-visibility"></span>
 									<strong><?php echo esc_html__( 'Visitor View', 'scrutinizer' ); ?></strong>
-									<span><?php echo esc_html__( 'Profile the public frontend', 'scrutinizer' ); ?></span>
+									<span><?php echo esc_html__( 'Measure what visitors experience', 'scrutinizer' ); ?></span>
 								</button>
 							</div>
 						</div>
