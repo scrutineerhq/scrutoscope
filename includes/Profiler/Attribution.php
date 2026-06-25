@@ -47,6 +47,21 @@ class Attribution {
 				$ref  = new \ReflectionMethod( $callback[0], $callback[1] );
 				$file = (string) $ref->getFileName();
 				$line = (int) $ref->getStartLine();
+			} elseif ( is_string( $callback ) && false !== strpos( $callback, '::' ) ) {
+				// String static method callback: 'ClassName::methodName' or '\Namespace\Class::method'.
+				$parts  = explode( '::', $callback, 2 );
+				$class  = ltrim( $parts[0], '\\' );
+				$method = $parts[1];
+				if ( class_exists( $class, false ) ) {
+					$ref  = new \ReflectionMethod( $class, $method );
+					$file = (string) $ref->getFileName();
+					$line = (int) $ref->getStartLine();
+				} elseif ( class_exists( $class ) ) {
+					// Trigger autoloader, then reflect.
+					$ref  = new \ReflectionMethod( $class, $method );
+					$file = (string) $ref->getFileName();
+					$line = (int) $ref->getStartLine();
+				}
 			} elseif ( is_string( $callback ) && function_exists( $callback ) ) {
 				$ref  = new \ReflectionFunction( $callback );
 				$file = (string) $ref->getFileName();
@@ -58,6 +73,18 @@ class Attribution {
 		}
 
 		$result = self::classify( $file );
+
+		// Namespace fallback: when file-path matching fails but we know the
+		// class, try to match the class's namespace root to a plugin slug.
+		if ( 'unknown' === $result['type'] ) {
+			$class_name = self::extract_class_name( $callback );
+			if ( $class_name ) {
+				$ns_result = self::classify_by_namespace( $class_name );
+				if ( 'unknown' !== $ns_result['type'] ) {
+					$result = $ns_result;
+				}
+			}
+		}
 
 		$result['file'] = $file;
 		$result['line'] = $line;
@@ -256,5 +283,156 @@ class Attribution {
 	 */
 	public static function clear_cache() {
 		self::$cache = array();
+	}
+
+	/**
+	 * Extract the class name from a callback.
+	 *
+	 * @param callable $callback  WordPress callback.
+	 * @return string|false  Fully qualified class name, or false.
+	 */
+	private static function extract_class_name( $callback ) {
+		if ( is_array( $callback ) && count( $callback ) >= 2 ) {
+			return is_object( $callback[0] ) ? get_class( $callback[0] ) : (string) $callback[0];
+		}
+
+		if ( is_string( $callback ) && false !== strpos( $callback, '::' ) ) {
+			$parts = explode( '::', $callback, 2 );
+			return ltrim( $parts[0], '\\' );
+		}
+
+		if ( is_object( $callback ) && ! ( $callback instanceof \Closure ) ) {
+			return get_class( $callback );
+		}
+
+		return false;
+	}
+
+	/**
+	 * Namespace → plugin mapping cache.
+	 *
+	 * @var array<string, array>|null
+	 */
+	private static $namespace_map = null;
+
+	/**
+	 * Try to attribute a class to a plugin via its namespace.
+	 *
+	 * Builds a map of namespace prefixes → plugin slugs by scanning active
+	 * plugins' composer.json autoload.psr-4 entries, then falls back to
+	 * matching the root namespace (case-insensitive) against plugin directory
+	 * names.
+	 *
+	 * @param string $class_name  Fully qualified class name (no leading backslash).
+	 * @return array{type: string, slug: string, name: string}
+	 */
+	private static function classify_by_namespace( $class_name ) {
+		$unknown = array(
+			'type' => 'unknown',
+			'slug' => '',
+			'name' => '',
+		);
+
+		if ( empty( $class_name ) || false === strpos( $class_name, '\\' ) ) {
+			// Non-namespaced class — try direct slug match (e.g., class 'wordfence').
+			$slug_guess = strtolower( $class_name );
+			$plugin_dir = wp_normalize_path( WP_PLUGIN_DIR );
+			if ( is_dir( $plugin_dir . '/' . $slug_guess ) ) {
+				return array(
+					'type' => 'plugin',
+					'slug' => $slug_guess,
+					'name' => self::plugin_name_from_slug( $slug_guess ),
+				);
+			}
+			return $unknown;
+		}
+
+		// Build the namespace map once.
+		if ( null === self::$namespace_map ) {
+			self::$namespace_map = self::build_namespace_map();
+		}
+
+		// Try longest-prefix match against the map.
+		$ns_parts = explode( '\\', $class_name );
+		for ( $i = count( $ns_parts ) - 1; $i >= 1; $i-- ) {
+			$prefix = implode( '\\', array_slice( $ns_parts, 0, $i ) ) . '\\';
+			if ( isset( self::$namespace_map[ $prefix ] ) ) {
+				$slug = self::$namespace_map[ $prefix ];
+				return array(
+					'type' => 'plugin',
+					'slug' => $slug,
+					'name' => self::plugin_name_from_slug( $slug ),
+				);
+			}
+		}
+
+		// Last resort: match root namespace against plugin directory names.
+		$root      = strtolower( $ns_parts[0] );
+		$plugin_dir = wp_normalize_path( WP_PLUGIN_DIR );
+		if ( is_dir( $plugin_dir . '/' . $root ) ) {
+			return array(
+				'type' => 'plugin',
+				'slug' => $root,
+				'name' => self::plugin_name_from_slug( $root ),
+			);
+		}
+
+		return $unknown;
+	}
+
+	/**
+	 * Build a map of PSR-4 namespace prefix → plugin slug from composer.json files.
+	 *
+	 * @return array<string, string>  Keys are namespace prefixes (with trailing backslash),
+	 *                                values are plugin slugs.
+	 */
+	private static function build_namespace_map() {
+		$map        = array();
+		$plugin_dir = wp_normalize_path( WP_PLUGIN_DIR );
+
+		if ( ! is_dir( $plugin_dir ) ) {
+			return $map;
+		}
+
+		$entries = scandir( $plugin_dir );
+		if ( ! $entries ) {
+			return $map;
+		}
+
+		foreach ( $entries as $slug ) {
+			if ( '.' === $slug[0] ) {
+				continue;
+			}
+
+			$composer_path = $plugin_dir . '/' . $slug . '/composer.json';
+			if ( ! file_exists( $composer_path ) ) {
+				continue;
+			}
+
+			$json = file_get_contents( $composer_path );
+			if ( ! $json ) {
+				continue;
+			}
+
+			$data = json_decode( $json, true );
+			if ( ! is_array( $data ) ) {
+				continue;
+			}
+
+			// Extract PSR-4 autoload prefixes.
+			$autoload = array();
+			if ( isset( $data['autoload']['psr-4'] ) && is_array( $data['autoload']['psr-4'] ) ) {
+				$autoload = array_merge( $autoload, $data['autoload']['psr-4'] );
+			}
+			if ( isset( $data['autoload-dev']['psr-4'] ) && is_array( $data['autoload-dev']['psr-4'] ) ) {
+				$autoload = array_merge( $autoload, $data['autoload-dev']['psr-4'] );
+			}
+
+			foreach ( $autoload as $prefix => $path ) {
+				$map[ $prefix ] = $slug;
+			}
+		}
+
+		return $map;
 	}
 }
