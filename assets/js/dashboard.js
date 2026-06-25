@@ -3556,7 +3556,7 @@
 
 		// Fetch compiled profile via AJAX
 		$.post( scrutinizerAdmin.ajaxUrl, {
-			action: 'scrutinizer_get_profile',
+			action: 'scrutinizer_get_profile_detail',
 			nonce:  scrutinizerAdmin.nonce,
 			id:     profileId
 		}, function( response ) {
@@ -3749,10 +3749,18 @@
 			};
 
 			// Use fetch to avoid jQuery AJAX CORS defaults
+			var bodyStr = JSON.stringify( payload );
+
+			// Guard against relay's 2 MB limit.
+			if ( bodyStr.length > 2000000 ) {
+				reject( new Error( 'Report too large (' + ( bodyStr.length / 1048576 ).toFixed( 1 ) + ' MB). Try unchecking Trace and Timeline.' ) );
+				return;
+			}
+
 			fetch( RELAY_URL + '/r/', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify( payload )
+				body: bodyStr
 			} )
 			.then( function( resp ) {
 				if ( ! resp.ok ) {
