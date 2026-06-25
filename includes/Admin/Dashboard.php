@@ -182,7 +182,14 @@ class Dashboard {
 			</div>
 
 			<!-- Settings Panel (D33 — toggled by gear icon) -->
-			<div id="scrutinizer-settings-panel" style="display:none;" role="region" aria-label="<?php echo esc_attr__( 'Settings', 'scrutinizer' ); ?>">
+			<div id="scrutinizer-settings-modal" class="scrutinizer-modal" style="display:none;" role="dialog" aria-label="<?php echo esc_attr__( 'Settings', 'scrutinizer' ); ?>">
+				<div class="scrutinizer-modal-overlay"></div>
+				<div class="scrutinizer-modal-content">
+					<div class="scrutinizer-modal-header">
+						<h2><?php echo esc_html__( 'Settings', 'scrutinizer' ); ?></h2>
+						<button type="button" id="scrutinizer-settings-modal-close" class="scrutinizer-modal-close" aria-label="<?php echo esc_attr__( 'Close', 'scrutinizer' ); ?>">&times;</button>
+					</div>
+					<div class="scrutinizer-modal-body" id="scrutinizer-settings-panel">
 
 				<!-- Session Status -->
 				<div class="scrutinizer-status-card" id="scrutinizer-status">
@@ -244,6 +251,8 @@ class Dashboard {
 				</div>
 
 				<!-- Background Profiling + Query Profiling rendered by JS here -->
+					</div>
+				</div>
 			</div>
 		</div>
 		<?php

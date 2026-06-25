@@ -116,10 +116,22 @@
 			startProfiling( $( this ).data( 'target' ) || '' );
 		} );
 
-		// Settings gear toggle.
+		// Settings gear — open modal.
 		$( document ).on( 'click', '.scrutinizer-gear-toggle', function() {
-			$( '#scrutinizer-settings-panel' ).slideToggle( 200 );
-			$( this ).toggleClass( 'is-active' );
+			$( '#scrutinizer-settings-modal' ).fadeIn( 150 );
+			$( this ).attr( 'aria-expanded', 'true' );
+		} );
+
+		// Close settings modal.
+		$( document ).on( 'click', '#scrutinizer-settings-modal-close, .scrutinizer-modal-overlay', function() {
+			$( '#scrutinizer-settings-modal' ).fadeOut( 150 );
+			$( '.scrutinizer-gear-toggle' ).attr( 'aria-expanded', 'false' );
+		} );
+		$( document ).on( 'keydown', function( e ) {
+			if ( 27 === e.keyCode && $( '#scrutinizer-settings-modal' ).is( ':visible' ) ) {
+				$( '#scrutinizer-settings-modal' ).fadeOut( 150 );
+				$( '.scrutinizer-gear-toggle' ).attr( 'aria-expanded', 'false' );
+			}
 		} );
 
 		// Stop button.
