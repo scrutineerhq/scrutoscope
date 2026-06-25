@@ -148,7 +148,7 @@ class Dashboard {
 		<div class="wrap" id="scrutinizer-dashboard">
 			<h1>
 				<?php echo esc_html__( 'Scrutinizer', 'scrutinizer' ); ?>
-				<button type="button" class="scrutinizer-gear-toggle" title="<?php echo esc_attr__( 'Settings', 'scrutinizer' ); ?>" aria-expanded="false" aria-controls="scrutinizer-settings-panel">
+				<button type="button" class="scrutinizer-gear-toggle" title="<?php echo esc_attr__( 'Settings', 'scrutinizer' ); ?>" aria-label="<?php echo esc_attr__( 'Settings', 'scrutinizer' ); ?>" aria-expanded="false" aria-controls="scrutinizer-settings-panel">
 					<span class="dashicons dashicons-admin-generic"></span>
 				</button>
 			</h1>

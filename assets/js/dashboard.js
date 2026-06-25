@@ -298,6 +298,14 @@
 			}
 		} );
 
+		// Keyboard support for compare target picker (a11y).
+		$( document ).on( 'keydown', '.scrutinizer-compare-target', function( e ) {
+			if ( 13 === e.which || 32 === e.which ) {
+				e.preventDefault();
+				$( this ).trigger( 'click' );
+			}
+		} );
+
 		// Dismiss inline comparison.
 		$( document ).on( 'click', '#scrutinizer-inline-compare-close', function() {
 			$( '#scrutinizer-inline-compare' ).slideUp( 200, function() {
@@ -707,13 +715,14 @@
 		var filtered = [];
 		for ( var f = 0; f < groups.length; f++ ) {
 			var g = groups[ f ];
-			var count2xx = parseInt( g.count_2xx, 10 ) || 0;
-			var count4xx = parseInt( g.count_4xx, 10 ) || 0;
+			var count2xx   = parseInt( g.count_2xx, 10 ) || 0;
+			var countTotal = parseInt( g.count_total, 10 ) || 0;
+			var countNon2xx = countTotal - count2xx;
 
 			if ( '2xx' === routeFilter && 0 === count2xx ) {
 				continue;
 			}
-			if ( '4xx' === routeFilter && ( count2xx > 0 || 0 === count4xx ) ) {
+			if ( 'non2xx' === routeFilter && 0 === countNon2xx ) {
 				continue;
 			}
 
@@ -735,7 +744,7 @@
 		var html = '<div class="scrutinizer-filter-bar">';
 		html += '<label>Showing: <select id="scrutinizer-route-filter">';
 		html += '<option value="2xx"' + ( '2xx' === routeFilter ? ' selected' : '' ) + '>Pages that loaded</option>';
-		html += '<option value="4xx"' + ( '4xx' === routeFilter ? ' selected' : '' ) + '>Not found responses</option>';
+		html += '<option value="non2xx"' + ( 'non2xx' === routeFilter ? ' selected' : '' ) + '>Other responses</option>';
 		html += '<option value=""' + ( '' === routeFilter ? ' selected' : '' ) + '>All requests</option>';
 		html += '</select></label>';
 		html += '<input type="search" id="scrutinizer-route-search" placeholder="Search routes\u2026" value="' + esc( routeSearch ) + '" />';
@@ -1757,7 +1766,7 @@
 		html += '<tr><td>PHP</td><td>' + esc( request.php_version || '—' ) + '</td></tr>';
 		html += '<tr><td>WordPress</td><td>' + esc( request.wp_version || '—' ) + '</td></tr>';
 		html += '<tr><td>Peak Memory</td><td>' + formatBytes( memPeak ) + '</td></tr>';
-		html += '<tr><td>Allocated by Hooks</td><td>' + formatBytes( memAlloc ) + '</td></tr>';
+		html += '<tr><td>Memory Used</td><td>' + formatBytes( memAlloc ) + '</td></tr>';
 		html += '<tr><td>DB Queries</td><td>' + ( summary.query_count || 0 ) + '</td></tr>';
 		html += '<tr><td>HTTP Calls</td><td>' + ( summary.http_call_count || 0 ) + ( summary.http_total_ms > 0 ? ' (' + summary.http_total_ms + ' ms total)' : '' ) + '</td></tr>';
 		html += '<tr><td>Callbacks Observed</td><td>' + ( summary.callback_count || 0 ) + '</td></tr>';
@@ -2726,7 +2735,7 @@
 			var p = profiles[ i ];
 			var durMs = p.duration_ns ? ( p.duration_ns / 1e6 ).toFixed( 1 ) + ' ms' : '?';
 			var label = ( p.request_method || 'GET' ) + ' ' + truncate( p.request_url || p.route_key || '', 50 );
-			html += '<li class="scrutinizer-compare-target" data-id="' + parseInt( p.id, 10 ) + '">';
+			html += '<li class="scrutinizer-compare-target" data-id="' + parseInt( p.id, 10 ) + '" tabindex="0" role="button">';
 			html += '<span class="picker-route">' + esc( label ) + '</span>';
 			html += '<span class="picker-meta">' + esc( durMs ) + ' · ' + esc( p.captured_at || '' ) + '</span>';
 			if ( p.note ) {
