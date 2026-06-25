@@ -300,6 +300,8 @@
 				renderRouteTable( routeData );
 			} else if ( 'history' === currentView ) {
 				renderHistoryTable( historyData );
+			} else if ( 'cron' === currentView ) {
+				renderCronView( cronData );
 			}
 		} );
 
@@ -2941,9 +2943,21 @@
 	function buildHttpCountMap( httpCalls ) {
 		var map = {};
 		for ( var i = 0; i < httpCalls.length; i++ ) {
-			var caller = ( httpCalls[ i ].caller || '' ).trim();
-			if ( caller ) {
-				map[ caller ] = ( map[ caller ] || 0 ) + 1;
+			var raw = httpCalls[ i ].caller || '';
+			// caller can be a string or an object with .caller string.
+			var caller = 'string' === typeof raw ? raw : ( raw.caller || '' );
+			caller = caller.trim();
+			if ( ! caller ) {
+				continue;
+			}
+			// caller is a call-stack string like "wp_remote_get, do_action, require_once".
+			// Match each function in the stack against trace callbacks.
+			var parts = caller.split( /,\s*/ );
+			for ( var p = 0; p < parts.length; p++ ) {
+				var fn = parts[ p ].trim();
+				if ( fn ) {
+					map[ fn ] = ( map[ fn ] || 0 ) + 1;
+				}
 			}
 		}
 		return map;
@@ -3658,7 +3672,7 @@
 		var html = '<div class="scrutinizer-cron-view">';
 
 		// Summary cards.
-		html += '<div class="scrutinizer-metrics">';
+		html += '<div class="scrutinizer-metric-cards">';
 		html += renderMetricCard( String( summary.total || 0 ), 'Events', 'default' );
 		html += renderMetricCard( String( summary.recurring || 0 ), 'Recurring', 'default' );
 		html += renderMetricCard( String( summary.one_shot || 0 ), 'One-Shot', 'default' );
@@ -3696,18 +3710,19 @@
 		}
 
 		// Events table.
-		html += '<table class="scrutinizer-cron-table">';
+		html += '<table class="scrutinizer-profile-table scrutinizer-cron-table widefat">';
 		html += '<thead><tr>';
-		html += '<th>Hook</th>';
-		html += '<th>Next Run</th>';
+		html += sortHeader( 'Hook', 'hook' );
+		html += sortHeader( 'Next Run', 'timestamp' );
 		html += '<th>Schedule</th>';
 		html += '<th>Source</th>';
 		html += '<th>Status</th>';
 		html += '</tr></thead>';
 		html += '<tbody>';
 
-		for ( var i = 0; i < events.length; i++ ) {
-			var ev = events[i];
+		var sortedEvents = sortRows( events );
+		for ( var i = 0; i < sortedEvents.length; i++ ) {
+			var ev = sortedEvents[i];
 			var rowClass = ev.overdue ? 'scrutinizer-cron-overdue' : '';
 			var attrType = ev.attribution.type || 'unknown';
 
@@ -3758,7 +3773,7 @@
 		if ( schedules.length > 0 ) {
 			html += '<details class="scrutinizer-cron-schedules">';
 			html += '<summary>Registered Schedules (' + schedules.length + ')</summary>';
-			html += '<table class="scrutinizer-cron-schedule-table"><thead><tr><th>Name</th><th>Interval</th><th>Display</th></tr></thead><tbody>';
+			html += '<table class="scrutinizer-profile-table scrutinizer-cron-schedule-table widefat"><thead><tr><th>Name</th><th>Interval</th><th>Display</th></tr></thead><tbody>';
 			for ( var j = 0; j < schedules.length; j++ ) {
 				html += '<tr>';
 				html += '<td><code>' + esc( schedules[j].name ) + '</code></td>';
@@ -4423,7 +4438,7 @@
 		// --- Endpoints reference ---
 		html += '<div class="scrutinizer-api-section">';
 		html += '<h3 class="scrutinizer-api-heading"><span class="dashicons dashicons-rest-api"></span> Endpoints</h3>';
-		html += '<table class="scrutinizer-api-endpoints">';
+		html += '<table class="scrutinizer-profile-table scrutinizer-api-endpoints widefat">';
 		html += '<thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead>';
 		html += '<tbody>';
 		html += '<tr><td><code>GET</code></td><td><code>/v1/prompt</code></td><td>System prompt (text/plain) \u2014 the API contract</td></tr>';
