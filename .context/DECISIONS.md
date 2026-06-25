@@ -122,3 +122,15 @@ Replace all dark-background sections (#1e1e1e) with standard WP admin cards (whi
 
 ## D36: Trace rendering — collapsed tree with search
 Trace tab renders top-level phase nodes collapsed by default. Each node shows callback count + total time. Expand on click to reveal hooks, then callbacks. Search/filter input at top for finding specific hooks. Never render 18K+ DOM nodes simultaneously.
+
+## D37: Lazy-loaded trace data
+The detail AJAX endpoint (`get_profile_detail`) accepts `lightweight=1` to strip trace data from the response and return only a `trace_count`. Trace loads on demand when the user clicks the Trace tab via a separate `get_profile_trace` endpoint. The share flow omits `lightweight=1` and gets the full profile. This solves silent View failures on large profiles (4-30MB trace data over AJAX).
+
+## D38: Trace explorer — Splunk-style log view
+The Trace tab replaces the collapsed-tree phase view with a flat, filterable, sortable table. Features: text search (callbacks, hooks, sources), built-in filter pills (Top 10 Slowest, DB Heavy, HTTP Calls, AJAX, plus context-aware Checkout/Login/Auth), source-type filter dropdown, duration and query-count thresholds, sortable columns, client-side pagination (200 per page), and saved searches in localStorage. Entries are enriched client-side by cross-referencing with sources (for source_type), queries (for query counts), and HTTP calls (for HTTP counts) — all already present in the lightweight profile response.
+
+## D39: Viewer accepts local file uploads
+The scrutinizer.dev/view SPA has two entry points: (1) `/r/{id}#key` for relay-hosted encrypted reports, and (2) a drop zone for local JSON exports. Both feed the same rendering engine. No WordPress, no auth, no network — just drag, drop, explore. The JSON export includes `_scrutinizer.viewer` pointing to the viewer URL so recipients know where to go.
+
+## D40: Gzip before encryption, R2 for storage
+Report payloads are gzip-compressed before AES-256-GCM encryption. Combined with migrating the relay from KV to R2 (no practical size limit), this handles profiles that were previously too large to share. The viewer decompresses after decryption. Client-side DOM pagination handles rendering.

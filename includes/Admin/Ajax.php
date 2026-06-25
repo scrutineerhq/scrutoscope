@@ -38,6 +38,7 @@ class Ajax {
 		add_action( 'wp_ajax_scrutinizer_create_api_password', array( __CLASS__, 'create_api_password' ) );
 		add_action( 'wp_ajax_scrutinizer_revoke_api_password', array( __CLASS__, 'revoke_api_password' ) );
 		add_action( 'wp_ajax_scrutinizer_toggle_query_profiling', array( __CLASS__, 'toggle_query_profiling' ) );
+		add_action( 'wp_ajax_scrutinizer_get_profile_trace', array( __CLASS__, 'get_profile_trace' ) );
 	}
 
 	/**
@@ -300,7 +301,56 @@ class Ajax {
 			);
 		}
 
+		// Lightweight mode: strip trace (large) and add counts for tab badges.
+		$lightweight = isset( $_GET['lightweight'] ) && '1' === $_GET['lightweight'];
+
+		if ( $lightweight && isset( $profile['profile_data'] ) ) {
+			$data = &$profile['profile_data'];
+
+			$profile['trace_count'] = isset( $data['trace'] ) ? count( $data['trace'] ) : 0;
+			unset( $data['trace'] );
+		}
+
 		wp_send_json_success( array( 'profile' => $profile ) );
+	}
+
+	/**
+	 * Get trace data for a profile (lazy-loaded by the Trace tab).
+	 */
+	public static function get_profile_trace() {
+		check_ajax_referer( 'scrutinizer_nonce', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error(
+				array( 'message' => __( 'Permission denied.', 'scrutinizer' ) ),
+				403
+			);
+		}
+
+		$profile_id = 0;
+		if ( isset( $_GET['profile_id'] ) ) {
+			$profile_id = absint( $_GET['profile_id'] );
+		}
+
+		if ( empty( $profile_id ) ) {
+			wp_send_json_error(
+				array( 'message' => __( 'No profile ID specified.', 'scrutinizer' ) ),
+				400
+			);
+		}
+
+		$profile = Storage::get_profile( $profile_id );
+
+		if ( null === $profile ) {
+			wp_send_json_error(
+				array( 'message' => __( 'Profile not found.', 'scrutinizer' ) ),
+				404
+			);
+		}
+
+		$trace = isset( $profile['profile_data']['trace'] ) ? $profile['profile_data']['trace'] : array();
+
+		wp_send_json_success( array( 'trace' => $trace ) );
 	}
 
 	/**

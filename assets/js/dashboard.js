@@ -27,6 +27,16 @@
 	var currentProfileId = 0;     // currently viewed profile detail
 	var currentProfileData = null; // full profile object for the current detail view
 
+	// Trace explorer state.
+	var traceLoaded       = false;
+	var traceRawData      = null;  // raw flat trace from AJAX
+	var traceEntries      = [];    // enriched flat entries
+	var traceFiltered     = [];    // after filters applied
+	var tracePageSize     = 200;
+	var traceShown        = 0;
+	var traceSortKey      = 'exclusive_ns';
+	var traceSortDir      = 'desc';
+
 	// Table sort state (per-table).
 	var tableSortState = {};
 
@@ -267,6 +277,11 @@
 			$( this ).addClass( 'active' );
 			$( '.scrutinizer-tab-content' ).hide();
 			$( '#scrutinizer-tab-' + tab ).show();
+
+			// Lazy-load trace data on first click.
+			if ( 'trace' === tab && ! traceLoaded && currentProfileId ) {
+				loadTraceData( currentProfileId );
+			}
 		} );
 
 		// Info bubble toggle (mobile-friendly tooltip).
@@ -276,6 +291,121 @@
 		} );
 		$( document ).on( 'click', function() {
 			$( '.scrutinizer-info-bubble' ).removeClass( 'visible' );
+		} );
+
+		// --- Trace Explorer event handlers ---
+
+		// Trace search input.
+		$( document ).on( 'input', '#scrutinizer-trace-search', function() {
+			refreshTraceTable();
+		} );
+
+		// Trace pill click.
+		$( document ).on( 'click', '.scrutinizer-trace-pill', function() {
+			$( this ).toggleClass( 'active' );
+			refreshTraceTable();
+		} );
+
+		// Trace source filter.
+		$( document ).on( 'change', '#scrutinizer-trace-source', function() {
+			refreshTraceTable();
+		} );
+
+		// Trace duration threshold.
+		$( document ).on( 'input', '#scrutinizer-trace-min-duration', function() {
+			refreshTraceTable();
+		} );
+
+		// Trace query threshold.
+		$( document ).on( 'input', '#scrutinizer-trace-min-queries', function() {
+			refreshTraceTable();
+		} );
+
+		// Trace table column sort.
+		$( document ).on( 'click', '.scrutinizer-trace-sortable', function() {
+			var key = $( this ).data( 'sort-key' );
+			if ( traceSortKey === key ) {
+				traceSortDir = 'asc' === traceSortDir ? 'desc' : 'asc';
+			} else {
+				traceSortKey = key;
+				traceSortDir = 'desc';
+			}
+			// Update header indicators.
+			$( '.scrutinizer-trace-sortable' ).removeClass( 'sort-asc sort-desc' );
+			$( this ).addClass( 'asc' === traceSortDir ? 'sort-asc' : 'sort-desc' );
+			refreshTraceTable();
+		} );
+
+		// Trace "Show more" button.
+		$( document ).on( 'click', '#scrutinizer-trace-show-more', function() {
+			traceShown += tracePageSize;
+			var rows = renderTraceRows( traceFiltered, traceShown - tracePageSize, tracePageSize );
+			$( '#scrutinizer-trace-tbody' ).append( rows );
+			updateTraceStatus();
+		} );
+
+		// Trace clear filters.
+		$( document ).on( 'click', '#scrutinizer-trace-clear', function() {
+			$( '#scrutinizer-trace-search' ).val( '' );
+			$( '#scrutinizer-trace-source' ).val( '' );
+			$( '#scrutinizer-trace-min-duration' ).val( '' );
+			$( '#scrutinizer-trace-min-queries' ).val( '' );
+			$( '.scrutinizer-trace-pill' ).removeClass( 'active' );
+			refreshTraceTable();
+		} );
+
+		// Save search button.
+		$( document ).on( 'click', '#scrutinizer-trace-save-search', function() {
+			var search = $( '#scrutinizer-trace-search' ).val() || '';
+			var source = $( '#scrutinizer-trace-source' ).val() || '';
+			var minDur = $( '#scrutinizer-trace-min-duration' ).val() || '';
+			var minQ   = $( '#scrutinizer-trace-min-queries' ).val() || '';
+			var pills  = [];
+			$( '.scrutinizer-trace-pill.active:not(.saved-search)' ).each( function() {
+				pills.push( $( this ).data( 'pill' ) );
+			} );
+
+			if ( ! search && ! source && ! minDur && ! minQ && 0 === pills.length ) {
+				return;
+			}
+
+			var name = window.prompt( 'Name this saved search:' );
+			if ( ! name ) { return; }
+
+			var saved = loadSavedSearches();
+			saved.push( { name: name, search: search, source: source, minDur: minDur, minQ: minQ, pills: pills } );
+			localStorage.setItem( 'scrutinizer_saved_searches', JSON.stringify( saved ) );
+			renderSavedSearchPills();
+		} );
+
+		// Click a saved search pill.
+		$( document ).on( 'click', '.scrutinizer-saved-pill', function( e ) {
+			if ( $( e.target ).hasClass( 'scrutinizer-pill-remove' ) ) { return; }
+			var idx = parseInt( $( this ).data( 'saved-idx' ), 10 );
+			var saved = loadSavedSearches();
+			if ( ! saved[ idx ] ) { return; }
+			var s = saved[ idx ];
+
+			// Apply saved filters.
+			$( '#scrutinizer-trace-search' ).val( s.search || '' );
+			$( '#scrutinizer-trace-source' ).val( s.source || '' );
+			$( '#scrutinizer-trace-min-duration' ).val( s.minDur || '' );
+			$( '#scrutinizer-trace-min-queries' ).val( s.minQ || '' );
+			$( '.scrutinizer-trace-pill' ).removeClass( 'active' );
+			( s.pills || [] ).forEach( function( p ) {
+				$( '.scrutinizer-trace-pill[data-pill="' + p + '"]' ).addClass( 'active' );
+			} );
+			refreshTraceTable();
+		} );
+
+		// Remove a saved search.
+		$( document ).on( 'click', '.scrutinizer-pill-remove', function( e ) {
+			e.stopPropagation();
+			var idx = parseInt( $( this ).closest( '.scrutinizer-saved-pill' ).data( 'saved-idx' ), 10 );
+			var saved = loadSavedSearches();
+			saved.splice( idx, 1 );
+			localStorage.setItem( 'scrutinizer_saved_searches', JSON.stringify( saved ) );
+			renderSavedSearchPills();
 		} );
 
 		// Background profiling toggle.
@@ -1095,12 +1225,19 @@
 		$.get( scrutinizerAdmin.ajaxUrl, {
 			action:     'scrutinizer_get_profile_detail',
 			nonce:      scrutinizerAdmin.nonce,
-			profile_id: profileId
+			profile_id: profileId,
+			lightweight: '1'
 		}, function( response ) {
 			if ( response.success ) {
 				// Reset color map for each profile view.
 				pluginColorMap = {};
 				colorIndex     = 0;
+				// Reset trace state.
+				traceLoaded   = false;
+				traceRawData  = null;
+				traceEntries  = [];
+				traceFiltered = [];
+				traceShown    = 0;
 				renderProfileDetail( response.data.profile );
 				showDetailView();
 			} else {
@@ -1123,6 +1260,7 @@
 		var assets       = data.enqueued_assets || {};
 		var timeline     = data.timeline || [];
 		var traceData    = data.trace || [];
+		var traceCount   = profile.trace_count || traceData.length || 0;
 		var durMs        = ( summary.duration_ms || 0 ).toFixed( 1 );
 		var queryCount   = summary.query_count || 0;
 		var httpCount    = summary.http_call_count || 0;
@@ -1190,8 +1328,8 @@
 		if ( autoloadOpts.count > 0 ) {
 			html += '<button class="scrutinizer-tab" data-tab="options">Options (' + autoloadOpts.count + ')</button>';
 		}
-		if ( traceData.length > 0 ) {
-			html += '<button class="scrutinizer-tab" data-tab="trace">Trace (' + traceData.length + ')</button>';
+		if ( traceCount > 0 ) {
+			html += '<button class="scrutinizer-tab" data-tab="trace">Trace (' + traceCount.toLocaleString() + ')</button>';
 		}
 		html += '<button class="scrutinizer-tab" data-tab="metadata">Metadata</button>';
 		html += '</div>';
@@ -1239,10 +1377,21 @@
 			html += '</div>';
 		}
 
-		// Tab: Hook Execution Trace.
-		if ( traceData.length > 0 ) {
+		// Tab: Hook Execution Trace (lazy-loaded).
+		if ( traceCount > 0 ) {
 			html += '<div class="scrutinizer-tab-content" id="scrutinizer-tab-trace" style="display:none">';
-			html += renderTraceTab( traceData, sources );
+			if ( traceData.length > 0 ) {
+				// Trace was included (non-lightweight), render immediately.
+				traceLoaded  = true;
+				traceRawData = traceData;
+				html += renderTraceExplorerShell( traceCount );
+			} else {
+				// Trace not loaded yet — show placeholder.
+				html += '<div class="scrutinizer-trace-loading">';
+				html += '<span class="spinner is-active" style="float:none;margin:0 8px 0 0;"></span>';
+				html += 'Loading ' + traceCount.toLocaleString() + ' callbacks\u2026';
+				html += '</div>';
+			}
 			html += '</div>';
 		}
 
@@ -1982,53 +2131,10 @@
 	/* ------------------------------------------------------------------ */
 
 	/**
-	 * Build a tree from the flat trace by inferring parent-child from time windows.
-	 * A frame B is a child of frame A if B.start >= A.start && B.end <= A.end.
-	 * The trace is sorted by start_ns (from CallStack pop order → re-sort needed).
+	 * Parse a trace entry ID into callback, hook, and priority components.
+	 * ID format: "callback_name@hook_tag:priority"
 	 */
-	function buildTraceTree( flatTrace ) {
-		if ( ! flatTrace || flatTrace.length === 0 ) {
-			return [];
-		}
-
-		// Sort by start_ns ascending, break ties by end_ns descending (parents first).
-		var entries = flatTrace.slice().sort( function( a, b ) {
-			if ( a.start_ns !== b.start_ns ) { return a.start_ns - b.start_ns; }
-			return b.end_ns - a.end_ns;
-		});
-
-		// Annotate with parsed id components.
-		for ( var i = 0; i < entries.length; i++ ) {
-			entries[i] = parseTraceId( entries[i] );
-			entries[i].children = [];
-		}
-
-		// Stack-based tree builder.
-		var roots = [];
-		var stack = []; // stack of { node, end_ns }
-
-		for ( var j = 0; j < entries.length; j++ ) {
-			var node = entries[j];
-
-			// Pop finished parents.
-			while ( stack.length > 0 && stack[ stack.length - 1 ].end_ns <= node.start_ns ) {
-				stack.pop();
-			}
-
-			if ( stack.length > 0 ) {
-				stack[ stack.length - 1 ].node.children.push( node );
-			} else {
-				roots.push( node );
-			}
-
-			stack.push( { node: node, end_ns: node.end_ns } );
-		}
-
-		return roots;
-	}
-
 	function parseTraceId( entry ) {
-		// id format: "callback_name@hook_tag:priority"
 		var id   = entry.id || '';
 		var atIdx = id.lastIndexOf( '@' );
 		var callback = id;
@@ -2053,219 +2159,381 @@
 		return entry;
 	}
 
-	function renderTraceTab( traceData, sources ) {
-		if ( ! traceData || 0 === traceData.length ) {
-			return '<p class="scrutinizer-empty">No trace data captured.</p>';
+	/* ================================================================== */
+	/*  Trace Explorer — Splunk-style log explorer for hook traces        */
+	/* ================================================================== */
+
+	/**
+	 * Lazy-load trace data via AJAX and render the explorer.
+	 */
+	function loadTraceData( profileId ) {
+		$.get( scrutinizerAdmin.ajaxUrl, {
+			action:     'scrutinizer_get_profile_trace',
+			nonce:      scrutinizerAdmin.nonce,
+			profile_id: profileId
+		}, function( response ) {
+			if ( response.success && response.data && response.data.trace ) {
+				traceRawData = response.data.trace;
+				traceLoaded  = true;
+
+				// Store on profile object so export works.
+				if ( currentProfileData && currentProfileData.profile_data ) {
+					currentProfileData.profile_data.trace = traceRawData;
+				}
+
+				// Enrich with source/query/HTTP cross-references.
+				var profileData = ( currentProfileData && currentProfileData.profile_data ) || {};
+				traceEntries = enrichTraceEntries(
+					traceRawData,
+					profileData.sources || [],
+					profileData.queries || [],
+					profileData.http_calls || []
+				);
+
+				$( '#scrutinizer-tab-trace' ).html( renderTraceExplorerShell( traceEntries.length ) );
+				refreshTraceTable();
+				renderSavedSearchPills();
+			} else {
+				$( '#scrutinizer-tab-trace' ).html(
+					'<p class="scrutinizer-empty">Failed to load trace data.</p>'
+				);
+			}
+		} ).fail( function() {
+			$( '#scrutinizer-tab-trace' ).html(
+				'<p class="scrutinizer-empty">Failed to load trace data.</p>'
+			);
+		} );
+	}
+
+	/**
+	 * Enrich flat trace entries with source type, query count, and HTTP count.
+	 */
+	function enrichTraceEntries( rawTrace, sources, queries, httpCalls ) {
+		var srcMap   = buildSourceMap( sources );
+		var queryMap = buildQueryCountMap( queries );
+		var httpMap  = buildHttpCountMap( httpCalls );
+		var entries  = [];
+
+		for ( var i = 0; i < rawTrace.length; i++ ) {
+			var entry = parseTraceId( $.extend( {}, rawTrace[ i ] ) );
+			entry.exclusive_ms = ( entry.exclusive_ns || 0 ) / 1e6;
+			entry.inclusive_ms = ( entry.inclusive_ns || 0 ) / 1e6;
+
+			var srcInfo = srcMap[ entry._callback ] || { type: 'unknown', name: 'unknown' };
+			entry.source_type = srcInfo.type;
+			entry.source_name = srcInfo.name;
+
+			entry.query_count = queryMap[ entry._callback ] || 0;
+			entry.http_count  = httpMap[ entry._callback ] || 0;
+
+			entries.push( entry );
 		}
 
-		var tree = buildTraceTree( traceData );
+		return entries;
+	}
 
-		// Group root nodes into lifecycle phases.
-		var phases = groupByPhase( tree );
+	/** Build a map: callback_name to { type, name } from sources array. */
+	function buildSourceMap( sources ) {
+		var map = {};
+		for ( var i = 0; i < sources.length; i++ ) {
+			var src = sources[ i ];
+			var cbs = src.callbacks || [];
+			for ( var j = 0; j < cbs.length; j++ ) {
+				map[ cbs[ j ].callback ] = {
+					type: src.type || 'unknown',
+					name: src.name || src.slug || 'unknown'
+				};
+			}
+		}
+		return map;
+	}
 
+	/** Build a map: callback_name to query count from queries array. */
+	function buildQueryCountMap( queries ) {
+		var map = {};
+		for ( var i = 0; i < queries.length; i++ ) {
+			var callerStr = queries[ i ].caller || '';
+			var callers   = callerStr.split( ', ' );
+			var credited  = {};
+			for ( var j = 0; j < callers.length; j++ ) {
+				var c = callers[ j ].trim();
+				if ( c && ! credited[ c ] ) {
+					credited[ c ] = true;
+					map[ c ] = ( map[ c ] || 0 ) + 1;
+				}
+			}
+		}
+		return map;
+	}
+
+	/** Build a map: callback_name to HTTP call count from http_calls array. */
+	function buildHttpCountMap( httpCalls ) {
+		var map = {};
+		for ( var i = 0; i < httpCalls.length; i++ ) {
+			var caller = ( httpCalls[ i ].caller || '' ).trim();
+			if ( caller ) {
+				map[ caller ] = ( map[ caller ] || 0 ) + 1;
+			}
+		}
+		return map;
+	}
+
+	/**
+	 * Render the trace explorer shell: search, pills, filters, table container.
+	 */
+	function renderTraceExplorerShell( totalCount ) {
 		var html = '';
 
-		// Summary + search.
-		html += '<div class="scrutinizer-trace-summary">';
-		html += '<span>' + traceData.length.toLocaleString() + ' callbacks traced</span>';
-		html += ' \u00b7 <span>' + phases.length + ' phases</span>';
-		html += ' \u00b7 <input type="search" id="scrutinizer-trace-filter" placeholder="Filter hooks\u2026" class="scrutinizer-trace-filter" />';
+		// Search bar.
+		html += '<div class="scrutinizer-trace-explorer">';
+		html += '<div class="scrutinizer-trace-search-bar">';
+		html += '<span class="dashicons dashicons-search scrutinizer-trace-search-icon"></span>';
+		html += '<input type="search" id="scrutinizer-trace-search" placeholder="Search callbacks, hooks, sources\u2026" class="scrutinizer-trace-search-input" />';
 		html += '</div>';
 
-		// Collapsed phase tree.
-		html += '<div class="scrutinizer-trace-tree">';
-		for ( var p = 0; p < phases.length; p++ ) {
-			var phase = phases[ p ];
-			html += '<details class="scrutinizer-trace-phase">';
-			html += '<summary class="scrutinizer-trace-phase-summary">';
-			html += '<strong>' + esc( formatPhaseName( phase.name ) ) + '</strong>';
-			html += ' <span class="scrutinizer-muted">(' + phase.callbackCount.toLocaleString() + ' callback' + ( phase.callbackCount !== 1 ? 's' : '' ) + ', ';
-			html += ( phase.totalNs / 1e6 ).toFixed( 1 ) + ' ms)</span>';
-			html += '</summary>';
-			html += '<div class="scrutinizer-trace-phase-children">';
+		// Built-in pills.
+		html += '<div class="scrutinizer-trace-pills">';
+		html += '<button type="button" class="scrutinizer-trace-pill" data-pill="top-10">Top 10 Slowest</button>';
+		html += '<button type="button" class="scrutinizer-trace-pill" data-pill="db-heavy">DB Heavy (&gt;10)</button>';
+		html += '<button type="button" class="scrutinizer-trace-pill" data-pill="http-calls">HTTP Calls</button>';
+		html += '<button type="button" class="scrutinizer-trace-pill" data-pill="ajax">AJAX</button>';
 
-			// Group children by hook within this phase.
-			var hooks = groupChildrenByHook( phase.nodes );
-			for ( var h = 0; h < hooks.length; h++ ) {
-				var hook = hooks[ h ];
-				if ( hook.callbacks.length > 1 ) {
-					html += '<details class="scrutinizer-trace-hook">';
-					html += '<summary class="scrutinizer-trace-hook-summary">';
-					html += '<code>' + esc( hook.name ) + '</code>';
-					html += ' <span class="scrutinizer-muted">(' + hook.callbacks.length + ' callback' + ( hook.callbacks.length !== 1 ? 's' : '' ) + ', ';
-					html += ( hook.totalNs / 1e6 ).toFixed( 1 ) + ' ms)</span>';
-					html += '</summary>';
-					html += '<div class="scrutinizer-trace-hook-children">';
-					for ( var c = 0; c < hook.callbacks.length; c++ ) {
-						html += renderTraceLeaf( hook.callbacks[ c ] );
-					}
-					html += '</div>';
-					html += '</details>';
-				} else if ( hook.callbacks.length === 1 ) {
-					html += renderTraceLeaf( hook.callbacks[ 0 ] );
-				}
-			}
-
-			html += '</div>';
-			html += '</details>';
+		// Show context-aware pills only if matching data exists.
+		var hasCheckout = false;
+		var hasAuth = false;
+		for ( var i = 0; i < traceEntries.length && ( ! hasCheckout || ! hasAuth ); i++ ) {
+			var h = traceEntries[ i ]._hook;
+			if ( ! hasCheckout && h.indexOf( 'woocommerce_checkout' ) !== -1 ) { hasCheckout = true; }
+			if ( ! hasAuth && ( h.indexOf( 'wp_authenticate' ) !== -1 || h.indexOf( 'login_' ) === 0 || h.indexOf( 'auth_cookie' ) !== -1 ) ) { hasAuth = true; }
 		}
+		if ( hasCheckout ) {
+			html += '<button type="button" class="scrutinizer-trace-pill" data-pill="checkout">Checkout</button>';
+		}
+		if ( hasAuth ) {
+			html += '<button type="button" class="scrutinizer-trace-pill" data-pill="login">Login/Auth</button>';
+		}
+
+		// Saved searches placeholder.
+		html += '<span id="scrutinizer-trace-saved-pills"></span>';
+		html += '<button type="button" class="scrutinizer-trace-pill scrutinizer-trace-save" id="scrutinizer-trace-save-search" title="Save current filters as a pill">+ Save</button>';
 		html += '</div>';
 
-		return html;
-	}
+		// Filter controls.
+		html += '<div class="scrutinizer-trace-filters">';
+		html += '<label>Source <select id="scrutinizer-trace-source">';
+		html += '<option value="">All</option>';
+		html += '<option value="plugin">Plugin</option>';
+		html += '<option value="theme">Theme</option>';
+		html += '<option value="core">Core</option>';
+		html += '<option value="mu-plugin">MU-Plugin</option>';
+		html += '<option value="unknown">Unknown</option>';
+		html += '</select></label>';
+		html += '<label>Duration &gt; <input type="number" id="scrutinizer-trace-min-duration" min="0" step="0.1" style="width:70px" /> ms</label>';
+		html += '<label>Queries &gt; <input type="number" id="scrutinizer-trace-min-queries" min="0" step="1" style="width:60px" /></label>';
+		html += '<button type="button" class="button-link" id="scrutinizer-trace-clear">Clear filters</button>';
+		html += '</div>';
 
-	/**
-	 * Group root-level trace nodes into lifecycle phases.
-	 * Nodes whose hook matches a known WP lifecycle hook become phase headers.
-	 * Adjacent non-lifecycle nodes are grouped under the preceding phase.
-	 */
-	function groupByPhase( rootNodes ) {
-		var lifecycleHooks = [
-			'muplugins_loaded', 'plugins_loaded', 'setup_theme', 'after_setup_theme',
-			'init', 'widgets_init', 'wp_loaded', 'parse_request', 'send_headers',
-			'wp', 'template_redirect', 'get_header', 'wp_head', 'wp_enqueue_scripts',
-			'the_post', 'loop_start', 'the_content', 'loop_end', 'get_sidebar',
-			'get_footer', 'wp_footer', 'wp_print_footer_scripts',
-			'admin_init', 'admin_menu', 'admin_enqueue_scripts', 'admin_head',
-			'admin_footer', 'shutdown'
-		];
-		var isLifecycle = {};
-		for ( var l = 0; l < lifecycleHooks.length; l++ ) {
-			isLifecycle[ lifecycleHooks[ l ] ] = true;
-		}
+		// Status bar.
+		html += '<div class="scrutinizer-trace-status" id="scrutinizer-trace-status"></div>';
 
-		var phases = [];
-		var currentPhase = null;
+		// Table.
+		html += '<table class="scrutinizer-trace-table widefat striped">';
+		html += '<thead><tr>';
+		html += '<th class="scrutinizer-trace-sortable' + ( 'exclusive_ns' === traceSortKey ? ( ' sort-' + traceSortDir ) : '' ) + '" data-sort-key="exclusive_ns" style="width:90px">Duration</th>';
+		html += '<th class="scrutinizer-trace-sortable' + ( '_callback' === traceSortKey ? ( ' sort-' + traceSortDir ) : '' ) + '" data-sort-key="_callback">Callback</th>';
+		html += '<th class="scrutinizer-trace-sortable' + ( '_hook' === traceSortKey ? ( ' sort-' + traceSortDir ) : '' ) + '" data-sort-key="_hook">Hook</th>';
+		html += '<th class="scrutinizer-trace-sortable' + ( 'source_name' === traceSortKey ? ( ' sort-' + traceSortDir ) : '' ) + '" data-sort-key="source_name" style="width:120px">Source</th>';
+		html += '<th class="scrutinizer-trace-sortable' + ( 'query_count' === traceSortKey ? ( ' sort-' + traceSortDir ) : '' ) + '" data-sort-key="query_count" style="width:60px">Qry</th>';
+		html += '<th class="scrutinizer-trace-sortable' + ( 'http_count' === traceSortKey ? ( ' sort-' + traceSortDir ) : '' ) + '" data-sort-key="http_count" style="width:60px">HTTP</th>';
+		html += '</tr></thead>';
+		html += '<tbody id="scrutinizer-trace-tbody"></tbody>';
+		html += '</table>';
 
-		for ( var i = 0; i < rootNodes.length; i++ ) {
-			var node = rootNodes[ i ];
-			var hook = node._hook || '';
+		// Show more button.
+		html += '<div class="scrutinizer-trace-more" id="scrutinizer-trace-more-wrap" style="display:none">';
+		html += '<button type="button" class="button" id="scrutinizer-trace-show-more">Show 200 more</button>';
+		html += '</div>';
 
-			if ( isLifecycle[ hook ] || null === currentPhase ) {
-				// Start a new phase.
-				currentPhase = {
-					name: hook || node._callback || 'startup',
-					nodes: [],
-					callbackCount: 0,
-					totalNs: 0
-				};
-				phases.push( currentPhase );
-			}
-
-			currentPhase.nodes.push( node );
-			var count = countDescendants( node );
-			currentPhase.callbackCount += count;
-			currentPhase.totalNs += node.inclusive_ns || 0;
-		}
-
-		return phases;
-	}
-
-	/**
-	 * Count total descendants (including self) of a trace node.
-	 */
-	function countDescendants( node ) {
-		var count = 1;
-		if ( node.children ) {
-			for ( var i = 0; i < node.children.length; i++ ) {
-				count += countDescendants( node.children[ i ] );
-			}
-		}
-		return count;
-	}
-
-	/**
-	 * Group a set of trace nodes by their hook name for sub-phase rendering.
-	 */
-	function groupChildrenByHook( nodes ) {
-		var hookMap = {};
-		var hookOrder = [];
-
-		for ( var i = 0; i < nodes.length; i++ ) {
-			var node = nodes[ i ];
-			// Flatten: add this node and all its children grouped by hook.
-			var allNodes = flattenWithChildren( node );
-			for ( var j = 0; j < allNodes.length; j++ ) {
-				var n = allNodes[ j ];
-				var hookName = n._hook || n._callback || 'unknown';
-				if ( ! hookMap[ hookName ] ) {
-					hookMap[ hookName ] = { name: hookName, callbacks: [], totalNs: 0 };
-					hookOrder.push( hookName );
-				}
-				hookMap[ hookName ].callbacks.push( n );
-				hookMap[ hookName ].totalNs += n.exclusive_ns || 0;
-			}
-		}
-
-		var result = [];
-		for ( var k = 0; k < hookOrder.length; k++ ) {
-			result.push( hookMap[ hookOrder[ k ] ] );
-		}
-		return result;
-	}
-
-	/**
-	 * Flatten a trace node tree into a list of leaf-like entries for display.
-	 */
-	function flattenWithChildren( node ) {
-		var result = [ node ];
-		if ( node.children ) {
-			for ( var i = 0; i < node.children.length; i++ ) {
-				result = result.concat( flattenWithChildren( node.children[ i ] ) );
-			}
-		}
-		return result;
-	}
-
-	/**
-	 * Render a single trace callback as a compact line.
-	 */
-	function renderTraceLeaf( node ) {
-		var exclusiveMs = ( ( node.exclusive_ns || 0 ) / 1e6 ).toFixed( 2 );
-		var inclusiveMs = ( ( node.inclusive_ns || 0 ) / 1e6 ).toFixed( 2 );
-		var timing = exclusiveMs + ' ms';
-		if ( node.children && node.children.length > 0 && node.exclusive_ns !== node.inclusive_ns ) {
-			timing += ' <span class="scrutinizer-muted">(total with children: ' + inclusiveMs + ' ms)</span>';
-		}
-		var priority = node._priority ? ':' + esc( node._priority ) : '';
-
-		var html = '<div class="scrutinizer-trace-leaf-item">';
-		html += '<code>' + esc( node._callback ) + '</code>';
-		html += ' <span class="scrutinizer-trace-hook-tag">@' + esc( node._hook ) + priority + '</span>';
-		html += ' <span class="scrutinizer-trace-timing">' + timing + '</span>';
 		html += '</div>';
 		return html;
 	}
 
-	function getTraceColor( callback, hook ) {
-		// Try to identify plugin/theme from callback or hook name.
-		// Common patterns: ClassName::method → check class prefix
-		// For now, use hook-based coloring: core hooks get core color,
-		// plugin-prefixed hooks get plugin color.
-		var coreHooks = [ 'plugins_loaded', 'setup_theme', 'after_setup_theme', 'init',
-			'wp_loaded', 'parse_request', 'wp', 'template_redirect', 'wp_head',
-			'wp_enqueue_scripts', 'wp_footer', 'shutdown', 'admin_init', 'admin_menu',
-			'admin_enqueue_scripts' ];
+	/**
+	 * Apply current filters, sort, and re-render the trace table.
+	 */
+	function refreshTraceTable() {
+		var search     = ( $( '#scrutinizer-trace-search' ).val() || '' ).toLowerCase();
+		var source     = $( '#scrutinizer-trace-source' ).val() || '';
+		var minDur     = parseFloat( $( '#scrutinizer-trace-min-duration' ).val() ) || 0;
+		var minQueries = parseInt( $( '#scrutinizer-trace-min-queries' ).val(), 10 ) || 0;
 
-		for ( var i = 0; i < coreHooks.length; i++ ) {
-			if ( hook === coreHooks[i] ) {
-				return sourceColors.core;
+		// Gather active pills.
+		var activePills = {};
+		$( '.scrutinizer-trace-pill.active' ).each( function() {
+			activePills[ $( this ).data( 'pill' ) ] = true;
+		} );
+
+		// Filter.
+		traceFiltered = applyTraceFilters( traceEntries, search, source, minDur, minQueries, activePills );
+
+		// Sort.
+		var sk = traceSortKey;
+		var sd = 'asc' === traceSortDir ? 1 : -1;
+		traceFiltered.sort( function( a, b ) {
+			var va = a[ sk ];
+			var vb = b[ sk ];
+			if ( 'string' === typeof va ) { va = va.toLowerCase(); vb = ( vb || '' ).toLowerCase(); }
+			if ( va < vb ) { return -1 * sd; }
+			if ( va > vb ) { return sd; }
+			return 0;
+		} );
+
+		// Render first page.
+		traceShown = Math.min( tracePageSize, traceFiltered.length );
+		$( '#scrutinizer-trace-tbody' ).html( renderTraceRows( traceFiltered, 0, traceShown ) );
+		updateTraceStatus();
+	}
+
+	/**
+	 * Apply all filters to trace entries. Pills are AND-combined.
+	 */
+	function applyTraceFilters( entries, search, source, minDur, minQueries, activePills ) {
+		var result = entries;
+
+		// Text search.
+		if ( search ) {
+			result = result.filter( function( e ) {
+				return e._callback.toLowerCase().indexOf( search ) !== -1 ||
+					e._hook.toLowerCase().indexOf( search ) !== -1 ||
+					e.source_name.toLowerCase().indexOf( search ) !== -1;
+			} );
+		}
+
+		// Source type.
+		if ( source ) {
+			result = result.filter( function( e ) {
+				return e.source_type === source;
+			} );
+		}
+
+		// Duration threshold.
+		if ( minDur > 0 ) {
+			result = result.filter( function( e ) {
+				return e.exclusive_ms >= minDur;
+			} );
+		}
+
+		// Query count threshold.
+		if ( minQueries > 0 ) {
+			result = result.filter( function( e ) {
+				return e.query_count >= minQueries;
+			} );
+		}
+
+		// Pills (AND).
+		if ( activePills[ 'top-10' ] ) {
+			var sorted = result.slice().sort( function( a, b ) { return b.exclusive_ns - a.exclusive_ns; } );
+			result = sorted.slice( 0, 10 );
+		}
+		if ( activePills[ 'db-heavy' ] ) {
+			result = result.filter( function( e ) { return e.query_count > 10; } );
+		}
+		if ( activePills[ 'http-calls' ] ) {
+			result = result.filter( function( e ) { return e.http_count > 0; } );
+		}
+		if ( activePills.ajax ) {
+			result = result.filter( function( e ) { return e._hook.indexOf( 'wp_ajax_' ) === 0; } );
+		}
+		if ( activePills.checkout ) {
+			result = result.filter( function( e ) {
+				return e._hook.indexOf( 'woocommerce_checkout' ) !== -1 ||
+					e._hook.indexOf( 'woocommerce_before_checkout' ) !== -1 ||
+					e._hook.indexOf( 'woocommerce_after_checkout' ) !== -1;
+			} );
+		}
+		if ( activePills.login ) {
+			result = result.filter( function( e ) {
+				return e._hook.indexOf( 'wp_authenticate' ) !== -1 ||
+					e._hook.indexOf( 'login_' ) === 0 ||
+					e._hook.indexOf( 'auth_cookie' ) !== -1;
+			} );
+		}
+
+		return result;
+	}
+
+	/**
+	 * Render trace table rows for a range of entries.
+	 */
+	function renderTraceRows( entries, start, count ) {
+		var html = '';
+		var end = Math.min( start + count, entries.length );
+
+		for ( var i = start; i < end; i++ ) {
+			var e = entries[ i ];
+			var durMs  = e.exclusive_ms.toFixed( 2 );
+			var color  = sourceColors[ e.source_type ] || sourceColors.unknown || '#999';
+			var durCls = e.exclusive_ms >= 10 ? ' scrutinizer-trace-slow' : '';
+
+			html += '<tr>';
+			html += '<td class="scrutinizer-trace-dur' + durCls + '">' + esc( durMs ) + ' ms</td>';
+			html += '<td class="scrutinizer-trace-cb"><code>' + esc( e._callback ) + '</code>';
+			if ( e._priority ) {
+				html += ' <span class="scrutinizer-muted">:' + esc( e._priority ) + '</span>';
 			}
+			html += '</td>';
+			html += '<td class="scrutinizer-trace-hook"><code>' + esc( e._hook ) + '</code></td>';
+			html += '<td><span class="scrutinizer-source-dot" style="background:' + color + '"></span>' + esc( e.source_name ) + '</td>';
+			html += '<td class="scrutinizer-trace-num">' + ( e.query_count > 0 ? e.query_count : '<span class="scrutinizer-muted">\u2014</span>' ) + '</td>';
+			html += '<td class="scrutinizer-trace-num">' + ( e.http_count > 0 ? e.http_count : '<span class="scrutinizer-muted">\u2014</span>' ) + '</td>';
+			html += '</tr>';
 		}
 
-		// WP_ prefix in callback usually means core.
-		if ( callback.indexOf( 'WP_' ) === 0 || callback.indexOf( 'wp_' ) === 0 ) {
-			return sourceColors.core;
+		return html;
+	}
+
+	/** Update the trace status bar and show/hide the "Show more" button. */
+	function updateTraceStatus() {
+		var filterCount = 0;
+		if ( $( '#scrutinizer-trace-search' ).val() ) { filterCount++; }
+		if ( $( '#scrutinizer-trace-source' ).val() ) { filterCount++; }
+		if ( parseFloat( $( '#scrutinizer-trace-min-duration' ).val() ) > 0 ) { filterCount++; }
+		if ( parseInt( $( '#scrutinizer-trace-min-queries' ).val(), 10 ) > 0 ) { filterCount++; }
+		$( '.scrutinizer-trace-pill.active' ).each( function() { filterCount++; } );
+
+		var showing = Math.min( traceShown, traceFiltered.length );
+		var statusText = 'Showing ' + showing.toLocaleString() + ' of ' + traceFiltered.length.toLocaleString() + ' callbacks';
+		if ( traceFiltered.length !== traceEntries.length ) {
+			statusText += ' (filtered from ' + traceEntries.length.toLocaleString() + ')';
+		}
+		if ( filterCount > 0 ) {
+			statusText += ' \u00b7 ' + filterCount + ' filter' + ( filterCount !== 1 ? 's' : '' ) + ' active';
 		}
 
-		// If callback contains a class from known sources, match it.
-		// Fallback: use a rotating palette by callback's first segment.
-		var key = callback.split( '::' )[0] || callback.split( '_' )[0] || callback;
-		if ( ! pluginColorMap[ key ] ) {
-			pluginColorMap[ key ] = pluginPalette[ colorIndex % pluginPalette.length ];
-			colorIndex++;
+		$( '#scrutinizer-trace-status' ).text( statusText );
+		$( '#scrutinizer-trace-more-wrap' ).toggle( traceShown < traceFiltered.length );
+	}
+
+	/** Load saved searches from localStorage. */
+	function loadSavedSearches() {
+		try {
+			return JSON.parse( localStorage.getItem( 'scrutinizer_saved_searches' ) || '[]' );
+		} catch ( e ) {
+			return [];
 		}
-		return pluginColorMap[ key ];
+	}
+
+	/** Render saved search pills into the placeholder span. */
+	function renderSavedSearchPills() {
+		var saved = loadSavedSearches();
+		var html = '';
+		for ( var i = 0; i < saved.length; i++ ) {
+			html += '<button type="button" class="scrutinizer-trace-pill saved-search scrutinizer-saved-pill" data-saved-idx="' + i + '">';
+			html += esc( saved[ i ].name );
+			html += ' <span class="scrutinizer-pill-remove" title="Remove">\u00d7</span>';
+			html += '</button>';
+		}
+		$( '#scrutinizer-trace-saved-pills' ).html( html );
 	}
 
 	/* ------------------------------------------------------------------ */
@@ -3627,9 +3895,9 @@
 
 		// Build a clean export object with metadata.
 		var exportObj = {
-			_export: {
-				plugin: 'scrutinizer',
+			_scrutinizer: {
 				version: scrutinizerAdmin.version || '1.0.0',
+				viewer: 'https://scrutinizer.dev/view',
 				exported_at: new Date().toISOString()
 			},
 			id:          parseInt( id, 10 ),
