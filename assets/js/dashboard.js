@@ -1586,7 +1586,6 @@
 		// Tab navigation.
 		html += '<div class="scrutinizer-tabs">';
 		html += '<button class="scrutinizer-tab active" data-tab="timeline">Timeline</button>';
-		html += '<button class="scrutinizer-tab" data-tab="breakdown">Breakdown</button>';
 		html += '<button class="scrutinizer-tab" data-tab="sources">Sources</button>';
 		if ( queries.length > 0 ) {
 			html += '<button class="scrutinizer-tab" data-tab="queries">Queries (' + queries.length + ')</button>';
@@ -1618,11 +1617,6 @@
 		} else {
 			html += '<p class="scrutinizer-empty">No timeline data available.</p>';
 		}
-		html += '</div>';
-
-		// Tab: Breakdown.
-		html += '<div class="scrutinizer-tab-content" id="scrutinizer-tab-breakdown" style="display:none">';
-		html += renderBreakdown( summary );
 		html += '</div>';
 
 		// Tab: Sources.
@@ -2434,8 +2428,30 @@
 		}
 
 		var totalExclNs = summary.total_exclusive_ns || 1;
+		var durationNs  = summary.duration_ns || totalExclNs;
 
-		var html = '<p class="scrutinizer-tab-subtitle">Each plugin and theme\u2019s contribution to server request duration, sorted by the time spent in their own callbacks.</p>';
+		// Thin proportional breakdown bar.
+		var html = '<div class="scrutinizer-source-bar">';
+		for ( var sb = 0; sb < sources.length; sb++ ) {
+			var barSrc = sources[ sb ];
+			var barPct = ( ( barSrc.exclusive_ns || 0 ) / durationNs ) * 100;
+			if ( barPct < 0.1 ) { continue; }
+			var barCol = getSourceColor( barSrc.slug, barSrc.type );
+			html += '<div class="segment" style="width:' + barPct.toFixed( 2 ) + '%;background:' + barCol + '" title="' + esc( barSrc.name || barSrc.slug ) + ': ' + ( barSrc.exclusive_ns / 1e6 ).toFixed( 1 ) + ' ms (' + barPct.toFixed( 1 ) + '%)"></div>';
+		}
+		// Unattributed time as its own segment.
+		var unattribNs = summary.unattributed_ns || 0;
+		var bootstrapNs = summary.bootstrap_ns || 0;
+		var accountedNs = unattribNs + bootstrapNs;
+		if ( accountedNs > 0 ) {
+			var unPct = ( accountedNs / durationNs ) * 100;
+			if ( unPct >= 0.1 ) {
+				html += '<div class="segment" style="width:' + unPct.toFixed( 2 ) + '%;background:#dcdcde" title="Unattributed + Bootstrap: ' + ( accountedNs / 1e6 ).toFixed( 1 ) + ' ms (' + unPct.toFixed( 1 ) + '%)"></div>';
+			}
+		}
+		html += '</div>';
+
+		html += '<p class="scrutinizer-tab-subtitle">Each plugin and theme\u2019s contribution to server request duration, sorted by the time spent in their own callbacks.</p>';
 		html += '<table class="scrutinizer-source-table widefat">';
 		html += '<thead><tr>';
 		html += '<th>Source</th>';

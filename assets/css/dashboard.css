@@ -703,6 +703,25 @@
 
 /* ----- Breakdown Bars ----- */
 
+.scrutinizer-source-bar {
+	display: flex;
+	height: 20px;
+	border-radius: 3px;
+	overflow: hidden;
+	background: #f0f0f1;
+	margin-bottom: 12px;
+}
+
+.scrutinizer-source-bar .segment {
+	height: 100%;
+	transition: opacity 0.15s;
+	cursor: default;
+}
+
+.scrutinizer-source-bar .segment:hover {
+	opacity: 0.8;
+}
+
 .scrutinizer-breakdown {
 	margin: 16px 0;
 }
