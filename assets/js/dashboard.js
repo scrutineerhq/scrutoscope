@@ -179,8 +179,8 @@
 	/* ------------------------------------------------------------------ */
 
 	function bindEvents() {
-		// Sortable table headers.
-		$( document ).on( 'click', '.scrutinizer-sortable', function() {
+		// Sortable table headers (detail-view: queries, http calls, assets).
+		$( document ).on( 'click', '.scrutinizer-sortable[data-sort-table]', function() {
 			var tableId  = $( this ).data( 'sort-table' );
 			var key      = $( this ).data( 'sort-key' );
 			var type     = $( this ).data( 'sort-type' ) || 'string';
@@ -285,8 +285,8 @@
 			showRouteView();
 		} );
 
-		// Sortable headers.
-		$( document ).on( 'click', '.scrutinizer-sortable', function() {
+		// Sortable headers (list views: grouped, route, history, cron).
+		$( document ).on( 'click', '.scrutinizer-sortable[data-sort]', function() {
 			var field = $( this ).data( 'sort' );
 			if ( sortField === field ) {
 				sortDir = ( 'asc' === sortDir ) ? 'desc' : 'asc';
