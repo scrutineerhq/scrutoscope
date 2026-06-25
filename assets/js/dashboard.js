@@ -160,13 +160,15 @@
 
 	function init() {
 		bindEvents();
-		renderTopTabs();
-		fetchGrouped();
 
 		if ( scrutinizerAdmin.isActive ) {
-			startPolling();
+			// Active session — go straight to capture flow with stop button.
+			showCaptureFlow();
 			showStopButton();
+			startPolling();
 		}
+		// Home view is shown by default via PHP template.
+		// Results are hidden until "View Profiles" is clicked.
 
 		initBackgroundControls();
 		initQueryProfilingControls();
@@ -204,6 +206,25 @@
 		// Caller cell click-to-expand.
 		$( document ).on( 'click', '.scrutinizer-caller-cell', function() {
 			$( this ).toggleClass( 'is-expanded' );
+		} );
+
+		// Home view navigation.
+		$( document ).on( 'click', '#scrutinizer-home-capture, #scrutinizer-empty-capture', function() {
+			showCaptureFlow();
+		} );
+
+		$( document ).on( 'click', '#scrutinizer-home-profiles', function() {
+			showProfilesView();
+		} );
+
+		$( document ).on( 'click', '#scrutinizer-home-settings', function() {
+			$( '#scrutinizer-settings-modal' ).fadeIn( 150 );
+			$( '.scrutinizer-gear-toggle' ).attr( 'aria-expanded', 'true' );
+		} );
+
+		// Back buttons.
+		$( document ).on( 'click', '#scrutinizer-capture-back', function() {
+			showHomeView();
 		} );
 
 		// Decision cards — start profiling.
@@ -920,6 +941,42 @@
 	}
 
 	/* ------------------------------------------------------------------ */
+	/*  View management                                                    */
+	/* ------------------------------------------------------------------ */
+
+	var profilesLoaded = false;
+
+	function showHomeView() {
+		$( '#scrutinizer-home' ).show();
+		$( '#scrutinizer-capture-flow' ).hide();
+		$( '#scrutinizer-results' ).hide();
+		$( '#scrutinizer-top-tabs' ).hide();
+		$( '#scrutinizer-detail' ).hide();
+	}
+
+	function showCaptureFlow() {
+		$( '#scrutinizer-home' ).hide();
+		$( '#scrutinizer-capture-flow' ).show();
+		$( '#scrutinizer-results' ).hide();
+		$( '#scrutinizer-top-tabs' ).hide();
+		$( '#scrutinizer-detail' ).hide();
+	}
+
+	function showProfilesView() {
+		$( '#scrutinizer-home' ).hide();
+		$( '#scrutinizer-capture-flow' ).hide();
+		$( '#scrutinizer-results' ).show();
+		$( '#scrutinizer-detail' ).hide();
+
+		// Lazy-load: only fetch routes + render tabs on first visit.
+		if ( ! profilesLoaded ) {
+			profilesLoaded = true;
+			renderTopTabs();
+			fetchGrouped();
+		}
+	}
+
+	/* ------------------------------------------------------------------ */
 	/*  Session start / stop                                               */
 	/* ------------------------------------------------------------------ */
 
@@ -966,7 +1023,7 @@
 		html += '</div>';
 		html += '<p class="description" style="margin-top:8px;">Keyboard shortcut: <kbd>Ctrl+Shift+N</kbd> (Chrome/Edge) or <kbd>Cmd+Shift+N</kbd> (Safari).</p>';
 		html += '</div>';
-		$( '#scrutinizer-controls' ).html( html );
+		$( '#scrutinizer-capture-status' ).html( html );
 	}
 
 	function stopProfiling() {
@@ -977,7 +1034,9 @@
 		}, function( response ) {
 			if ( response.success ) {
 				showNotice( response.data.message, 'success' );
-				window.location.reload();
+				// Navigate to profiles view instead of reloading.
+				$( '#scrutinizer-capture-status' ).empty();
+				showProfilesView();
 			} else {
 				showNotice( response.data.message || scrutinizerAdmin.i18n.error, 'error' );
 			}
@@ -1000,16 +1059,21 @@
 	}
 
 	function showStopButton() {
-		var $controls = $( '#scrutinizer-controls' );
-		$controls.html(
+		// Show in the capture flow status area.
+		var $captureStatus = $( '#scrutinizer-capture-status' );
+		$captureStatus.html(
+			'<div class="scrutinizer-capture-active">' +
 			'<div class="scrutinizer-polling">' +
 				'<span class="spinner is-active"></span>' +
-				scrutinizerAdmin.i18n.profiling +
+				'<strong>Profiling active</strong>' +
 			'</div>' +
+			'<p>Browse pages in the other tab. When done, click Stop Profiling below.</p>' +
 			'<button type="button" class="button button-secondary button-large" id="scrutinizer-stop">' +
 				scrutinizerAdmin.i18n.stopProfiling +
-			'</button>'
+			'</button>' +
+			'</div>'
 		);
+		// Also update the settings modal status.
 		$( '.scrutinizer-status-card' ).addClass( 'is-active' );
 		$( '.scrutinizer-dot' ).addClass( 'active' ).removeClass( 'inactive' );
 		$( '#scrutinizer-status-text' ).text( scrutinizerAdmin.i18n.profiling );
@@ -1096,9 +1160,7 @@
 				'<h3>No measurements yet</h3>' +
 				'<p>Start a profiling session to see where your server time goes, or turn on background measurement to capture requests automatically.</p>' +
 				'<div class="scrutinizer-empty-actions">' +
-				'<button type="button" class="button button-primary scrutinizer-decision-card" data-target="admin" data-mode="admin">Admin Dashboard</button> ' +
-				'<button type="button" class="button scrutinizer-decision-card" data-target="frontend" data-mode="frontend">Logged-in Frontend</button> ' +
-				'<button type="button" class="button scrutinizer-decision-card" data-target="visitor" data-mode="visitor">Visitor View</button>' +
+				'<button type="button" class="button button-primary" id="scrutinizer-empty-capture">Capture Profile</button>' +
 				'</div>' +
 				'</div>'
 			);

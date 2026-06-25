@@ -167,7 +167,59 @@ class Dashboard {
 			</div>
 
 			<!-- Results (data-first — above-fold for return visitors) -->
-			<div class="scrutinizer-results" id="scrutinizer-results">
+			<!-- Home View (landing screen) -->
+			<div class="scrutinizer-home" id="scrutinizer-home">
+				<div class="scrutinizer-home-cards">
+					<button type="button" class="scrutinizer-home-card" id="scrutinizer-home-capture">
+						<span class="dashicons dashicons-performance"></span>
+						<strong><?php echo esc_html__( 'Capture Profile', 'scrutinizer' ); ?></strong>
+						<span><?php echo esc_html__( 'Measure a page and see where time goes', 'scrutinizer' ); ?></span>
+					</button>
+					<button type="button" class="scrutinizer-home-card" id="scrutinizer-home-profiles">
+						<span class="dashicons dashicons-chart-bar"></span>
+						<strong><?php echo esc_html__( 'View Profiles', 'scrutinizer' ); ?></strong>
+						<span><?php echo esc_html__( 'Browse captured measurements', 'scrutinizer' ); ?></span>
+					</button>
+					<button type="button" class="scrutinizer-home-card" id="scrutinizer-home-settings">
+						<span class="dashicons dashicons-admin-generic"></span>
+						<strong><?php echo esc_html__( 'Settings', 'scrutinizer' ); ?></strong>
+						<span><?php echo esc_html__( 'Background measurement, sample rate, query profiling', 'scrutinizer' ); ?></span>
+					</button>
+				</div>
+			</div>
+
+			<!-- Capture Flow (guided profiling) -->
+			<div class="scrutinizer-capture-flow" id="scrutinizer-capture-flow" style="display:none;">
+				<button type="button" class="button button-link" id="scrutinizer-capture-back">
+					<?php echo esc_html__( '← Back', 'scrutinizer' ); ?>
+				</button>
+				<h2><?php echo esc_html__( 'Capture Profile', 'scrutinizer' ); ?></h2>
+				<p class="scrutinizer-capture-intro"><?php echo esc_html__( 'Choose what to measure. The target page opens in a new tab — browse around, then come back to this window and click Stop Profiling when done.', 'scrutinizer' ); ?></p>
+				<div class="scrutinizer-decision-cards">
+					<button type="button" class="scrutinizer-decision-card" data-target="<?php echo esc_url( admin_url() ); ?>" data-mode="admin">
+						<span class="dashicons dashicons-dashboard"></span>
+						<strong><?php echo esc_html__( 'Admin Dashboard', 'scrutinizer' ); ?></strong>
+						<span><?php echo esc_html__( 'Measure admin page performance', 'scrutinizer' ); ?></span>
+						<span class="scrutinizer-card-hint"><?php echo esc_html__( 'Opens in new tab', 'scrutinizer' ); ?></span>
+					</button>
+					<button type="button" class="scrutinizer-decision-card" data-target="<?php echo esc_url( home_url( '/' ) ); ?>" data-mode="frontend">
+						<span class="dashicons dashicons-admin-users"></span>
+						<strong><?php echo esc_html__( 'Logged-in Frontend', 'scrutinizer' ); ?></strong>
+						<span><?php echo esc_html__( 'Measure pages while logged in', 'scrutinizer' ); ?></span>
+						<span class="scrutinizer-card-hint"><?php echo esc_html__( 'Opens in new tab', 'scrutinizer' ); ?></span>
+					</button>
+					<button type="button" class="scrutinizer-decision-card" data-target="<?php echo esc_url( home_url( '/' ) ); ?>" data-mode="visitor">
+						<span class="dashicons dashicons-visibility"></span>
+						<strong><?php echo esc_html__( 'Visitor View', 'scrutinizer' ); ?></strong>
+						<span><?php echo esc_html__( 'Measure what visitors experience', 'scrutinizer' ); ?></span>
+						<span class="scrutinizer-card-hint"><?php echo esc_html__( 'Requires incognito window', 'scrutinizer' ); ?></span>
+					</button>
+				</div>
+				<div id="scrutinizer-capture-status"></div>
+			</div>
+
+			<!-- Results (routes/history/cron/api tabs) -->
+			<div class="scrutinizer-results" id="scrutinizer-results" style="display:none;">
 				<h2><?php echo esc_html__( 'Routes', 'scrutinizer' ); ?></h2>
 				<div id="scrutinizer-profile-list">
 					<p class="scrutinizer-empty scrutinizer-loading"><?php echo esc_html__( 'Loading…', 'scrutinizer' ); ?></p>
@@ -223,31 +275,7 @@ class Dashboard {
 
 				<!-- Controls -->
 				<div class="scrutinizer-controls" id="scrutinizer-controls">
-					<?php if ( ! $is_active ) : ?>
-						<div class="scrutinizer-decision-prompt">
-							<h3><?php echo esc_html__( "What's slow?", 'scrutinizer' ); ?></h3>
-							<div class="scrutinizer-decision-cards">
-								<button type="button" class="scrutinizer-decision-card" data-target="<?php echo esc_url( admin_url() ); ?>" data-mode="admin">
-									<span class="dashicons dashicons-dashboard"></span>
-									<strong><?php echo esc_html__( 'Admin Dashboard', 'scrutinizer' ); ?></strong>
-									<span><?php echo esc_html__( 'Measure admin page performance', 'scrutinizer' ); ?></span>
-									<span class="scrutinizer-card-hint"><?php echo esc_html__( 'Opens in new tab', 'scrutinizer' ); ?></span>
-								</button>
-								<button type="button" class="scrutinizer-decision-card" data-target="<?php echo esc_url( home_url( '/' ) ); ?>" data-mode="frontend">
-									<span class="dashicons dashicons-admin-users"></span>
-									<strong><?php echo esc_html__( 'Logged-in Frontend', 'scrutinizer' ); ?></strong>
-									<span><?php echo esc_html__( 'Measure pages while logged in', 'scrutinizer' ); ?></span>
-									<span class="scrutinizer-card-hint"><?php echo esc_html__( 'Opens in new tab', 'scrutinizer' ); ?></span>
-								</button>
-								<button type="button" class="scrutinizer-decision-card" data-target="<?php echo esc_url( home_url( '/' ) ); ?>" data-mode="visitor">
-									<span class="dashicons dashicons-visibility"></span>
-									<strong><?php echo esc_html__( 'Visitor View', 'scrutinizer' ); ?></strong>
-									<span><?php echo esc_html__( 'Measure what visitors experience', 'scrutinizer' ); ?></span>
-									<span class="scrutinizer-card-hint"><?php echo esc_html__( 'Requires incognito window', 'scrutinizer' ); ?></span>
-								</button>
-							</div>
-						</div>
-					<?php else : ?>
+					<?php if ( $is_active ) : ?>
 						<button type="button" class="button button-secondary button-large" id="scrutinizer-stop">
 							<?php echo esc_html__( 'Stop Profiling', 'scrutinizer' ); ?>
 						</button>
