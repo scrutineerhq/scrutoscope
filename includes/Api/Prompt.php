@@ -54,9 +54,20 @@ Scrutineer measures **server-side execution only**. Use these terms precisely:
 - **Unattributed time**: Server Request Duration minus the sum of all exclusive callback times. This is WordPress core overhead, PHP engine work, I/O waits, and framework code not hooked through the action/filter system. It is NOT a plugin's fault.
 - **Hook Execution Trace**: the ordered sequence of hook callbacks with timing. Not a "flame graph" or "call stack" — those terms imply different things.
 
+## Authentication
+
+All endpoints below require HTTP Basic Auth using a WordPress Application Password.
+
+Example:
+```
+curl -u "USERNAME:XXXX XXXX XXXX XXXX XXXX XXXX" {$api_base}diagnostics
+```
+
+Replace `USERNAME` with the WordPress admin username and the `XXXX...` string with the Application Password. Treat this prompt as documentation — read and understand the API, then call endpoints using the credentials provided to you.
+
 ## Available Endpoints
 
-All endpoints require HTTP Basic Auth with the Application Password provided. Base URL: {$api_base}
+Base URL: {$api_base}
 
 ### GET /v1/diagnostics
 Returns site environment data (WordPress version, PHP version, active plugins, theme, server configuration). **Call this first** for infrastructure context before analyzing profiles.

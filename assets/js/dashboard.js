@@ -27,6 +27,57 @@
 	var currentProfileId = 0;     // currently viewed profile detail
 	var currentProfileData = null; // full profile object for the current detail view
 
+	// Table sort state (per-table).
+	var tableSortState = {};
+
+	/* ------------------------------------------------------------------ */
+	/*  Generic table sort utility                                         */
+	/* ------------------------------------------------------------------ */
+
+	function sortTableData( tableId, data, key, type ) {
+		var state = tableSortState[ tableId ] || {};
+		if ( state.key === key ) {
+			state.dir = 'asc' === state.dir ? 'desc' : 'asc';
+		} else {
+			state.key = key;
+			state.dir = 'desc';
+		}
+		tableSortState[ tableId ] = state;
+
+		var dir = 'asc' === state.dir ? 1 : -1;
+		data.sort( function( a, b ) {
+			var va = a[ key ];
+			var vb = b[ key ];
+			if ( 'number' === type ) {
+				va = parseFloat( va ) || 0;
+				vb = parseFloat( vb ) || 0;
+			} else {
+				va = String( va || '' ).toLowerCase();
+				vb = String( vb || '' ).toLowerCase();
+			}
+			if ( va < vb ) {
+				return -1 * dir;
+			}
+			if ( va > vb ) {
+				return dir;
+			}
+			return 0;
+		} );
+		return data;
+	}
+
+	function sortIndicator( tableId, key ) {
+		var state = tableSortState[ tableId ] || {};
+		if ( state.key !== key ) {
+			return '';
+		}
+		return '<span class="scrutinizer-sort-indicator">' + ( 'asc' === state.dir ? '▲' : '▼' ) + '</span>';
+	}
+
+	function sortableHeader( tableId, key, label, type ) {
+		return '<th class="scrutinizer-sortable' + ( 'number' === type ? ' numeric' : '' ) + '" data-sort-table="' + tableId + '" data-sort-key="' + key + '" data-sort-type="' + ( type || 'string' ) + '">' + label + sortIndicator( tableId, key ) + '</th>';
+	}
+
 	/* ------------------------------------------------------------------ */
 	/*  Color palette                                                      */
 	/* ------------------------------------------------------------------ */
@@ -111,6 +162,30 @@
 	/* ------------------------------------------------------------------ */
 
 	function bindEvents() {
+		// Sortable table headers.
+		$( document ).on( 'click', '.scrutinizer-sortable', function() {
+			var tableId  = $( this ).data( 'sort-table' );
+			var key      = $( this ).data( 'sort-key' );
+			var type     = $( this ).data( 'sort-type' ) || 'string';
+			if ( 'queries' === tableId && currentProfileData ) {
+				var q = currentProfileData.profile_data.queries || [];
+				sortTableData( tableId, q, key, type );
+				$( '.scrutinizer-queries-table' ).replaceWith( renderQueriesTableBody( q ) );
+			} else if ( 'httpcalls' === tableId && currentProfileData ) {
+				var h = currentProfileData.profile_data.http_calls || [];
+				sortTableData( tableId, h, key, type );
+				$( '.scrutinizer-http-table' ).replaceWith( renderHttpCallsTableBody( h ) );
+			} else if ( 'assets-scripts' === tableId && currentProfileData ) {
+				var s = ( currentProfileData.profile_data.enqueued_assets || {} ).scripts || [];
+				sortTableData( tableId, s, key, type );
+				$( '.scrutinizer-asset-table-scripts' ).replaceWith( renderAssetTableBody( s, 'scripts' ) );
+			} else if ( 'assets-styles' === tableId && currentProfileData ) {
+				var st = ( currentProfileData.profile_data.enqueued_assets || {} ).styles || [];
+				sortTableData( tableId, st, key, type );
+				$( '.scrutinizer-asset-table-styles' ).replaceWith( renderAssetTableBody( st, 'styles' ) );
+			}
+		} );
+
 		// Decision cards — start profiling.
 		$( document ).on( 'click', '.scrutinizer-decision-card', function() {
 			startProfiling( $( this ).data( 'target' ) || '' );
@@ -1063,7 +1138,7 @@
 		// Pin/annotate toolbar.
 		html += '<div class="scrutinizer-pin-toolbar">';
 		html += '<button type="button" class="button ' + ( isPinned ? 'button-primary' : '' ) + '" id="scrutinizer-pin-toggle" data-pinned="' + ( isPinned ? '1' : '' ) + '">';
-		html += isPinned ? '📌 ' + esc( scrutinizerAdmin.i18n.unpin || 'Unpin' ) : '📌 ' + esc( scrutinizerAdmin.i18n.pin || 'Pin' );
+		html += isPinned ? '<span class="dashicons dashicons-admin-post"></span> ' + esc( scrutinizerAdmin.i18n.unpin || 'Unpin' ) : '<span class="dashicons dashicons-admin-post"></span> ' + esc( scrutinizerAdmin.i18n.pin || 'Pin' );
 		html += '</button>';
 		html += '<label class="scrutinizer-pin-field"><span>' + esc( scrutinizerAdmin.i18n.note || 'Note' ) + ':</span>';
 		html += '<input type="text" id="scrutinizer-note-input" value="' + esc( profileNote ) + '" placeholder="Why did you take this measurement?" /></label>';
@@ -1515,7 +1590,7 @@
 				html += esc( displayLabel ) + ': ' + breakdown[ lt ].ms + ' ms (' + breakdown[ lt ].percent + '%)';
 				if ( 'unattributed' === lt ) {
 					html += ' <button type="button" class="scrutinizer-info-toggle" aria-label="What is unattributed time?">ⓘ</button>';
-					html += '<span class="scrutinizer-info-bubble">Time spent in PHP bootstrap, autoloaders, database connections, WordPress core initialization, and opcode compilation \u2014 before hooks fire. This is normal overhead, not a problem to solve.</span>';
+					html += '<span class="scrutinizer-info-bubble">Time outside hook callbacks \u2014 PHP bootstrap, autoloaders, database connections, and core initialization. Could not be profiled. <a href="https://xdebug.org/docs/profiler" target="_blank" rel="noopener">Learn about full profiling with Xdebug</a>.</span>';
 				}
 				html += '</span>';
 			}
@@ -1544,7 +1619,7 @@
 		html += '<th>Type</th>';
 		html += '<th class="numeric">' + scrutinizerAdmin.i18n.exclusiveTime + ' <button type="button" class="scrutinizer-info-toggle" aria-label="What is exclusive time?">ⓘ</button><span class="scrutinizer-info-bubble">Time spent directly in this source\u2019s own callbacks, excluding time in callbacks it triggers from other sources. This is the most useful number for identifying what\u2019s slow.</span></th>';
 		html += '<th class="numeric">Weight</th>';
-		html += '<th class="numeric">Memory</th>';
+		html += '<th class="numeric">Memory <button type="button" class="scrutinizer-info-toggle" aria-label="What is memory?">ⓘ</button><span class="scrutinizer-info-bubble">Net heap change measured during this source\u2019s callbacks (memory_get_usage delta). Positive = allocated, negative = freed. Reflects what happened during execution, not total responsibility.</span></th>';
 		html += '<th class="numeric">' + scrutinizerAdmin.i18n.inclusiveTime + ' <button type="button" class="scrutinizer-info-toggle" aria-label="What is inclusive time?">ⓘ</button><span class="scrutinizer-info-bubble">Total time spent in this source\u2019s callbacks including any nested callbacks from other sources that it triggers.</span></th>';
 		html += '<th class="numeric">' + scrutinizerAdmin.i18n.callCount + '</th>';
 		html += '</tr></thead><tbody>';
@@ -1557,12 +1632,12 @@
 			var memDelta = src.memory_delta || 0;
 			var memClass = memDelta > 1048576 ? ' scrutinizer-mem-high' : ( memDelta < 0 ? ' scrutinizer-mem-freed' : '' );
 
-			// Expandable Unknown source row (F5).
+			// Expandable Unknown source row — shows individual callbacks since the source is unidentified.
 			if ( 'unknown' === src.type && src.callbacks && src.callbacks.length > 0 ) {
 				html += '<tr class="scrutinizer-unknown-row">';
 				html += '<td>';
 				html += '<details class="scrutinizer-unknown-expand">';
-				html += '<summary>' + esc( src.name || src.slug ) + '</summary>';
+				html += '<summary>' + esc( src.name || src.slug ) + ' <span class="scrutinizer-muted">(' + src.callbacks.length + ' callback' + ( src.callbacks.length !== 1 ? 's' : '' ) + ')</span></summary>';
 				html += '<div class="scrutinizer-unknown-detail">';
 				for ( var u = 0; u < src.callbacks.length; u++ ) {
 					var cb = src.callbacks[ u ];
@@ -1629,13 +1704,18 @@
 		html += '<strong>' + queries.length + ' queries</strong> totaling <strong>' + totalQueryMs.toFixed( 1 ) + ' ms</strong>';
 		html += '</div>';
 
-		html += '<table class="scrutinizer-source-table scrutinizer-queries-table widefat">';
+		html += renderQueriesTableBody( queries );
+		return html;
+	}
+
+	function renderQueriesTableBody( queries ) {
+		var html = '<table class="scrutinizer-source-table scrutinizer-queries-table widefat">';
 		html += '<thead><tr>';
 		html += '<th class="numeric">#</th>';
-		html += '<th>Source</th>';
-		html += '<th>SQL</th>';
-		html += '<th class="numeric">Time</th>';
-		html += '<th>Caller</th>';
+		html += sortableHeader( 'queries', 'source_name', 'Source', 'string' );
+		html += sortableHeader( 'queries', 'sql', 'SQL', 'string' );
+		html += sortableHeader( 'queries', 'time_ms', 'Time', 'number' );
+		html += sortableHeader( 'queries', 'caller', 'Caller', 'string' );
 		html += '</tr></thead><tbody>';
 
 		for ( var i = 0; i < queries.length; i++ ) {
@@ -1649,12 +1729,14 @@
 				var qAttr = qr.attribution;
 				var qColor = sourceColors[ qAttr.type ] || '#888';
 				qSource = '<span class="scrutinizer-asset-source-pill" style="background:' + qColor + '">' + esc( qAttr.name || qAttr.slug || qAttr.type ) + '</span>';
+				qr.source_name = qAttr.name || qAttr.slug || qAttr.type || '';
 			} else if ( qr.caller ) {
 				// Try to infer source from caller string.
 				var callerSource = inferSourceFromCaller( qr.caller );
 				if ( callerSource ) {
 					var csColor = sourceColors[ callerSource.type ] || '#888';
 					qSource = '<span class="scrutinizer-asset-source-pill" style="background:' + csColor + '">' + esc( callerSource.name ) + '</span>';
+					qr.source_name = callerSource.name || '';
 				}
 			}
 
@@ -1691,15 +1773,20 @@
 		html += ' totaling <strong>' + totalHttpMs.toFixed( 1 ) + ' ms</strong>';
 		html += '</div>';
 
-		html += '<table class="scrutinizer-source-table scrutinizer-http-table widefat">';
+		html += renderHttpCallsTableBody( httpCalls );
+		return html;
+	}
+
+	function renderHttpCallsTableBody( httpCalls ) {
+		var html = '<table class="scrutinizer-source-table scrutinizer-http-table widefat">';
 		html += '<thead><tr>';
 		html += '<th class="numeric">#</th>';
-		html += '<th>Method</th>';
-		html += '<th>URL</th>';
-		html += '<th class="numeric">Status</th>';
-		html += '<th class="numeric">Duration</th>';
-		html += '<th>Source</th>';
-		html += '<th>Caller</th>';
+		html += sortableHeader( 'httpcalls', 'method', 'Method', 'string' );
+		html += sortableHeader( 'httpcalls', 'url', 'URL', 'string' );
+		html += sortableHeader( 'httpcalls', 'status', 'Status', 'number' );
+		html += sortableHeader( 'httpcalls', 'duration_ms', 'Duration', 'number' );
+		html += sortableHeader( 'httpcalls', 'source_name', 'Source', 'string' );
+		html += sortableHeader( 'httpcalls', 'caller_str', 'Caller', 'string' );
 		html += '</tr></thead><tbody>';
 
 		for ( var i = 0; i < httpCalls.length; i++ ) {
@@ -1712,6 +1799,8 @@
 				sourceName = hc.caller.attribution.name || hc.caller.attribution.slug || hc.caller.attribution.type || '';
 			}
 			var callerStr = ( hc.caller && hc.caller.caller ) ? hc.caller.caller : '';
+			hc.source_name = sourceName;
+			hc.caller_str  = callerStr;
 
 			html += '<tr' + slow + '>';
 			html += '<td class="numeric">' + ( i + 1 ) + '</td>';
@@ -1748,25 +1837,26 @@
 
 		if ( scripts.length > 0 ) {
 			html += '<h4 class="scrutinizer-asset-section-label">Scripts</h4>';
-			html += renderAssetTable( scripts );
+			html += renderAssetTableBody( scripts, 'scripts' );
 		}
 		if ( styles.length > 0 ) {
 			html += '<h4 class="scrutinizer-asset-section-label">Stylesheets</h4>';
-			html += renderAssetTable( styles );
+			html += renderAssetTableBody( styles, 'styles' );
 		}
 
 		return html;
 	}
 
-	function renderAssetTable( assetList ) {
-		var html = '<table class="scrutinizer-source-table scrutinizer-asset-table widefat">';
+	function renderAssetTableBody( assetList, assetType ) {
+		var tableId = 'assets-' + assetType;
+		var html = '<table class="scrutinizer-source-table scrutinizer-asset-table scrutinizer-asset-table-' + assetType + ' widefat">';
 		html += '<thead><tr>';
-		html += '<th>Handle</th>';
-		html += '<th>Source</th>';
-		html += '<th class="numeric">Size</th>';
-		html += '<th>Location</th>';
+		html += sortableHeader( tableId, 'handle', 'Handle', 'string' );
+		html += sortableHeader( tableId, 'src', 'Source', 'string' );
+		html += sortableHeader( tableId, 'size', 'Size', 'number' );
+		html += sortableHeader( tableId, 'location', 'Location', 'string' );
 		html += '<th>Dependencies</th>';
-		html += '<th>Version</th>';
+		html += sortableHeader( tableId, 'version', 'Version', 'string' );
 		html += '</tr></thead><tbody>';
 
 		for ( var i = 0; i < assetList.length; i++ ) {
@@ -1873,6 +1963,7 @@
 		html += '<tr><td>User Role</td><td>' + rolePill( request.user_role ) + '</td></tr>';
 		html += '<tr><td>PHP</td><td>' + esc( request.php_version || '—' ) + '</td></tr>';
 		html += '<tr><td>WordPress</td><td>' + esc( request.wp_version || '—' ) + '</td></tr>';
+		html += '<tr><td>Scrutinizer</td><td>' + esc( scrutinizerAdmin.version || '—' ) + '</td></tr>';
 		html += '<tr><td>Peak Memory</td><td>' + formatBytes( memPeak ) + '</td></tr>';
 		html += '<tr><td>Memory Used</td><td>' + formatBytes( memAlloc ) + '</td></tr>';
 		html += '<tr><td>DB Queries</td><td>' + ( summary.query_count || 0 ) + '</td></tr>';
@@ -2342,7 +2433,7 @@
 				$( '#scrutinizer-pin-toggle' )
 					.addClass( 'button-primary' )
 					.data( 'pinned', '1' )
-					.html( '📌 ' + esc( scrutinizerAdmin.i18n.unpin || 'Unpin' ) );
+					.html( '<span class="dashicons dashicons-admin-post"></span> ' + esc( scrutinizerAdmin.i18n.unpin || 'Unpin' ) );
 				showNotice( response.data.message, 'success' );
 			}
 		} );
@@ -2358,7 +2449,7 @@
 				$( '#scrutinizer-pin-toggle' )
 					.removeClass( 'button-primary' )
 					.data( 'pinned', '' )
-					.html( '📌 ' + esc( scrutinizerAdmin.i18n.pin || 'Pin' ) );
+					.html( '<span class="dashicons dashicons-admin-post"></span> ' + esc( scrutinizerAdmin.i18n.pin || 'Pin' ) );
 				showNotice( response.data.message, 'success' );
 			}
 		} );
@@ -2433,7 +2524,7 @@
 		// Pinned only.
 		html += '<label class="scrutinizer-history-check-label">';
 		html += '<input type="checkbox" id="scrutinizer-history-pinned" /> ';
-		html += '📌 ' + esc( scrutinizerAdmin.i18n.pinned || 'Pinned' );
+		html += '<span class="dashicons dashicons-admin-post"></span> ' + esc( scrutinizerAdmin.i18n.pinned || 'Pinned' );
 		html += '</label>';
 
 		// Date range.
@@ -2444,7 +2535,7 @@
 		// Bulk action bar (hidden until selections made).
 		html += '<div class="scrutinizer-bulk-bar" id="scrutinizer-bulk-bar" style="display:none">';
 		html += '<span id="scrutinizer-bulk-count">0 selected</span>';
-		html += '<button type="button" class="button" id="scrutinizer-bulk-pin" title="Pin selected profiles">📌 Pin</button>';
+		html += '<button type="button" class="button" id="scrutinizer-bulk-pin" title="Pin selected profiles"><span class="dashicons dashicons-admin-post"></span> Pin</button>';
 		html += '<button type="button" class="button" id="scrutinizer-bulk-unpin" title="Unpin selected profiles">Unpin</button>';
 		html += '<button type="button" class="button" id="scrutinizer-bulk-delete" title="Delete selected profiles">🗑 Delete</button>';
 		html += '<button type="button" class="button" id="scrutinizer-compare-btn" style="display:none">' + esc( scrutinizerAdmin.i18n.compareSelected || 'Compare Selected' ) + '</button>';
@@ -2504,7 +2595,7 @@
 		html += '<th>Captured</th>';
 		html += '<th>Route</th>';
 		html += '<th class="numeric">Duration</th>';
-		html += '<th>📌</th>';
+		html += '<th><span class="dashicons dashicons-admin-post" title="Pinned"></span></th>';
 		html += '<th>Note</th>';
 		html += '<th>Tags</th>';
 		html += '<th>Actions</th>';
@@ -2513,7 +2604,7 @@
 		for ( var i = 0; i < profiles.length; i++ ) {
 			var p     = profiles[ i ];
 			var durMs = ( parseInt( p.duration_ns, 10 ) / 1e6 ).toFixed( 1 );
-			var pinIcon = parseInt( p.is_pinned, 10 ) === 1 ? '📌' : '';
+			var pinIcon = parseInt( p.is_pinned, 10 ) === 1 ? '<span class="dashicons dashicons-admin-post"></span>' : '';
 			var notePrev = truncate( p.note || '', 40 );
 			var tagPills = renderTagPills( p.tags || '' );
 			var checked  = compareChecked[ p.id ] ? ' checked' : '';

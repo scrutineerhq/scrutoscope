@@ -602,7 +602,7 @@ class Profiler {
 	 */
 	private static function get_http_caller() {
 		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_debug_backtrace
-		$trace        = debug_backtrace( DEBUG_BACKTRACE_IGNORE_ARGS, 20 );
+		$trace        = debug_backtrace( DEBUG_BACKTRACE_IGNORE_ARGS, 30 );
 		$caller_parts = array();
 		$source_file  = '';
 
@@ -614,10 +614,13 @@ class Profiler {
 
 			$file = $frame['file'];
 
-			// Skip WP HTTP internals and this profiler.
+			// Skip WP HTTP internals, hook dispatch, and this profiler.
 			if ( false !== strpos( $file, 'class-http.php' )
 				|| false !== strpos( $file, 'class-wp-http' )
+				|| false !== strpos( $file, 'class-wp-hook.php' )
+				|| false !== strpos( $file, 'plugin.php' )
 				|| false !== strpos( $file, 'Profiler.php' )
+				|| false !== strpos( $file, 'Instrumentor.php' )
 				|| false !== strpos( $file, 'http.php' )
 			) {
 				continue;
