@@ -23,15 +23,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Pin & Annotate** — Pin important profiles to protect from cleanup. Add notes and tags for organization.
 - **Profile Retention** — Automatic cleanup with configurable TTL (default 30 days) and per-route cap (default 100). Pinned profiles exempt.
 - **Cron Inventory** — Dashboard tab listing all registered WordPress cron events with schedules, next run, and hook details.
-- **REST API** — Five read-only endpoints for AI agent integration:
+- **REST API** — Six read-only endpoints for AI agent integration:
   - `GET /v1/prompt` — Self-documenting system prompt (the API contract)
   - `GET /v1/diagnostics` — Site fingerprint with opt-in field selection
   - `GET /v1/routes` — Route summary with stats
   - `GET /v1/profile/{id}` — Full compiled profile
   - `GET /v1/compare/{a}/{b}` — Two profiles with computed deltas
+  - `GET /v1/manifest` — Public API manifest for agent discovery
 - **Send to Agent** — One-click prompt generation with short-lived Application Password credentials. Auto-revokes previous access on each generation.
 - **Send to Support** — Zero-knowledge encrypted report sharing via `scrutinizer.dev` relay. Client-side AES-256-GCM encryption, configurable expiry (1–30 days), optional passphrase protection, expire-after-reading, and instant revocation.
-- **WP-CLI Integration** — Six commands: `wp scrutinizer status`, `list`, `view`, `purge`, `compare`, `export`.
+- **WP-CLI Integration** — Seven commands: `wp scrutinizer status`, `list`, `show`, `delete`, `export`, `clear`, `mu-plugin`.
 - **Diagnostics Sharing Controls** — Per-field opt-in checkboxes for environment details shared via the API.
 - **Settings Panel** — Gear icon reveals capture rate, retention, and query profiling controls without cluttering the data-first layout.
 
