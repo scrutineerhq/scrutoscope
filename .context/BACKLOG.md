@@ -57,22 +57,23 @@ Full spec at `workspace/your_files/scrutineer-api-spec.md`. Panel review at `wor
 - [x] Scoped auto-created Application Passwords (§6 — 24h TTL, restricted to scrutinizer/v1/*)
 - [x] "Send to Agent" button — auto-creates password, copies one-liner to clipboard
 
-### Secure Sharing Relay
-- [ ] scrutinizer.dev CF Worker — KV storage, capability URLs
-- [ ] Client-side AES-256-GCM encryption (Web Crypto API, key in URL fragment)
-- [ ] Relay endpoints: POST /r/, GET /r/{id}, GET /r/{id}/data, DELETE /r/{id}
-- [ ] "Send to Support" button — encrypt + upload + display share URL
-- [ ] Expiry options (1/7/14/30 days + expire-after-reading)
-- [ ] Shared Reports management panel (list active shares, one-click revoke)
-- [ ] Optional passphrase protection (PBKDF2 key wrapping, minimum strength)
+### Secure Sharing Relay ✅ Complete
+- [x] scrutinizer.dev CF Worker — R2 storage, capability URLs
+- [x] Client-side AES-256-GCM encryption (Web Crypto API, key in URL fragment)
+- [x] Relay endpoints: POST /r/, GET /r/{id}, GET /r/{id}/data, DELETE /r/{id}
+- [x] "Send to Support" button — encrypt + upload + display share URL
+- [x] Expiry options (1/7/14/30 days + expire-after-reading)
+- [x] Optional passphrase protection (PBKDF2 key wrapping)
+- [x] Gzip before encryption (CompressionStream/DecompressionStream)
 
-### Report Viewer (Studio)
-- [ ] Standalone SPA at scrutinizer.dev — full dashboard experience, read-only
-- [ ] Client-side decryption flow
-- [ ] Guidance header ("How to read this report" + security warning)
-- [ ] Error states (missing fragment, expired, wrong passphrase, corrupted)
-- [ ] Responsive design, dark/light mode, print-friendly
-- [ ] Referrer-Policy: no-referrer
+### Report Viewer (Studio) ✅ Complete
+- [x] Standalone SPA at scrutinizer.dev — full dashboard experience, read-only
+- [x] Client-side decryption + decompression flow
+- [x] Guidance header ("How to read this report" + security warning)
+- [x] Error states (missing fragment, expired, wrong passphrase, corrupted)
+- [x] Responsive design, dark/light mode
+- [x] File upload drop zone at scrutinizer.dev/view (D39)
+- [x] Referrer-Policy: no-referrer
 
 ## M3 — Compare Workflow & Regression Language
 

@@ -1419,6 +1419,11 @@
 		html += '</div>';
 
 		$( '#scrutinizer-detail-content' ).html( html );
+
+		// Init timeline interactivity if timeline was rendered inline.
+		if ( timelineLoaded ) {
+			initTimelineInteractivity();
+		}
 	}
 
 	/* ------------------------------------------------------------------ */
@@ -1448,7 +1453,20 @@
 			return '<p class="scrutinizer-empty">No timeline data available.</p>';
 		}
 
-		var html = '<div class="scrutinizer-timeline-container">';
+		var html = '<div class="scrutinizer-timeline-container" data-duration-ns="' + durationNs + '">';
+
+		// Zoom controls.
+		html += '<div class="scrutinizer-zoom-controls">';
+		html += '<button type="button" class="zoom-out-btn" title="Zoom out">−</button>';
+		html += '<span class="zoom-level">1×</span>';
+		html += '<button type="button" class="zoom-in-btn" title="Zoom in">+</button>';
+		html += '<button type="button" class="zoom-reset-btn" title="Reset zoom">Reset</button>';
+		html += '<span class="zoom-hint">Scroll to zoom · Drag to pan</span>';
+		html += '</div>';
+
+		// Zoomable viewport.
+		html += '<div class="scrutinizer-timeline-viewport">';
+		html += '<div class="scrutinizer-timeline-zoom-wrapper">';
 
 		// Phase milestones — lollipop stems above the bar.
 		var labelPositions = [];
@@ -1522,7 +1540,7 @@
 			if ( seg.pct_width < 0.05 ) {
 				continue;
 			}
-			html += '<div class="timeline-segment" style="left:' + seg.pct_start.toFixed( 3 ) + '%;width:' + Math.max( seg.pct_width, 0.15 ).toFixed( 3 ) + '%;background:' + color + '" title="' + esc( seg.callback ) + ' (' + seg.source + ')\n' + ( seg.wall_ns / 1e6 ).toFixed( 2 ) + ' ms"></div>';
+			html += '<div class="timeline-segment" style="left:' + seg.pct_start.toFixed( 3 ) + '%;width:' + Math.max( seg.pct_width, 0.15 ).toFixed( 3 ) + '%;background:' + color + '" data-callback="' + esc( seg.callback ) + '" data-source="' + esc( seg.source ) + '" data-type="' + esc( seg.type ) + '" data-wall-ns="' + seg.wall_ns + '" data-pct="' + seg.pct_width.toFixed( 2 ) + '"></div>';
 		}
 
 		html += '</div>'; // timeline-bar
@@ -1651,6 +1669,9 @@
 			html += '</div>';
 		}
 
+		html += '</div>'; // zoom-wrapper
+		html += '</div>'; // viewport
+
 		// I/O summary counts below timeline.
 		var queryCount = summary.query_count || 0;
 		var httpCount  = ( httpCalls && httpCalls.length ) || 0;
@@ -1685,6 +1706,232 @@
 		html += '</div>'; // timeline-container
 
 		return html;
+	}
+
+	/* ================================================================== */
+	/*  Timeline Interactivity: Tooltip, Zoom, Pan                        */
+	/* ================================================================== */
+
+	var timelineZoom = 1;
+	var timelinePanX = 0; // px offset
+	var timelineDragging = false;
+	var timelineDragStartX = 0;
+	var timelineDragStartPan = 0;
+	var $timelineTooltip = null;
+
+	function initTimelineInteractivity() {
+		// Create persistent tooltip element if not exists.
+		if ( ! $timelineTooltip || ! $timelineTooltip.length ) {
+			$timelineTooltip = $( '<div class="scrutinizer-timeline-tooltip"></div>' );
+			$( 'body' ).append( $timelineTooltip );
+		}
+
+		var $container = $( '.scrutinizer-timeline-container' );
+		if ( ! $container.length ) {
+			return;
+		}
+
+		var $viewport = $container.find( '.scrutinizer-timeline-viewport' );
+		var $wrapper  = $container.find( '.scrutinizer-timeline-zoom-wrapper' );
+
+		if ( ! $viewport.length || ! $wrapper.length ) {
+			return;
+		}
+
+		// Reset state on re-init.
+		timelineZoom = 1;
+		timelinePanX = 0;
+		applyTimelineZoom( $container, $wrapper );
+
+		// --- Tooltip on segment hover ---
+		$viewport.off( 'mouseenter.scrtl' ).on( 'mouseenter.scrtl', '.timeline-segment', function( e ) {
+			var $seg = $( this );
+			var callback = $seg.data( 'callback' ) || '';
+			var source   = $seg.data( 'source' )   || 'unknown';
+			var type     = $seg.data( 'type' )      || '';
+			var wallNs   = parseFloat( $seg.data( 'wall-ns' ) ) || 0;
+			var pct      = $seg.data( 'pct' )       || '0';
+			var ms       = ( wallNs / 1e6 ).toFixed( 2 );
+			var color    = getSourceColor( source, type );
+
+			var ttHtml = '<div class="tt-callback">' + esc( callback ) + '</div>';
+			ttHtml += '<div class="tt-source" style="background:' + color + ';color:#fff">' + esc( source ) + ' (' + esc( type ) + ')</div>';
+			ttHtml += '<div class="tt-stats">';
+			ttHtml += '<div><span class="tt-stat-label">Duration</span><br><span class="tt-stat-value">' + ms + ' ms</span></div>';
+			ttHtml += '<div><span class="tt-stat-label">Share</span><br><span class="tt-stat-value">' + pct + '%</span></div>';
+			ttHtml += '</div>';
+			$timelineTooltip.html( ttHtml ).show();
+			positionTooltip( e );
+		} );
+
+		$viewport.off( 'mousemove.scrtl' ).on( 'mousemove.scrtl', '.timeline-segment', function( e ) {
+			positionTooltip( e );
+		} );
+
+		$viewport.off( 'mouseleave.scrtl' ).on( 'mouseleave.scrtl', '.timeline-segment', function() {
+			$timelineTooltip.hide();
+		} );
+
+		// --- Scroll to zoom ---
+		$viewport[0].addEventListener( 'wheel', function( e ) {
+			e.preventDefault();
+			var rect = $viewport[0].getBoundingClientRect();
+			var mouseXRatio = ( e.clientX - rect.left ) / rect.width;
+
+			var oldZoom = timelineZoom;
+			if ( e.deltaY < 0 ) {
+				timelineZoom = Math.min( timelineZoom * 1.3, 40 );
+			} else {
+				timelineZoom = Math.max( timelineZoom / 1.3, 1 );
+			}
+
+			// Adjust pan so the point under the cursor stays fixed.
+			var viewportW = rect.width;
+			var oldTotalW = viewportW * oldZoom;
+			var newTotalW = viewportW * timelineZoom;
+			var cursorOldAbs = -timelinePanX + mouseXRatio * viewportW;
+			var cursorNewAbs = ( cursorOldAbs / oldTotalW ) * newTotalW;
+			timelinePanX = -( cursorNewAbs - mouseXRatio * viewportW );
+
+			clampPan( viewportW );
+			applyTimelineZoom( $container, $wrapper );
+		}, { passive: false } );
+
+		// --- Drag to pan ---
+		$viewport.off( 'mousedown.scrtlpan' ).on( 'mousedown.scrtlpan', function( e ) {
+			if ( timelineZoom <= 1 ) {
+				return;
+			}
+			if ( e.button !== 0 ) {
+				return;
+			}
+			e.preventDefault();
+			timelineDragging = true;
+			timelineDragStartX = e.clientX;
+			timelineDragStartPan = timelinePanX;
+			$viewport.css( 'cursor', 'grabbing' );
+		} );
+
+		$( document ).off( 'mousemove.scrtlpan' ).on( 'mousemove.scrtlpan', function( e ) {
+			if ( ! timelineDragging ) {
+				return;
+			}
+			var dx = e.clientX - timelineDragStartX;
+			timelinePanX = timelineDragStartPan + dx;
+			var viewportW = $viewport[0].getBoundingClientRect().width;
+			clampPan( viewportW );
+			applyTimelineZoom( $container, $wrapper );
+		} );
+
+		$( document ).off( 'mouseup.scrtlpan' ).on( 'mouseup.scrtlpan', function() {
+			if ( timelineDragging ) {
+				timelineDragging = false;
+				$viewport.css( 'cursor', timelineZoom > 1 ? 'grab' : '' );
+			}
+		} );
+
+		// --- Zoom control buttons ---
+		$container.find( '.zoom-in-btn' ).off( 'click' ).on( 'click', function() {
+			timelineZoom = Math.min( timelineZoom * 1.5, 40 );
+			var viewportW = $viewport[0].getBoundingClientRect().width;
+			clampPan( viewportW );
+			applyTimelineZoom( $container, $wrapper );
+		} );
+
+		$container.find( '.zoom-out-btn' ).off( 'click' ).on( 'click', function() {
+			timelineZoom = Math.max( timelineZoom / 1.5, 1 );
+			var viewportW = $viewport[0].getBoundingClientRect().width;
+			clampPan( viewportW );
+			applyTimelineZoom( $container, $wrapper );
+		} );
+
+		$container.find( '.zoom-reset-btn' ).off( 'click' ).on( 'click', function() {
+			timelineZoom = 1;
+			timelinePanX = 0;
+			applyTimelineZoom( $container, $wrapper );
+		} );
+	}
+
+	function clampPan( viewportW ) {
+		var totalW = viewportW * timelineZoom;
+		var maxPan = 0;
+		var minPan = -( totalW - viewportW );
+		if ( timelinePanX > maxPan ) { timelinePanX = maxPan; }
+		if ( timelinePanX < minPan ) { timelinePanX = minPan; }
+		if ( timelineZoom <= 1 ) { timelinePanX = 0; }
+	}
+
+	function applyTimelineZoom( $container, $wrapper ) {
+		$wrapper.css( 'transform', 'scaleX(' + timelineZoom + ') translateX(' + ( timelinePanX / timelineZoom ) + 'px)' );
+
+		// Counter-scale text inside the wrapper so it stays readable.
+		var invScale = 1 / timelineZoom;
+		$wrapper.find( '.milestone' ).css( 'transform', 'translateX(-50%) scaleX(' + invScale + ')' );
+		$wrapper.find( '.http-lollipop' ).css( 'transform', 'translateX(-50%) scaleX(' + invScale + ')' );
+
+		// Update zoom label.
+		var label = timelineZoom <= 1 ? '1\u00d7' : timelineZoom.toFixed( 1 ) + '\u00d7';
+		$container.find( '.zoom-level' ).text( label );
+
+		// Toggle cursor.
+		var $viewport = $container.find( '.scrutinizer-timeline-viewport' );
+		if ( ! timelineDragging ) {
+			$viewport.css( 'cursor', timelineZoom > 1 ? 'grab' : '' );
+		}
+
+		// Show/hide zoom hint vs reset.
+		if ( timelineZoom > 1 ) {
+			$container.find( '.zoom-hint' ).text( 'Drag to pan \u00b7 Scroll to zoom' );
+		} else {
+			$container.find( '.zoom-hint' ).text( 'Scroll to zoom \u00b7 Drag to pan' );
+		}
+
+		// Regenerate axis ticks for visible range.
+		updateTimelineAxis( $container, $wrapper );
+	}
+
+	function updateTimelineAxis( $container, $wrapper ) {
+		var $axis = $wrapper.find( '.scrutinizer-timeline-axis' );
+		if ( ! $axis.length ) {
+			return;
+		}
+		var durationNs = parseInt( $container.data( 'duration-ns' ), 10 ) || 0;
+		if ( ! durationNs ) {
+			return;
+		}
+		var durationMs = durationNs / 1e6;
+
+		// When zoomed, the scaleX transform stretches everything.
+		// Axis ticks at original %positions are correct in the scaled coordinate space.
+		// But we want more tick density when zoomed.
+		var tickCount = Math.min( Math.max( Math.round( 5 * timelineZoom ), 5 ), 20 );
+		var tickHtml = '';
+		for ( var k = 0; k <= tickCount; k++ ) {
+			var tickMs  = ( durationMs * k / tickCount ).toFixed( 0 );
+			var tickPct = ( k / tickCount ) * 100;
+			// Counter-scale the text so it stays readable when parent is scaleX-ed.
+			tickHtml += '<span class="axis-tick" style="left:' + tickPct + '%;transform:translateX(-50%) scaleX(' + ( 1 / timelineZoom ) + ')">' + tickMs + ' ms</span>';
+		}
+		$axis.html( tickHtml );
+	}
+
+	function positionTooltip( e ) {
+		if ( ! $timelineTooltip ) {
+			return;
+		}
+		var ttW = $timelineTooltip.outerWidth();
+		var ttH = $timelineTooltip.outerHeight();
+		var x = e.clientX + 12;
+		var y = e.clientY - ttH - 8;
+
+		// Keep on screen.
+		if ( x + ttW > window.innerWidth - 8 ) {
+			x = e.clientX - ttW - 12;
+		}
+		if ( y < 8 ) {
+			y = e.clientY + 16;
+		}
+		$timelineTooltip.css( { left: x + 'px', top: y + 'px' } );
 	}
 
 	function formatPhaseName( name ) {
@@ -2255,6 +2502,7 @@
 						profileData.queries || []
 					)
 				);
+				initTimelineInteractivity();
 			} else {
 				$( '#scrutinizer-tab-timeline' ).html(
 					'<p class="scrutinizer-empty">Failed to load timeline data.</p>'
