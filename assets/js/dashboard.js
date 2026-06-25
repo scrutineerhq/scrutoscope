@@ -190,17 +190,17 @@
 			var tab = $( this ).data( 'tab' );
 			$( '.scrutinizer-tab' ).removeClass( 'active' );
 			$( this ).addClass( 'active' );
+			$( '.scrutinizer-tab-content' ).hide();
+			$( '#scrutinizer-tab-' + tab ).show();
+		} );
 
 		// Info bubble toggle (mobile-friendly tooltip).
 		$( document ).on( 'click', '.scrutinizer-info-toggle', function( e ) {
 			e.stopPropagation();
 			$( this ).next( '.scrutinizer-info-bubble' ).toggleClass( 'visible' );
-		});
+		} );
 		$( document ).on( 'click', function() {
 			$( '.scrutinizer-info-bubble' ).removeClass( 'visible' );
-		});
-			$( '.scrutinizer-tab-content' ).hide();
-			$( '#scrutinizer-tab-' + tab ).show();
 		} );
 
 		// Background profiling toggle.

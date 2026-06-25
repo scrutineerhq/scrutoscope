@@ -169,7 +169,7 @@ class Dashboard {
 			<div class="scrutinizer-results" id="scrutinizer-results">
 				<h2><?php echo esc_html__( 'Routes', 'scrutinizer' ); ?></h2>
 				<div id="scrutinizer-profile-list">
-					<p class="scrutinizer-empty"><?php echo esc_html__( 'No profiles captured yet.', 'scrutinizer' ); ?></p>
+					<p class="scrutinizer-empty scrutinizer-loading"><?php echo esc_html__( 'Loading…', 'scrutinizer' ); ?></p>
 				</div>
 			</div>
 
