@@ -63,14 +63,14 @@ class Dashboard {
 			'scrutinizer-dashboard',
 			SCRUTINIZER_URL . 'assets/css/dashboard.css',
 			array(),
-			SCRUTINIZER_VERSION
+			SCRUTINIZER_VERSION . '.' . filemtime( SCRUTINIZER_DIR . 'assets/css/dashboard.css' )
 		);
 
 		wp_enqueue_script(
 			'scrutinizer-dashboard',
 			SCRUTINIZER_URL . 'assets/js/dashboard.js',
 			array( 'jquery' ),
-			SCRUTINIZER_VERSION,
+			SCRUTINIZER_VERSION . '.' . filemtime( SCRUTINIZER_DIR . 'assets/js/dashboard.js' ),
 			true
 		);
 
