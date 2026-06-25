@@ -3288,31 +3288,42 @@ details.scrutinizer-term > .scrutinizer-term-explain {
 
 /* DEBUG: Visual padding inspection — REMOVE AFTER */
 #scrutinizer-settings-panel {
-	outline: 3px solid red !important;
+	border: 4px solid red !important;
 }
 #scrutinizer-settings-panel > .scrutinizer-status-card {
-	outline: 2px dashed blue !important;
-	background: rgba(0, 0, 255, 0.05) !important;
+	border: 4px solid blue !important;
+	background: rgba(0, 0, 255, 0.08) !important;
 }
 #scrutinizer-settings-panel > .scrutinizer-controls {
-	outline: 2px dashed green !important;
-	background: rgba(0, 255, 0, 0.05) !important;
+	border: 4px solid green !important;
+	background: rgba(0, 255, 0, 0.08) !important;
 }
 #scrutinizer-settings-panel > .scrutinizer-bg-controls {
-	outline: 2px dashed orange !important;
-	background: rgba(255, 165, 0, 0.05) !important;
+	border: 4px solid orange !important;
+	background: rgba(255, 165, 0, 0.08) !important;
 }
 #scrutinizer-settings-panel > .scrutinizer-qp-controls {
-	outline: 2px dashed purple !important;
-	background: rgba(128, 0, 128, 0.05) !important;
+	border: 4px solid purple !important;
+	background: rgba(128, 0, 128, 0.08) !important;
 }
 .scrutinizer-modal-header {
-	outline: 2px dashed magenta !important;
-	background: rgba(255, 0, 255, 0.05) !important;
+	border: 4px solid magenta !important;
 }
 .scrutinizer-modal-body {
-	outline: 2px dotted cyan !important;
+	border: 4px solid cyan !important;
 }
 .scrutinizer-modal-content {
-	outline: 3px solid lime !important;
+	border: 4px solid lime !important;
+}
+.scrutinizer-toggle-label {
+	border: 2px solid hotpink !important;
+}
+.scrutinizer-rate-control {
+	border: 2px solid crimson !important;
+}
+.scrutinizer-overhead-note {
+	border: 2px solid teal !important;
+}
+h3 {
+	border: 2px solid gold !important;
 }
