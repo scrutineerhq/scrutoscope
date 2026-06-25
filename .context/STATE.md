@@ -16,15 +16,46 @@
 |-----------|--------|
 | Plugin bootstrap (`scrutinizer.php`) | ✅ Functional |
 | Profiler engine (`includes/Profiler/`) | ✅ Complete |
-| API (`includes/Api/`) | ✅ Complete — 5 endpoints |
-| Admin UI (`includes/Admin/`) | ✅ Functional — 21 AJAX handlers |
+| API (`includes/Api/`) | ✅ Complete — 6 endpoints |
+| Admin UI (`includes/Admin/`) | ✅ Functional — 24 AJAX handlers |
 | CSS/JS (`assets/`) | ✅ Complete — lazy-load, trace explorer, share w/ gzip |
-| WP-CLI (`includes/CLI/`) | ✅ Complete — 6 commands |
+| WP-CLI (`includes/CLI/`) | ✅ Complete — 7 commands |
 | Share relay (`scrutinizer.dev`) | ✅ Deployed — CF Worker + R2 + KV |
 | Viewer (`scrutinizer.dev/view`) | ✅ File upload drop zone |
 | Tests (`tests/`) | ⬜ Empty |
 
 ## What Changed This Session (June 25)
+
+### PHPCS / CI Fixes
+- Dashboard.php: embedded PHP tags moved to own lines, indentation fixed
+- Commands.php: added missing @param doc for mu_plugin()
+- CI: all green on latest push
+
+### GitHub Issues Templates
+- Bug report template (WP/PHP versions, steps to reproduce, environment)
+- Feature request template (problem, solution, alternatives)
+- Config: blank issues disabled, links to docs
+
+### Share Data Enrichment
+- Timeline: offset_ns/wall_ns → offset_ms/duration_ms, added source_type for viewer color-coding
+- Trace: parse raw IDs (callback@hook:priority) into structured objects with callback, phase, source, source_type, ms durations
+- HTTP Calls: flatten nested caller object to top-level caller string + source_type + source_name
+- Sources: include display name alongside slug
+
+### Relay Viewer Upgrade (code-ready, blocked on CF creds)
+- HTTP Calls tab: table with URL, Method, Status, Source, Duration
+- Autoloaded Options tab: total size card + option table
+- Enqueued Assets tab: scripts/styles tables with handles and sizes
+- HTTP Calls metric card in summary row
+- Timeline segment tooltips CSS (hover labels)
+- Brand color: wordmark uses Scrutineer teal (#15B7A4)
+
+### Landing Pages (code-ready, blocked on CF creds)
+- scrutineer.dev/ — Org hub, links to /scrutinizer, "v1.0.0 — Available now"
+- scrutineer.dev/scrutinizer — Product page with P3 badge, feature grid, trust grid
+- scrutineer.dev/about — "Why is this free?" community-gift page
+- ES module format fixed (export default instead of addEventListener)
+- Relay worker landing page updated with Scrutineer branding
 
 ### Phase D: Timeline Interactivity + UX Panel Completion
 - Timeline zoom/pan: scroll-to-zoom (up to 40×), drag-to-pan, zoom buttons (+/-/reset)
