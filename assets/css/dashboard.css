@@ -2288,12 +2288,83 @@
 	height: 20px;
 }
 
-#scrutinizer-settings-panel {
+/* ----- Settings Modal ----- */
+
+.scrutinizer-modal {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	z-index: 100000;
+	display: flex;
+	align-items: flex-start;
+	justify-content: center;
+	padding-top: 80px;
+}
+
+.scrutinizer-modal-overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(0, 0, 0, 0.5);
+}
+
+.scrutinizer-modal-content {
+	position: relative;
 	background: #fff;
-	border: 1px solid #c3c4c7;
-	box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+	border-radius: 8px;
+	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+	width: 580px;
+	max-width: 90vw;
+	max-height: calc(100vh - 160px);
+	overflow-y: auto;
+}
+
+.scrutinizer-modal-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 16px 24px;
+	border-bottom: 1px solid #dcdcde;
+	position: sticky;
+	top: 0;
+	background: #fff;
+	border-radius: 8px 8px 0 0;
+	z-index: 1;
+}
+
+.scrutinizer-modal-header h2 {
+	margin: 0;
+	font-size: 16px;
+	font-weight: 600;
+}
+
+.scrutinizer-modal-close {
+	background: none;
+	border: none;
+	font-size: 24px;
+	cursor: pointer;
+	color: #787c82;
+	padding: 0 4px;
+	line-height: 1;
+}
+
+.scrutinizer-modal-close:hover {
+	color: #1d2327;
+}
+
+.scrutinizer-modal-body {
 	padding: 20px 24px;
-	margin: 16px 0;
+}
+
+#scrutinizer-settings-panel {
+	margin: 0;
+	border: none;
+	box-shadow: none;
+	padding: 0;
 }
 
 #scrutinizer-settings-panel h3 {
