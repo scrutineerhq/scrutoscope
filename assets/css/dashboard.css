@@ -2965,7 +2965,7 @@
 }
 
 .scrutinizer-modal-body {
-	padding: 0;
+	padding: 20px;
 }
 
 /* Section spacing inside settings modal */
@@ -3006,7 +3006,6 @@
 	margin: 0;
 	border: none;
 	box-shadow: none;
-	padding: 0;
 }
 
 #scrutinizer-settings-panel h3 {
