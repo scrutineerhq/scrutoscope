@@ -37,6 +37,9 @@
 	var traceSortKey      = 'exclusive_ns';
 	var traceSortDir      = 'desc';
 
+	// Timeline lazy-load state.
+	var timelineLoaded = false;
+
 	// Table sort state (per-table).
 	var tableSortState = {};
 
@@ -281,6 +284,10 @@
 			// Lazy-load trace data on first click.
 			if ( 'trace' === tab && ! traceLoaded && currentProfileId ) {
 				loadTraceData( currentProfileId );
+			}
+			// Lazy-load timeline data on first click.
+			if ( 'timeline' === tab && ! timelineLoaded && currentProfileId ) {
+				loadTimelineData( currentProfileId );
 			}
 		} );
 
@@ -1238,6 +1245,8 @@
 				traceEntries  = [];
 				traceFiltered = [];
 				traceShown    = 0;
+				// Reset timeline state.
+				timelineLoaded = false;
 				renderProfileDetail( response.data.profile );
 				showDetailView();
 			} else {
@@ -1261,6 +1270,7 @@
 		var timeline     = data.timeline || [];
 		var traceData    = data.trace || [];
 		var traceCount   = profile.trace_count || traceData.length || 0;
+		var timelineCount = profile.timeline_count || timeline.length || 0;
 		var durMs        = ( summary.duration_ms || 0 ).toFixed( 1 );
 		var queryCount   = summary.query_count || 0;
 		var httpCount    = summary.http_call_count || 0;
@@ -1334,9 +1344,17 @@
 		html += '<button class="scrutinizer-tab" data-tab="metadata">Metadata</button>';
 		html += '</div>';
 
-		// Tab: Timeline.
+		// Tab: Timeline (lazy-loaded).
 		html += '<div class="scrutinizer-tab-content" id="scrutinizer-tab-timeline">';
-		html += renderTimeline( timeline, phaseMarkers, summary, sources, httpCalls, queries );
+		if ( timeline.length > 0 ) {
+			// Timeline was included in response (small profile or non-lightweight).
+			html += renderTimeline( timeline, phaseMarkers, summary, sources, httpCalls, queries );
+			timelineLoaded = true;
+		} else if ( timelineCount > 0 ) {
+			html += '<p class="scrutinizer-empty">Loading timeline data...</p>';
+		} else {
+			html += '<p class="scrutinizer-empty">No timeline data available.</p>';
+		}
 		html += '</div>';
 
 		// Tab: Breakdown.
@@ -2201,6 +2219,50 @@
 		} ).fail( function() {
 			$( '#scrutinizer-tab-trace' ).html(
 				'<p class="scrutinizer-empty">Failed to load trace data.</p>'
+			);
+		} );
+	}
+
+	/**
+	 * Lazy-load timeline data for the current profile.
+	 */
+	function loadTimelineData( profileId ) {
+		$.get( scrutinizerAdmin.ajaxUrl, {
+			action:     'scrutinizer_get_profile_timeline',
+			nonce:      scrutinizerAdmin.nonce,
+			profile_id: profileId
+		}, function( response ) {
+			if ( response.success && response.data ) {
+				timelineLoaded = true;
+
+				var timelineData  = response.data.timeline || [];
+				var phaseMarkers  = response.data.phase_markers || [];
+
+				// Store on profile object so export/share works.
+				if ( currentProfileData && currentProfileData.profile_data ) {
+					currentProfileData.profile_data.timeline      = timelineData;
+					currentProfileData.profile_data.phase_markers = phaseMarkers;
+				}
+
+				var profileData = ( currentProfileData && currentProfileData.profile_data ) || {};
+				$( '#scrutinizer-tab-timeline' ).html(
+					renderTimeline(
+						timelineData,
+						phaseMarkers,
+						profileData.summary || {},
+						profileData.sources || [],
+						profileData.http_calls || [],
+						profileData.queries || []
+					)
+				);
+			} else {
+				$( '#scrutinizer-tab-timeline' ).html(
+					'<p class="scrutinizer-empty">Failed to load timeline data.</p>'
+				);
+			}
+		} ).fail( function() {
+			$( '#scrutinizer-tab-timeline' ).html(
+				'<p class="scrutinizer-empty">Failed to load timeline data.</p>'
 			);
 		} );
 	}
