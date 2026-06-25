@@ -3285,3 +3285,34 @@ details.scrutinizer-term > .scrutinizer-term-explain {
 	pointer-events: none;
 	opacity: 0.5;
 }
+
+/* DEBUG: Visual padding inspection — REMOVE AFTER */
+#scrutinizer-settings-panel {
+	outline: 3px solid red !important;
+}
+#scrutinizer-settings-panel > .scrutinizer-status-card {
+	outline: 2px dashed blue !important;
+	background: rgba(0, 0, 255, 0.05) !important;
+}
+#scrutinizer-settings-panel > .scrutinizer-controls {
+	outline: 2px dashed green !important;
+	background: rgba(0, 255, 0, 0.05) !important;
+}
+#scrutinizer-settings-panel > .scrutinizer-bg-controls {
+	outline: 2px dashed orange !important;
+	background: rgba(255, 165, 0, 0.05) !important;
+}
+#scrutinizer-settings-panel > .scrutinizer-qp-controls {
+	outline: 2px dashed purple !important;
+	background: rgba(128, 0, 128, 0.05) !important;
+}
+.scrutinizer-modal-header {
+	outline: 2px dashed magenta !important;
+	background: rgba(255, 0, 255, 0.05) !important;
+}
+.scrutinizer-modal-body {
+	outline: 2px dotted cyan !important;
+}
+.scrutinizer-modal-content {
+	outline: 3px solid lime !important;
+}
