@@ -4855,7 +4855,7 @@
 				shareData.sources = profileData.sources.map( function( src ) {
 					return {
 						source: src.slug || 'unknown',
-						name: src.slug || 'unknown',
+						name: src.name || src.slug || 'unknown',
 						type: src.type || 'unknown',
 						exclusive_ms: ( src.exclusive_ns || 0 ) / 1e6,
 						inclusive_ms: ( src.inclusive_ns || 0 ) / 1e6,
