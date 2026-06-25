@@ -227,20 +227,23 @@ class Dashboard {
 						<div class="scrutinizer-decision-prompt">
 							<h3><?php echo esc_html__( "What's slow?", 'scrutinizer' ); ?></h3>
 							<div class="scrutinizer-decision-cards">
-								<button type="button" class="scrutinizer-decision-card" data-target="<?php echo esc_url( admin_url() ); ?>">
+								<button type="button" class="scrutinizer-decision-card" data-target="<?php echo esc_url( admin_url() ); ?>" data-mode="admin">
 									<span class="dashicons dashicons-dashboard"></span>
 									<strong><?php echo esc_html__( 'Admin Dashboard', 'scrutinizer' ); ?></strong>
 									<span><?php echo esc_html__( 'Measure admin page performance', 'scrutinizer' ); ?></span>
+									<span class="scrutinizer-card-hint"><?php echo esc_html__( 'Opens in new tab', 'scrutinizer' ); ?></span>
 								</button>
-								<button type="button" class="scrutinizer-decision-card" data-target="<?php echo esc_url( home_url( '/' ) ); ?>">
+								<button type="button" class="scrutinizer-decision-card" data-target="<?php echo esc_url( home_url( '/' ) ); ?>" data-mode="frontend">
 									<span class="dashicons dashicons-admin-users"></span>
 									<strong><?php echo esc_html__( 'Logged-in Frontend', 'scrutinizer' ); ?></strong>
 									<span><?php echo esc_html__( 'Measure pages while logged in', 'scrutinizer' ); ?></span>
+									<span class="scrutinizer-card-hint"><?php echo esc_html__( 'Opens in new tab', 'scrutinizer' ); ?></span>
 								</button>
-								<button type="button" class="scrutinizer-decision-card" data-target="<?php echo esc_url( home_url( '/' ) ); ?>">
+								<button type="button" class="scrutinizer-decision-card" data-target="<?php echo esc_url( home_url( '/' ) ); ?>" data-mode="visitor">
 									<span class="dashicons dashicons-visibility"></span>
 									<strong><?php echo esc_html__( 'Visitor View', 'scrutinizer' ); ?></strong>
 									<span><?php echo esc_html__( 'Measure what visitors experience', 'scrutinizer' ); ?></span>
+									<span class="scrutinizer-card-hint"><?php echo esc_html__( 'Requires incognito window', 'scrutinizer' ); ?></span>
 								</button>
 							</div>
 						</div>
