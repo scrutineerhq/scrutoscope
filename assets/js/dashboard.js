@@ -4980,11 +4980,24 @@
 			}
 			if ( sections.indexOf( 'queries' ) !== -1 && profileData.queries ) {
 				shareData.queries = profileData.queries.map( function( q ) {
+					var qSrc = '';
+					var qSrcType = '';
+					if ( q.attribution ) {
+						qSrc = q.attribution.name || q.attribution.slug || '';
+						qSrcType = q.attribution.type || 'unknown';
+					} else if ( q.caller ) {
+						var inferred = inferSourceFromCaller( q.caller );
+						if ( inferred ) {
+							qSrc = inferred.name;
+							qSrcType = inferred.type;
+						}
+					}
 					return {
 						sql: q.sql || '',
 						time_ms: q.time_ms || 0,
-						source: q.source || '',
-						source_type: q.source_type || '',
+						source: qSrc,
+						source_type: qSrcType,
+						caller: q.caller || '',
 						offset_ms: ( q.offset_ns || 0 ) / 1e6
 					};
 				} );
