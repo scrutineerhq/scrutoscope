@@ -23,10 +23,8 @@ Comparison uses coarse fingerprints (route class + frontend/admin + anon/auth + 
 ## D7: Likely Regression thresholds
 ≥5 matched requests per set, ≥20% + 100ms median increase, consistent direction in ≥3/5 comparisons. Below that: "Difference observed" or "Possible change."
 
-## D8: ~~Share model is capability-link, NOT zero-knowledge~~ SUPERSEDED
-~~Standard sharing is unlisted capability URLs with 128-bit random IDs. Not encrypted, not discoverable. Zero-knowledge is Phase 2 (Secure DX) only. Don't conflate them.~~
-
-**Superseded June 23, 2026:** Zero-knowledge sharing pulled into Phase 1. Share model is now capability URLs with client-side AES-256-GCM encryption, key in URL fragment. The relay (scrutinizer.dev) stores only ciphertext and cannot read reports. See scrutineer-api-spec.md §7. R2 replaced by CF KV (ciphertext blobs with TTL). The old D8 distinction between "capability-link Phase 1" and "zero-knowledge Phase 2" is dissolved — Scrutinizer ships with zero-knowledge from day one.
+## D8: Zero-knowledge sharing
+Share model is capability URLs with client-side AES-256-GCM encryption, key in URL fragment. The relay (scrutinizer.dev) stores only ciphertext and cannot read reports. KV with TTL for ciphertext blobs.
 
 ## D9: Expiry defaults
 Share links: 1-30 days, default 7. User-chosen at share time. R2 lifecycle removes expired artifacts.
@@ -34,23 +32,14 @@ Share links: 1-30 days, default 7. User-chosen at share time. R2 lifecycle remov
 ## D10: Section-level include/exclude before sharing
 Users see a checklist of all report sections. Defaults all-on. They can disable any section. Preview shows exactly what will be published.
 
-## D11: External diagnostics via Yoke only
-Yoke/.lol family provides external signals (DNS, TLS, redirects, CDN detection, HTTP protocol). These are on-demand, user-initiated, clearly separated from WordPress profiling data. External timing never enters Server Request Duration or baseline math.
-
-## D12: Three-phase product, separate data models
-- Phase 1: Scrutinizer (profiler + sharing + Yoke integration)
-- Phase 2: Triage (Secure DX — encrypted diagnostic handoff)
-- Phase 3: Scrutiny (Analytics SDK — feature counters, HITL consent)
-Each phase is a separate product under one brand with no shared raw data model or implied collection authority.
+## D12: Scrutinizer is a profiler
+This plugin profiles server-side PHP execution in WordPress. It is not a recommendations engine, not an analytics SDK, and not a diagnostic handoff tool. Separate products may exist under the Scrutineer brand in the future, but they are out of scope for this repo.
 
 ## D13: No global `all` hook
 Instrumentation wraps callbacks at entry/exit with monotonic HR clock. No `all` hook registration. No statement ticks.
 
-## D14: HITL consent for Analytics SDK (Phase 3)
-No public `enable()` method. Consent records are nonce-gated. Triage owns the consent UI. 5-deferral limit then opt-out. Re-prompt on major version bumps only.
-
-## D15: Single keypair per plugin (Secure DX)
-One keypair = root + operational. Shared teams share the keypair via their own trusted channel. Rotation via self-signed keyset endpoint (monotonic epoch) without plugin release.
+## D14: No global `enable()` method for third-party data collection
+If an analytics or telemetry feature is ever added, consent records must be nonce-gated with a deferral limit. No public API that lets arbitrary code opt a user in.
 
 ## D16: WordPress.org slug assigned at submission
 Plugin slug comes from wp.org at final submission time. Not pre-reserved.
