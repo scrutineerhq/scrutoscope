@@ -88,7 +88,7 @@ Comparison infrastructure exists (M2 compare view). This milestone improves the 
 
 ## M4 — Report Sharing (ABSORBED into M2.5)
 
-Sharing architecture redesigned June 23, 2026. Zero-knowledge relay pulled into Phase 1 (was Phase 2). Phase C improvements shipped June 25, 2026:
+Sharing architecture redesigned June 23, 2026. Zero-knowledge relay with client-side AES-256-GCM encryption. Phase C improvements shipped June 25, 2026:
 - [x] Gzip before encryption (CompressionStream/DecompressionStream)
 - [x] KV → R2 migration for report storage (10MB limit)
 - [x] File upload drop zone at scrutinizer.dev/view (D39)
@@ -179,24 +179,3 @@ Visual review: `workspace/your_files/scrutineer-visual-review-june25.md`
 - [ ] Hosted infrastructure — Workers, R2, D1, DO, KV, WAF at scrutineer.dev
 - [ ] wp.org submission
 
-## Phase 2 — Triage (Secure DX)
-
-Not scoped for Phase 1. Separate plugin (`Triage Secure DX`), separate wp.org listing.
-
-- E2E encrypted diagnostic handoff
-- Ed25519 keypair model (single shared key default)
-- Signed request envelopes at scrutineer.dev/req/{id}
-- Scope catalog with per-subscope toggle
-- Scrub + encrypt locally before upload
-- Go CLI + local Studio SPA
-- Embedded launcher pattern for plugin devs
-
-## Phase 3 — Scrutiny (Analytics)
-
-Not scoped for Phase 1. Separate SDK.
-
-- `Scrutiny::bumpCounter()`, `Scrutiny::setState()`, `Scrutiny::sample()`
-- HITL consent — nonce-gated, 5-deferral limit, per-plugin
-- Local aggregation + daily flush
-- Schema-first metric declarations
-- Cardinality enforcement

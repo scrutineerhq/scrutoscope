@@ -22,4 +22,4 @@ Design question: `DECISIONS.md` → `CONSTITUTION.md`
 
 ## Master Spec
 
-The full product specification lives outside this repo at `~/workspace/your_files/triage-spec.md` (1269 lines). These `.context/` files distill the spec into agent-actionable context — they don't replace it. When in doubt, the spec is authoritative.
+These `.context/` files are the authoritative agent-actionable context for the Scrutinizer plugin.

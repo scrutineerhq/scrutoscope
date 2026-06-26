@@ -5,7 +5,7 @@
 
 ## Measurement Contract
 
-- [ ] **Server Request Duration is wall-clock PHP/WP execution.** It is never called "page load." It never includes browser time. It never includes Yoke external timing.
+- [ ] **Server Request Duration is wall-clock PHP/WP execution.** It is never called "page load." It never includes browser time.
   - _Verify:_ `grep -ri "page.load\|page load" --include="*.php" includes/` — zero user-facing results.
 
 - [ ] **Exclusive + nested = inclusive.** Exclusive Callback Time = inclusive minus observed nested. These are distinct fields in every stored profile.
@@ -19,8 +19,8 @@
 
 ## Data Boundaries
 
-- [ ] **No network requests without explicit admin action.** Installing, activating, updating, or using the profiler locally produces zero outbound HTTP. Sharing and Yoke checks require deliberate button press.
-  - _Verify:_ Deactivate sharing/Yoke in test. `tcpdump` during a full profiling cycle — no outbound connections.
+- [ ] **No network requests without explicit admin action.** Installing, activating, updating, or using the profiler locally produces zero outbound HTTP. Sharing requires deliberate button press.
+  - _Verify:_ Deactivate sharing in test. `tcpdump` during a full profiling cycle — no outbound connections.
 
 - [ ] **Hard never-collect fields are enforced.** Passwords, cookies, auth headers, tokens, salts, private keys, DB creds, raw SQL literals, POST bodies, file contents, visitor data — all excluded from profiles, reports, and shared artifacts.
   - _Verify:_ `Storage::sanitize_profile()` strips these. Test suite covers each category.
