@@ -2872,9 +2872,6 @@
 	border-color: #d63638 !important;
 	background: #fff !important;
 	box-shadow: none !important;
-	display: inline-flex !important;
-	align-items: center;
-	gap: 4px;
 }
 
 .scrutinizer-btn-danger:hover,
