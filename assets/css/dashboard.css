@@ -2876,6 +2876,9 @@
 	border-color: #d63638 !important;
 	background: #fff !important;
 	box-shadow: none !important;
+	display: inline-flex !important;
+	align-items: center;
+	gap: 4px;
 }
 
 .scrutinizer-btn-danger:hover,
@@ -2890,8 +2893,6 @@
 	width: 16px;
 	height: 16px;
 	line-height: 1;
-	vertical-align: text-bottom;
-	margin-right: 2px;
 }
 
 /* Inline feedback for save/revoke (F11) */
