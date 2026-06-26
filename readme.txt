@@ -3,7 +3,7 @@ Contributors: scrutineerhq
 Tags: performance, profiling, debug, optimization, profiler
 Requires at least: 6.0
 Tested up to: 7.0
-Stable tag: 1.0.0
+Stable tag: 1.0.1
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -76,6 +76,21 @@ Yes, with a low sample rate (0.1% or 1%). Scrutinizer is designed for background
 
 == Changelog ==
 
+= 1.0.1 =
+* Fix: handle_prompt AJAX handler now returns proper JSON response
+* Fix: API audit log table creation on activation
+* Fix: Cron schedule registration runs only once per lifecycle
+* Fix: WCAG contrast ratios for muted text and inactive tabs
+* Fix: Timeline milestone labels no longer clip at container edges
+* Fix: Query density strip zoom alignment
+* Fix: Share payload field mapping for viewer compatibility
+* Fix: Duplicate sort click handlers on History/Cron tabs
+* Improved: Shared reports ledger with revocable links
+* Improved: Profile TTL controls (7/14/30 day or never) with countdown badges
+* Improved: Pinned and shared profiles exempt from TTL cleanup
+* Improved: Queries pill labels are now context-aware
+* Improved: Clean uninstall removes all tables, options, cron hooks, and app passwords
+
 = 1.0.0 =
 * Initial release
 * Server request duration profiling with source attribution
@@ -103,6 +118,9 @@ Yes, with a low sample rate (0.1% or 1%). Scrutinizer is designed for background
 4. Share — Zero-knowledge encrypted report sharing
 
 == Upgrade Notice ==
+
+= 1.0.1 =
+Bug fixes and polish. Adds shared reports ledger and profile TTL controls.
 
 = 1.0.0 =
 Initial release.
