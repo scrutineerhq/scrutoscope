@@ -26,9 +26,6 @@ Users see a checklist of all report sections. Defaults all-on. They can disable 
 ## D13: No global `all` hook
 Instrumentation wraps callbacks at entry/exit with monotonic HR clock. No `all` hook registration. No statement ticks.
 
-## D16: WordPress.org slug assigned at submission
-Plugin slug comes from wp.org at final submission time. Not pre-reserved.
-
 ## D18: Background profiling with configurable sample rate
 Background profiling is in scope with a configurable sample rate (1-100%). Users get passive profiling data without explicit sessions.
 
