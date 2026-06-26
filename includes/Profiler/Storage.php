@@ -83,6 +83,73 @@ class Storage {
 	}
 
 	/**
+	 * Strip query strings (and fragments) from every URL in a profile.
+	 *
+	 * The CONSTITUTION lists "Full HTTP URLs, query strings" under hard
+	 * never-collect. Query strings routinely carry secrets — password-reset
+	 * keys, auth tokens, nonces, outbound API keys — and PII such as search
+	 * terms. We keep only scheme + host + path so the route and destination
+	 * stay legible without persisting the sensitive tail.
+	 *
+	 * Applied at write time (here) so raw values never reach the database,
+	 * complementing the read-time \Scrutinizer\Api\Sanitizer as
+	 * defense-in-depth.
+	 *
+	 * @param array $profile_data Compiled report from Report::compile().
+	 * @return array Sanitized profile data.
+	 */
+	public static function sanitize_profile( $profile_data ) {
+		if ( ! is_array( $profile_data ) ) {
+			return $profile_data;
+		}
+
+		if ( isset( $profile_data['request']['url'] ) ) {
+			$profile_data['request']['url'] = self::strip_url_query( $profile_data['request']['url'] );
+		}
+
+		if ( isset( $profile_data['request']['referer'] ) ) {
+			$profile_data['request']['referer'] = self::strip_url_query( $profile_data['request']['referer'] );
+		}
+
+		if ( ! empty( $profile_data['http_calls'] ) && is_array( $profile_data['http_calls'] ) ) {
+			foreach ( $profile_data['http_calls'] as $i => $call ) {
+				if ( isset( $call['url'] ) ) {
+					$profile_data['http_calls'][ $i ]['url'] = self::strip_url_query( $call['url'] );
+				}
+			}
+		}
+
+		return $profile_data;
+	}
+
+	/**
+	 * Reduce a URL to scheme + host + path, dropping query string and fragment.
+	 *
+	 * @param string $url URL to reduce.
+	 * @return string Reduced URL, or '' when the input is empty.
+	 */
+	private static function strip_url_query( $url ) {
+		if ( ! is_string( $url ) || '' === $url ) {
+			return '';
+		}
+
+		$parts = wp_parse_url( $url );
+
+		// Unparseable — truncate at the first '?' as a conservative fallback.
+		if ( ! is_array( $parts ) || empty( $parts ) ) {
+			$pos = strpos( $url, '?' );
+			return ( false === $pos ) ? $url : substr( $url, 0, $pos );
+		}
+
+		$scheme = isset( $parts['scheme'] ) ? $parts['scheme'] . '://' : '';
+		$host   = isset( $parts['host'] ) ? $parts['host'] : '';
+		$port   = isset( $parts['port'] ) ? ':' . $parts['port'] : '';
+		$path   = isset( $parts['path'] ) ? $parts['path'] : '';
+
+		return $scheme . $host . $port . $path;
+	}
+
+	/**
 	 * Save a profile.
 	 *
 	 * @param string $session_id     Session identifier (empty for background).
@@ -93,6 +160,11 @@ class Storage {
 	 */
 	public static function save_profile( $session_id, $profile_data, $profile_type = 'session', $response_status = 0 ) {
 		global $wpdb;
+
+		// Strip query strings from URLs before anything is persisted. The
+		// CONSTITUTION lists "Full HTTP URLs, query strings" under hard
+		// never-collect, so the sensitive tail must never reach the database.
+		$profile_data = self::sanitize_profile( $profile_data );
 
 		$url         = isset( $profile_data['request']['url'] ) ? $profile_data['request']['url'] : '';
 		$method      = isset( $profile_data['request']['method'] ) ? $profile_data['request']['method'] : 'GET';
