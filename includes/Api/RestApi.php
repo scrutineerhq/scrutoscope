@@ -450,6 +450,23 @@ class RestApi {
 			}
 		}
 
+		// HTTP calls.
+		$response['http_calls'] = array();
+		if ( ! empty( $data['http_calls'] ) ) {
+			foreach ( $data['http_calls'] as $h ) {
+				$response['http_calls'][] = array(
+					'url'         => isset( $h['url'] ) ? $h['url'] : '',
+					'method'      => isset( $h['method'] ) ? $h['method'] : 'GET',
+					'status'      => isset( $h['status'] ) ? (int) $h['status'] : null,
+					'duration_ms' => isset( $h['duration_ms'] ) ? round( (float) $h['duration_ms'], 1 ) : 0,
+					'caller'      => isset( $h['caller'] ) ? $h['caller'] : '',
+					'source'      => isset( $h['source_name'] ) ? $h['source_name'] : ( isset( $h['source'] ) ? $h['source'] : '' ),
+					'source_type' => isset( $h['source_type'] ) ? $h['source_type'] : 'unknown',
+					'is_error'    => ! empty( $h['is_error'] ),
+				);
+			}
+		}
+
 		// Milestones (phase markers / timeline).
 		$response['milestones'] = array();
 		if ( ! empty( $data['phase_markers'] ) ) {

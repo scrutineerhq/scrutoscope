@@ -76,7 +76,7 @@ Returns site environment data (WordPress version, PHP version, active plugins, t
 Returns profiled routes with summary statistics: profile count, average duration, average query count.
 
 ### GET /v1/profile/{id}
-Returns a single profile: summary stats, per-source breakdown (exclusive/inclusive time, callback counts), database queries with timing and attribution, and lifecycle milestones (plugins_loaded, wp_head, etc.).
+Returns a single profile: summary stats, per-source breakdown (exclusive/inclusive time, callback counts), database queries with timing and attribution, outbound HTTP calls with URL/status/duration/caller, and lifecycle milestones (plugins_loaded, wp_head, etc.).
 
 ### GET /v1/compare/{id_a}/{id_b}
 Returns two profiles side by side with computed deltas for duration, query count, and per-source exclusive time changes.
@@ -95,6 +95,8 @@ Returns two profiles side by side with computed deltas for duration, query count
 - When unattributed time is high (>40%), check PHP/OPcache configuration before blaming plugins. Core overhead scales with complexity.
 - Context matters: 500ms with 23 active plugins is different from 500ms with 3 plugins.
 - Database query time should be evaluated relative to total duration. 50ms of query time in a 500ms request is 10% — notable but not alarming. 50ms in a 100ms request is 50% — worth investigating.
+- HTTP calls (outbound requests to external APIs, update checks, license verifiers) are captured with URL, HTTP status, duration, and the callback that initiated them. These are often the single largest contributor to slow requests because network I/O blocks the PHP process. A plugin making a blocking HTTP call on every page load is a significant finding.
+- HTTP call duration is included in the exclusive time of the callback that made the call. If a callback shows 800ms exclusive and has HTTP calls totaling 780ms, the callback itself is fast — the network wait is the cost.
 
 ## Tone Rules
 
