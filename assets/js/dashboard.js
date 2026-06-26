@@ -1830,8 +1830,16 @@
 		for ( var lk = 0; lk < labelPositions.length; lk++ ) {
 			var stemHeight = ( labelTiers[ lk ] + 1 ) * tierPx + baseOffset;
 			var leftPct    = labelPositions[ lk ].pct.toFixed( 2 );
+			var pctVal     = labelPositions[ lk ].pct;
+			// Edge alignment: right-align near right edge, left-align near left edge.
+			var edgeCls = '';
+			if ( pctVal > 85 ) {
+				edgeCls = ' milestone-right';
+			} else if ( pctVal < 15 ) {
+				edgeCls = ' milestone-left';
+			}
 			// Vertical stem from bottom, with dot at top and label above dot.
-			html += '<div class="milestone" style="left:' + leftPct + '%;height:' + stemHeight + 'px">';
+			html += '<div class="milestone' + edgeCls + '" style="left:' + leftPct + '%;height:' + stemHeight + 'px">';
 			html += '<span class="milestone-label">' + esc( formatPhaseName( labelPositions[ lk ].name ) ) + '</span>';
 			html += '<span class="milestone-dot"></span>';
 			html += '<span class="milestone-stem"></span>';
@@ -2331,7 +2339,8 @@
 
 		// Counter-scale text inside the wrapper so it stays readable.
 		var invScale = 1 / timelineZoom;
-		$wrapper.find( '.milestone' ).css( 'transform', 'translateX(-50%) scaleX(' + invScale + ')' );
+		$wrapper.find( '.milestone' ).not( '.milestone-left, .milestone-right' ).css( 'transform', 'translateX(-50%) scaleX(' + invScale + ')' );
+		$wrapper.find( '.milestone.milestone-left, .milestone.milestone-right' ).css( 'transform', 'scaleX(' + invScale + ')' );
 		$wrapper.find( '.http-lollipop' ).css( 'transform', 'translateX(-50%) scaleX(' + invScale + ')' );
 
 		// Counter-scale query density strip so bars don't stretch.
@@ -5227,9 +5236,10 @@
 			}
 			if ( sections.indexOf( 'timeline' ) !== -1 && profileData.phase_markers ) {
 				shareData.phase_markers = profileData.phase_markers.map( function( m ) {
+					var markerName = m.name || m.hook || '';
 					return {
-						hook: m.hook || '',
-						label: m.label || m.hook || '',
+						hook: markerName,
+						label: m.label || markerName,
 						offset_ms: ( m.offset_ns || 0 ) / 1e6
 					};
 				} );
@@ -5276,7 +5286,7 @@
 						callerStr = h.caller.caller || '';
 						if ( h.caller.attribution ) {
 							sourceType = h.caller.attribution.type || 'unknown';
-							sourceName = h.caller.attribution.name || h.caller.attribution.slug || '';
+							sourceName = h.caller.attribution.slug || h.caller.attribution.name || '';
 						}
 					} else if ( typeof h.caller === 'string' ) {
 						callerStr = h.caller;

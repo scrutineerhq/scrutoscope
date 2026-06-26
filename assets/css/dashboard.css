@@ -624,6 +624,14 @@
 	align-items: center;
 }
 
+.milestone.milestone-right {
+	align-items: flex-end;
+}
+
+.milestone.milestone-left {
+	align-items: flex-start;
+}
+
 .milestone-label {
 	font-size: 10px;
 	color: #50575e;
