@@ -41,7 +41,7 @@ class Storage {
 			route_key varchar(255) NOT NULL DEFAULT '',
 			duration_ns bigint(20) unsigned NOT NULL DEFAULT 0,
 			user_role varchar(50) NOT NULL DEFAULT 'anonymous',
-			profile_data longtext NOT NULL,
+			profile_data longblob NOT NULL,
 			captured_at datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
 			is_pinned tinyint(1) NOT NULL DEFAULT 0,
 			note text NOT NULL,
@@ -114,7 +114,7 @@ class Storage {
 			'route_key'      => $route_key,
 			'duration_ns'    => $dur_ns,
 			'user_role'      => $role,
-			'profile_data'   => wp_json_encode( $profile_data ),
+			'profile_data'   => gzcompress( wp_json_encode( $profile_data ) ),
 			'captured_at'    => current_time( 'mysql' ),
 		);
 		$insert_format = array( '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s', '%s' );
@@ -229,9 +229,33 @@ class Storage {
 			return null;
 		}
 
-		$row['profile_data'] = json_decode( $row['profile_data'], true );
+		$row['profile_data'] = self::decode_profile_data( $row['profile_data'] );
 
 		return $row;
+	}
+
+	/**
+	 * Decode profile_data from storage.
+	 *
+	 * Handles both gzip-compressed (LONGBLOB) and legacy uncompressed JSON (LONGTEXT).
+	 *
+	 * @param string $raw  Raw profile_data from the database.
+	 * @return array|null
+	 */
+	private static function decode_profile_data( $raw ) {
+		if ( empty( $raw ) ) {
+			return null;
+		}
+
+		// Try gzip decompression first (new format).
+		$json = @gzuncompress( $raw );
+
+		if ( false === $json ) {
+			// Fallback: legacy uncompressed JSON.
+			$json = $raw;
+		}
+
+		return json_decode( $json, true );
 	}
 
 	/**
