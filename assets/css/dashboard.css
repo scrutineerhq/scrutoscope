@@ -1928,23 +1928,43 @@
 /* ----- Memory sparkline ----- */
 
 /* Memory sparkline — overlaid on the timeline bar */
-.memory-overlay-svg {
+.memory-overlay-wrap {
 	position: absolute;
 	top: 0;
 	left: 0;
 	width: 100%;
 	height: 100%;
-	pointer-events: none;
 	z-index: 2;
+}
+
+.memory-overlay-wrap[data-tip]:hover::after {
+	content: attr(data-tip);
+	position: absolute;
+	bottom: calc(100% + 6px);
+	left: 50%;
+	transform: translateX(-50%);
+	background: #3c434a;
+	color: #fff;
+	font-size: 11px;
+	padding: 4px 8px;
+	border-radius: 3px;
+	white-space: nowrap;
+	pointer-events: none;
+	z-index: 10;
+}
+
+.memory-overlay-svg {
+	width: 100%;
+	height: 100%;
+	display: block;
 }
 
 .memory-overlay-svg .memory-hit-area,
 .memory-overlay-svg .memory-line {
 	pointer-events: stroke;
-	cursor: help;
 }
 
-.memory-overlay-svg:hover .memory-line {
+.memory-overlay-wrap:hover .memory-line {
 	stroke: rgba(230, 126, 34, 1);
 	stroke-width: 2.5;
 }
@@ -2468,18 +2488,9 @@
 	margin-bottom: 12px;
 }
 
-.scrutinizer-trace-search-icon {
-	position: absolute;
-	left: 10px;
-	top: 50%;
-	transform: translateY(-50%);
-	color: #a7aaad;
-	font-size: 16px;
-}
-
 .scrutinizer-trace-search-input {
 	width: 100%;
-	padding: 8px 12px 8px 34px;
+	padding: 8px 12px;
 	border: 1px solid #c3c4c7;
 	border-radius: 4px;
 	font-size: 13px;

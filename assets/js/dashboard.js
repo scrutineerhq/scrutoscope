@@ -1895,13 +1895,14 @@
 				}
 				var memLabel = formatBytes( memMax ) + ' peak';
 				var memMinLabel = formatBytes( memMin );
-				var memTitle = 'Memory: ' + memMinLabel + ' \\u2192 ' + memLabel;
+				var memTitle = 'Memory: ' + memMinLabel + ' → ' + memLabel;
+				html += '<div class="memory-overlay-wrap" data-tip="' + esc( memTitle ) + '">';
 				html += '<svg class="memory-overlay-svg" viewBox="0 0 100 100" preserveAspectRatio="none">';
-				html += '<title>' + esc( memTitle ) + '</title>';
 				// Wide invisible hit area for hover.
 				html += '<path d="' + pathD + '" fill="none" stroke="transparent" stroke-width="10" vector-effect="non-scaling-stroke" class="memory-hit-area"/>';
 				html += '<path d="' + pathD + '" fill="none" stroke="rgba(230,126,34,0.7)" stroke-width="2" vector-effect="non-scaling-stroke" class="memory-line"/>';
 				html += '</svg>';
+				html += '</div>';
 				html += '<span class="memory-overlay-label">' + esc( memLabel ) + '</span>';
 			}
 		}
@@ -3277,7 +3278,6 @@
 		// Search bar.
 		html += '<div class="scrutinizer-trace-explorer">';
 		html += '<div class="scrutinizer-trace-search-bar">';
-		html += '<span class="dashicons dashicons-search scrutinizer-trace-search-icon"></span>';
 		html += '<input type="search" id="scrutinizer-trace-search" placeholder="Search callbacks, hooks, sources\u2026" class="scrutinizer-trace-search-input" />';
 		html += '</div>';
 
@@ -3286,15 +3286,19 @@
 		html += '<button type="button" class="scrutinizer-trace-pill" data-pill="top-10">Top 10 Slowest</button>';
 		html += '<button type="button" class="scrutinizer-trace-pill" data-pill="db-heavy">DB Heavy (&gt;10)</button>';
 		html += '<button type="button" class="scrutinizer-trace-pill" data-pill="http-calls">HTTP Calls</button>';
-		html += '<button type="button" class="scrutinizer-trace-pill" data-pill="ajax">AJAX</button>';
 
 		// Show context-aware pills only if matching data exists.
+		var hasAjax = false;
 		var hasCheckout = false;
 		var hasAuth = false;
-		for ( var i = 0; i < traceEntries.length && ( ! hasCheckout || ! hasAuth ); i++ ) {
+		for ( var i = 0; i < traceEntries.length && ( ! hasAjax || ! hasCheckout || ! hasAuth ); i++ ) {
 			var h = traceEntries[ i ]._hook;
+			if ( ! hasAjax && ( h.indexOf( 'wp_ajax_' ) === 0 || h.indexOf( 'wp_ajax_nopriv_' ) === 0 ) ) { hasAjax = true; }
 			if ( ! hasCheckout && h.indexOf( 'woocommerce_checkout' ) !== -1 ) { hasCheckout = true; }
 			if ( ! hasAuth && ( h.indexOf( 'wp_authenticate' ) !== -1 || h.indexOf( 'login_' ) === 0 || h.indexOf( 'auth_cookie' ) !== -1 ) ) { hasAuth = true; }
+		}
+		if ( hasAjax ) {
+			html += '<button type="button" class="scrutinizer-trace-pill" data-pill="ajax">AJAX</button>';
 		}
 		if ( hasCheckout ) {
 			html += '<button type="button" class="scrutinizer-trace-pill" data-pill="checkout">Checkout</button>';
