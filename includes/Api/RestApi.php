@@ -185,24 +185,50 @@ class RestApi {
 	}
 
 	/**
-	 * Get client IP, respecting common proxy headers.
+	 * Get the client IP for the access log.
+	 *
+	 * REMOTE_ADDR is the only address a client cannot forge. Proxy headers
+	 * (X-Forwarded-For, CF-Connecting-IP, X-Real-IP) are trivially spoofable
+	 * unless the site genuinely sits behind a trusted proxy that overwrites
+	 * them — and a spoofed value would poison the audit log. So we use
+	 * REMOTE_ADDR by default and only consult proxy headers when the site
+	 * opts in via the `scrutinizer_trust_proxy_headers` filter.
 	 *
 	 * @return string
 	 */
 	private static function get_client_ip() {
-		$headers = array( 'HTTP_CF_CONNECTING_IP', 'HTTP_X_FORWARDED_FOR', 'HTTP_X_REAL_IP', 'REMOTE_ADDR' );
-		foreach ( $headers as $header ) {
-			if ( ! empty( $_SERVER[ $header ] ) ) {
-				$ip = sanitize_text_field( wp_unslash( $_SERVER[ $header ] ) );
-				// X-Forwarded-For can be comma-separated; take the first.
-				if ( strpos( $ip, ',' ) !== false ) {
-					$ip = trim( explode( ',', $ip )[0] );
-				}
-				if ( filter_var( $ip, FILTER_VALIDATE_IP ) ) {
-					return $ip;
+		/**
+		 * Whether to trust forwarded-for proxy headers for the access log.
+		 *
+		 * Enable only on sites behind a proxy/CDN that reliably sets these
+		 * headers; otherwise clients can spoof the logged IP.
+		 *
+		 * @param bool $trust Default false.
+		 */
+		if ( apply_filters( 'scrutinizer_trust_proxy_headers', false ) ) {
+			$headers = array( 'HTTP_CF_CONNECTING_IP', 'HTTP_X_FORWARDED_FOR', 'HTTP_X_REAL_IP', 'REMOTE_ADDR' );
+			foreach ( $headers as $header ) {
+				if ( ! empty( $_SERVER[ $header ] ) ) {
+					$ip = sanitize_text_field( wp_unslash( $_SERVER[ $header ] ) );
+					// X-Forwarded-For can be comma-separated; take the first.
+					if ( strpos( $ip, ',' ) !== false ) {
+						$ip = trim( explode( ',', $ip )[0] );
+					}
+					if ( filter_var( $ip, FILTER_VALIDATE_IP ) ) {
+						return $ip;
+					}
 				}
 			}
+			return 'unknown';
 		}
+
+		if ( ! empty( $_SERVER['REMOTE_ADDR'] ) ) {
+			$ip = sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
+			if ( filter_var( $ip, FILTER_VALIDATE_IP ) ) {
+				return $ip;
+			}
+		}
+
 		return 'unknown';
 	}
 
