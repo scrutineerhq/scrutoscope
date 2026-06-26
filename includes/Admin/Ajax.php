@@ -966,7 +966,7 @@ class Ajax {
 		// The prompt endpoint stays authenticated to prevent fingerprinting.
 		$username       = wp_get_current_user()->user_login;
 		$prompt_content = \Scrutinizer\Api\Prompt::build();
-		$prompt = sprintf(
+		$prompt         = sprintf(
 			"The following is the Scrutineer Performance Diagnostics API contract for my WordPress site. Use these credentials to authenticate all API calls:\n\nUsername: %s\nPassword: %s\n\n---\n\n%s",
 			$username,
 			$result['password'],
