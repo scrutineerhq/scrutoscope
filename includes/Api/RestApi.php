@@ -226,11 +226,12 @@ class RestApi {
 			return get_option( 'scrutinizer_api_log', array() );
 		}
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$rows = $wpdb->get_results(
 			$wpdb->prepare( "SELECT endpoint, ip, user_agent, user_id, created_at AS timestamp FROM {$table} ORDER BY id DESC LIMIT %d", $limit ),
 			ARRAY_A
 		);
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
 		return is_array( $rows ) ? $rows : array();
 	}
@@ -430,10 +431,10 @@ class RestApi {
 	 * Content-Type: text/plain, echo the raw data instead of letting
 	 * WP_REST_Server::serve_request() JSON-encode it.
 	 *
-	 * @param bool             $served   Whether the request has already been served.
+	 * @param bool              $served  Whether the request has already been served.
 	 * @param \WP_REST_Response $result  Response object.
-	 * @param \WP_REST_Request $request  Request object.
-	 * @param \WP_REST_Server  $server   Server instance.
+	 * @param \WP_REST_Request  $request Request object.
+	 * @param \WP_REST_Server   $server  Server instance.
 	 * @return bool
 	 */
 	public static function serve_text_plain( $served, $result, $request, $server ) {
