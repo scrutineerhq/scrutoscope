@@ -5,6 +5,27 @@ All notable changes to Scrutinizer will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2026-06-26
+
+### Fixed
+
+- `handle_prompt` AJAX handler now returns proper JSON response instead of raw text.
+- API audit log table created on activation (was missing for fresh installs).
+- Cron schedule registration runs only once per lifecycle instead of on every admin page load.
+- WCAG contrast ratios for muted text and inactive tab labels.
+- Timeline milestone labels no longer clip at container edges.
+- Query density strip alignment when zoomed.
+- Share payload field mapping for relay viewer compatibility.
+- Duplicate sort click handlers on History and Cron tabs.
+
+### Improved
+
+- Shared reports ledger with revocable links and expiry tracking.
+- Profile TTL controls: configurable 7, 14, or 30 day retention (or never). Countdown badges on profile cards.
+- Pinned and shared profiles are exempt from TTL cleanup.
+- Queries pill labels are context-aware (show count when expanded, "Queries" when collapsed).
+- Clean uninstall removes all database tables, options, cron hooks, and application passwords.
+
 ## [1.0.0] - 2026-06-25
 
 ### Added
@@ -44,4 +65,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **WordPress native** — Standard admin card patterns, semantic borders, WP color palette. No dark custom themes.
 - **Privacy by design** — SQL queries sanitized with literal stripping. No telemetry. No external calls except opt-in encrypted sharing.
 
+[1.0.1]: https://github.com/scrutineerhq/scrutinizer/releases/tag/v1.0.1
 [1.0.0]: https://github.com/scrutineerhq/scrutinizer/releases/tag/v1.0.0
