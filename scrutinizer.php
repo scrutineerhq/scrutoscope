@@ -3,7 +3,7 @@
  * Plugin Name:       Scrutinizer
  * Plugin URI:        https://scrutineer.dev/scrutinizer
  * Description:       WordPress Performance Profiler — See where your server request duration is spent.
-  * Version:           1.0.1
+ * Version:           1.0.1
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            The Scrutineer Project

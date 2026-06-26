@@ -491,15 +491,21 @@ class Storage {
 
 			// Exempt shared profiles — their data is referenced by relay links.
 			$shared_reports = get_option( 'scrutinizer_shared_reports', array() );
-			$shared_ids     = array_filter( array_map( function ( $r ) {
-				return isset( $r['profile_id'] ) ? (int) $r['profile_id'] : 0;
-			}, $shared_reports ) );
+			$shared_ids     = array_filter(
+				array_map(
+					function ( $r ) {
+						return isset( $r['profile_id'] ) ? (int) $r['profile_id'] : 0;
+					},
+					$shared_reports
+				)
+			);
 
 			$exclude_sql = '';
 			if ( ! empty( $shared_ids ) ) {
 				$placeholders = implode( ',', array_fill( 0, count( $shared_ids ), '%d' ) );
-				// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
 				$exclude_sql = $wpdb->prepare( " AND id NOT IN ({$placeholders})", $shared_ids );
+				// phpcs:enable WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
 			}
 
 			// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
