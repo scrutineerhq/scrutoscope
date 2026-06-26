@@ -3049,13 +3049,14 @@
 .scrutinizer-settings-view > h2 {
 	font-size: 18px;
 	font-weight: 600;
-	margin: 16px 0 20px;
+	margin: 4px 0 20px;
 }
 
 .scrutinizer-settings-grid {
 	display: grid;
 	grid-template-columns: 1fr;
 	gap: 16px;
+	align-items: start;
 }
 
 @media ( min-width: 1200px ) {
@@ -3079,9 +3080,11 @@
 	margin: 0 0 16px;
 	padding: 0 0 12px;
 	border-bottom: 1px solid #f0f0f1;
-	font-size: 14px;
+	font-size: 15px;
 	font-weight: 600;
 	color: #1d2327;
+	text-transform: uppercase;
+	letter-spacing: 0.02em;
 }
 
 .scrutinizer-settings-card .scrutinizer-status-card {
@@ -3109,7 +3112,9 @@
 .scrutinizer-settings-card .scrutinizer-proxy-controls {
 	margin: 0;
 	padding: 16px 0 0;
+	border: none;
 	border-top: 1px solid #f0f0f1;
+	background: none;
 }
 
 .scrutinizer-settings-card h4 {
@@ -3191,9 +3196,13 @@
 
 .scrutinizer-overhead-note {
 	margin: 16px 0 0;
+	padding: 10px 14px;
 	font-size: 12px;
 	color: #646970;
 	font-style: italic;
+	background: #f6f7f7;
+	border-left: 3px solid #dcdcde;
+	border-radius: 2px;
 }
 
 /* ------------------------------------------------------------------ */
@@ -3582,5 +3591,6 @@ details.scrutinizer-term > .scrutinizer-term-explain {
 }
 
 .scrutinizer-save-filters {
-	display: inline-block;
+	display: block;
+	margin-top: 8px;
 }

@@ -934,15 +934,16 @@
 		html += '<label style="margin-top:12px;">Exclude paths <span class="scrutinizer-label-hint">(one per line, * wildcard)</span></label>';
 		html += '<textarea id="scrutinizer-exclude-paths" rows="3" class="scrutinizer-exclude-textarea" placeholder="/wp-admin/*&#10;/wp-json/*">' + esc( excludeVal ) + '</textarea>';
 		html += '<button type="button" class="button scrutinizer-save-filters" id="scrutinizer-save-filters">Save filters</button>';
+
+		html += '<label class="scrutinizer-toggle-label" style="margin-top:16px;">';
+		html += '<input type="checkbox" id="scrutinizer-only-success"' + ( scrutinizerAdmin.onlySuccessful ? ' checked' : '' ) + '> ';
+		html += 'Only capture successful requests (HTTP 200)</label>';
 		html += '</div>';
 
 		html += '<p class="scrutinizer-overhead-note">Non-profiled requests add under 2 ms. Profiled requests include full hook instrumentation and trace storage. Unattributed time in each profile includes this cost.</p>';
 		if ( currentRate >= 50 ) {
 			html += '<p class="scrutinizer-overhead-note" style="color:#d63638;font-weight:500;">\u26a0 High capture rate. Each profile generates 2\u201310 MB of trace data. Not recommended for production sites or servers with limited disk/memory.</p>';
 		}
-		html += '<label class="scrutinizer-toggle-label" style="margin-top:16px;">';
-		html += '<input type="checkbox" id="scrutinizer-only-success"' + ( scrutinizerAdmin.onlySuccessful ? ' checked' : '' ) + '> ';
-		html += 'Only capture successful requests (HTTP 200)</label>';
 		html += '</div>';
 
 		$( '#scrutinizer-controls' ).after( html );
@@ -1171,6 +1172,7 @@
 	var profilesLoaded = false;
 
 	function showHomeView() {
+		$( '.wrap > h1' ).first().show();
 		$( '#scrutinizer-home' ).show();
 		$( '#scrutinizer-capture-flow' ).hide();
 		$( '#scrutinizer-results' ).hide();
@@ -1220,6 +1222,7 @@
 		$( '#scrutinizer-compare-view' ).hide();
 		$( '#scrutinizer-activation' ).hide();
 		$( '#scrutinizer-api-view' ).hide();
+		$( '.wrap > h1' ).first().hide();
 		$( '#scrutinizer-settings-view' ).show();
 		currentView = 'settings';
 	}
