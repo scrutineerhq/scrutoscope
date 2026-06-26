@@ -281,6 +281,11 @@
 			showCaptureFlow();
 		} );
 
+		$( document ).on( 'click', '#scrutinizer-home-link', function( e ) {
+			e.preventDefault();
+			showHomeView();
+		} );
+
 		$( document ).on( 'click', '#scrutinizer-home-profiles', function() {
 			showProfilesView();
 		} );
@@ -1033,6 +1038,12 @@
 		$( '#scrutinizer-results' ).hide();
 		$( '#scrutinizer-top-tabs' ).hide();
 		$( '#scrutinizer-detail' ).hide();
+		$( '#scrutinizer-route-detail' ).hide();
+		$( '#scrutinizer-history-view' ).hide();
+		$( '#scrutinizer-compare-view' ).hide();
+		$( '#scrutinizer-activation' ).hide();
+		$( '#scrutinizer-api-view' ).hide();
+		currentView = 'home';
 	}
 
 	function showCaptureFlow() {
@@ -1364,7 +1375,7 @@
 		$( '#scrutinizer-api-view' ).hide();
 		$( '.scrutinizer-top-tab' ).removeClass( 'active' );
 		$( '.scrutinizer-top-tab[data-top-tab="routes"]' ).addClass( 'active' );
-		renderGroupedTable( groupedData );
+		fetchGrouped();
 	}
 
 	/* ------------------------------------------------------------------ */
@@ -1694,8 +1705,7 @@
 		if ( queries.length > 0 ) {
 			html += '<div class="scrutinizer-tab-content" id="scrutinizer-tab-queries" style="display:none">';
 			html += renderQueriesTable( queries );
-			html += '</div>'; // query-density
-			html += '</div>'; // density-wrap
+			html += '</div>';
 		}
 
 		// Tab: HTTP Calls.
@@ -3610,11 +3620,13 @@
 
 	function showDetailView() {
 		currentView = 'detail';
+		$( '#scrutinizer-home' ).hide();
 		$( '#scrutinizer-results' ).hide();
 		$( '#scrutinizer-route-detail' ).hide();
 		$( '#scrutinizer-history-view' ).hide();
 		$( '#scrutinizer-compare-view' ).remove();
 		$( '#scrutinizer-activation' ).hide();
+		$( '#scrutinizer-api-view' ).hide();
 		$( '#scrutinizer-detail' ).show();
 
 		// Adjust back button based on where we came from.
@@ -5435,7 +5447,7 @@
 					html += '<input type="text" readonly value="' + esc( shareUrl ) + '" id="scrutinizer-share-url" />';
 					html += '<button type="button" class="button" id="scrutinizer-share-copy">Copy</button>';
 					html += '</div>';
-					html += '<p class="description">Expires: ' + esc( resp.expires_at ) + '</p>';
+					html += '<p class="description">Expires: ' + esc( new Date( resp.expires_at ).toLocaleString() ) + '</p>';
 					html += '<button type="button" class="button button-link scrutinizer-revoke-link" id="scrutinizer-share-revoke" data-id="' + esc( resp.id ) + '" data-token="' + esc( resp.revoke_token ) + '">';
 					html += '<span class="dashicons dashicons-dismiss"></span> Revoke</button>';
 					html += '</div>';
