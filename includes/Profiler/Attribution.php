@@ -367,7 +367,7 @@ class Attribution {
 		}
 
 		// Last resort: match root namespace against plugin directory names.
-		$root      = strtolower( $ns_parts[0] );
+		$root       = strtolower( $ns_parts[0] );
 		$plugin_dir = wp_normalize_path( WP_PLUGIN_DIR );
 		if ( is_dir( $plugin_dir . '/' . $root ) ) {
 			return array(
