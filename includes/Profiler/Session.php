@@ -61,11 +61,13 @@ class Session {
 
 		$session_id = wp_generate_uuid4();
 		$expires    = time() + self::ACTIVATION_TTL;
+		$user_id    = get_current_user_id();
 
 		$token = self::sign_token(
 			array(
 				'session_id' => $session_id,
 				'expires'    => $expires,
+				'user_id'    => $user_id,
 			)
 		);
 
@@ -74,6 +76,7 @@ class Session {
 				'scrutinizer_activate' => $token,
 				'scrutinizer_session'  => $session_id,
 				'scrutinizer_expires'  => $expires,
+				'scrutinizer_uid'      => $user_id,
 			),
 			$target_url
 		);
@@ -92,6 +95,7 @@ class Session {
 		$token      = sanitize_text_field( wp_unslash( $_GET['scrutinizer_activate'] ) );
 		$session_id = isset( $_GET['scrutinizer_session'] ) ? sanitize_text_field( wp_unslash( $_GET['scrutinizer_session'] ) ) : '';
 		$expires    = isset( $_GET['scrutinizer_expires'] ) ? absint( $_GET['scrutinizer_expires'] ) : 0;
+		$user_id    = isset( $_GET['scrutinizer_uid'] ) ? absint( $_GET['scrutinizer_uid'] ) : 0;
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 		// Validate expiry.
@@ -99,15 +103,23 @@ class Session {
 			return;
 		}
 
-		// Validate HMAC.
+		// Validate HMAC. The signed payload includes the issuing admin's user
+		// ID, so a token minted for one admin cannot be replayed under another.
 		$expected = self::sign_token(
 			array(
 				'session_id' => $session_id,
 				'expires'    => $expires,
+				'user_id'    => $user_id,
 			)
 		);
 
 		if ( ! hash_equals( $expected, $token ) ) {
+			return;
+		}
+
+		// The token is bound to the admin who created it — non-transferable.
+		// Reject if it isn't being redeemed by that same logged-in user.
+		if ( 0 === $user_id || get_current_user_id() !== $user_id ) {
 			return;
 		}
 
@@ -135,7 +147,7 @@ class Session {
 
 		// Redirect to a clean URL.
 		$clean_url = remove_query_arg(
-			array( 'scrutinizer_activate', 'scrutinizer_session', 'scrutinizer_expires' )
+			array( 'scrutinizer_activate', 'scrutinizer_session', 'scrutinizer_expires', 'scrutinizer_uid' )
 		);
 
 		wp_safe_redirect( $clean_url );
