@@ -30,6 +30,7 @@ class RestApi {
 	 */
 	public static function register() {
 		add_action( 'rest_api_init', array( __CLASS__, 'register_routes' ) );
+		add_filter( 'rest_pre_serve_request', array( __CLASS__, 'serve_text_plain' ), 10, 4 );
 	}
 
 	/**
@@ -142,29 +143,45 @@ class RestApi {
 	/**
 	 * Log an API access event.
 	 *
-	 * Stores the last 100 access events as a WP option.
+	 * Stores access events in a custom database table. Creates the
+	 * table on first use if it doesn't exist.
 	 *
 	 * @param string $endpoint  Endpoint path (e.g. '/v1/prompt').
 	 * @return void
 	 */
 	private static function log_access( $endpoint ) {
-		$log   = get_option( 'scrutinizer_api_log', array() );
-		$entry = array(
-			'endpoint'   => $endpoint,
-			'ip'         => self::get_client_ip(),
-			'user_agent' => isset( $_SERVER['HTTP_USER_AGENT'] ) ? substr( sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ), 0, 200 ) : '',
-			'user_id'    => get_current_user_id(),
-			'timestamp'  => gmdate( 'Y-m-d H:i:s' ),
+		global $wpdb;
+
+		self::maybe_create_log_table();
+
+		$table = $wpdb->prefix . 'scrutinizer_api_log';
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$wpdb->insert(
+			$table,
+			array(
+				'endpoint'   => $endpoint,
+				'ip'         => self::get_client_ip(),
+				'user_agent' => isset( $_SERVER['HTTP_USER_AGENT'] ) ? substr( sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ), 0, 200 ) : '',
+				'user_id'    => get_current_user_id(),
+				'created_at' => current_time( 'mysql' ),
+			),
+			array( '%s', '%s', '%s', '%d', '%s' )
 		);
 
-		$log[] = $entry;
-
-		// Keep last 100 entries.
-		if ( count( $log ) > 100 ) {
-			$log = array_slice( $log, -100 );
+		// Trim to last 500 entries to prevent unbounded growth.
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table}" );
+		if ( $count > 500 ) {
+			$cutoff_id = (int) $wpdb->get_var(
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$wpdb->prepare( "SELECT id FROM {$table} ORDER BY id DESC LIMIT 1 OFFSET %d", 500 )
+			);
+			if ( $cutoff_id > 0 ) {
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$wpdb->query( $wpdb->prepare( "DELETE FROM {$table} WHERE id <= %d", $cutoff_id ) );
+			}
 		}
-
-		update_option( 'scrutinizer_api_log', $log, false );
 	}
 
 	/**
@@ -192,10 +209,30 @@ class RestApi {
 	/**
 	 * Get the API access log.
 	 *
+	 * @param int $limit  Maximum entries to return.
 	 * @return array
 	 */
-	public static function get_access_log() {
-		return get_option( 'scrutinizer_api_log', array() );
+	public static function get_access_log( $limit = 100 ) {
+		global $wpdb;
+
+		$table = $wpdb->prefix . 'scrutinizer_api_log';
+
+		// Check if the table exists — return legacy option data during migration.
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$table_exists = $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM information_schema.TABLES WHERE table_schema = %s AND table_name = %s', DB_NAME, $table ) );
+
+		if ( ! $table_exists ) {
+			// Fall back to legacy option if table not yet created.
+			return get_option( 'scrutinizer_api_log', array() );
+		}
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results(
+			$wpdb->prepare( "SELECT endpoint, ip, user_agent, user_id, created_at AS timestamp FROM {$table} ORDER BY id DESC LIMIT %d", $limit ),
+			ARRAY_A
+		);
+
+		return is_array( $rows ) ? $rows : array();
 	}
 
 	/**
@@ -204,7 +241,76 @@ class RestApi {
 	 * @return void
 	 */
 	public static function clear_access_log() {
+		global $wpdb;
+
+		$table = $wpdb->prefix . 'scrutinizer_api_log';
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$wpdb->query( "TRUNCATE TABLE {$table}" );
+
+		// Also clean up legacy option if it exists.
 		delete_option( 'scrutinizer_api_log' );
+	}
+
+	/**
+	 * Create the API log table if it doesn't exist.
+	 *
+	 * Uses a static flag to avoid repeated checks within a request.
+	 */
+	private static function maybe_create_log_table() {
+		static $checked = false;
+
+		if ( $checked ) {
+			return;
+		}
+
+		$checked = true;
+
+		global $wpdb;
+
+		$table   = $wpdb->prefix . 'scrutinizer_api_log';
+		$charset = $wpdb->get_charset_collate();
+
+		// Quick existence check — avoid dbDelta overhead on every request.
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$exists = $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM information_schema.TABLES WHERE table_schema = %s AND table_name = %s', DB_NAME, $table ) );
+
+		if ( $exists ) {
+			return;
+		}
+
+		$sql = "CREATE TABLE {$table} (
+			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+			endpoint varchar(100) NOT NULL DEFAULT '',
+			ip varchar(45) NOT NULL DEFAULT '',
+			user_agent varchar(200) NOT NULL DEFAULT '',
+			user_id bigint(20) unsigned NOT NULL DEFAULT 0,
+			created_at datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+			PRIMARY KEY  (id),
+			KEY created_at (created_at)
+		) {$charset};";
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+		dbDelta( $sql );
+
+		// Migrate legacy option data into the table.
+		$legacy = get_option( 'scrutinizer_api_log', array() );
+		if ( ! empty( $legacy ) && is_array( $legacy ) ) {
+			foreach ( $legacy as $entry ) {
+				$wpdb->insert(
+					$table,
+					array(
+						'endpoint'   => isset( $entry['endpoint'] ) ? $entry['endpoint'] : '',
+						'ip'         => isset( $entry['ip'] ) ? $entry['ip'] : '',
+						'user_agent' => isset( $entry['user_agent'] ) ? $entry['user_agent'] : '',
+						'user_id'    => isset( $entry['user_id'] ) ? (int) $entry['user_id'] : 0,
+						'created_at' => isset( $entry['timestamp'] ) ? $entry['timestamp'] : current_time( 'mysql' ),
+					),
+					array( '%s', '%s', '%s', '%d', '%s' )
+				);
+			}
+			delete_option( 'scrutinizer_api_log' );
+		}
 	}
 
 	/**
@@ -300,20 +406,60 @@ class RestApi {
 	/**
 	 * Handle GET /v1/prompt.
 	 *
-	 * Returns raw text/plain — not JSON-wrapped.
+	 * Returns the prompt as text/plain. Uses rest_pre_serve_request
+	 * to bypass JSON encoding while staying inside the REST framework.
 	 *
 	 * @param \WP_REST_Request $request  Request object.
-	 * @return void
+	 * @return \WP_REST_Response
 	 */
 	public static function handle_prompt( $request ) {
 		self::log_access( '/v1/prompt' );
 		$prompt = Prompt::build();
 
-		// Bypass WP REST JSON encoding — send raw text.
-		header( 'Content-Type: text/plain; charset=utf-8' );
-		header( 'Cache-Control: private, max-age=3600' );
-		echo $prompt;
-		exit;
+		$response = new \WP_REST_Response( $prompt, 200 );
+		$response->header( 'Content-Type', 'text/plain; charset=utf-8' );
+		$response->header( 'Cache-Control', 'private, max-age=3600' );
+
+		return $response;
+	}
+
+	/**
+	 * Serve text/plain responses without JSON encoding.
+	 *
+	 * Hooked to `rest_pre_serve_request`. When a response carries
+	 * Content-Type: text/plain, echo the raw data instead of letting
+	 * WP_REST_Server::serve_request() JSON-encode it.
+	 *
+	 * @param bool             $served   Whether the request has already been served.
+	 * @param \WP_REST_Response $result  Response object.
+	 * @param \WP_REST_Request $request  Request object.
+	 * @param \WP_REST_Server  $server   Server instance.
+	 * @return bool
+	 */
+	public static function serve_text_plain( $served, $result, $request, $server ) {
+		if ( $served ) {
+			return $served;
+		}
+
+		// Only intercept our prompt endpoint.
+		$route = $request->get_route();
+		if ( '/scrutinizer/v1/prompt' !== $route ) {
+			return $served;
+		}
+
+		// Send headers that WP_REST_Response collected.
+		$headers = $result->get_headers();
+		foreach ( $headers as $key => $value ) {
+			header( sprintf( '%s: %s', $key, $value ) );
+		}
+
+		// Send the status code.
+		status_header( $result->get_status() );
+
+		// Output raw text — no JSON wrapping.
+		echo $result->get_data();
+
+		return true;
 	}
 
 	/**

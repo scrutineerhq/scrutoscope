@@ -190,9 +190,12 @@ function scrutinizer_admin_init() {
 	\Scrutinizer\Api\RestApi::register();
 	\Scrutinizer\Api\ApplicationPassword::register();
 
-	// Ensure cleanup cron is scheduled (covers upgrades from older versions).
-	if ( ! wp_next_scheduled( 'scrutinizer_cleanup_profiles' ) ) {
-		wp_schedule_event( time(), 'twicedaily', 'scrutinizer_cleanup_profiles' );
+	// Ensure cleanup cron is scheduled — only check on admin pages
+	// to avoid a wp_next_scheduled() DB hit on every frontend load.
+	if ( is_admin() || wp_doing_cron() ) {
+		if ( ! wp_next_scheduled( 'scrutinizer_cleanup_profiles' ) ) {
+			wp_schedule_event( time(), 'twicedaily', 'scrutinizer_cleanup_profiles' );
+		}
 	}
 }
 add_action( 'plugins_loaded', 'scrutinizer_admin_init' );

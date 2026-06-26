@@ -58,9 +58,12 @@ class ApplicationPassword {
 		add_action( 'rest_api_init', array( __CLASS__, 'enforce_scope' ) );
 		add_action( 'scrutinizer_cleanup_passwords', array( __CLASS__, 'garbage_collect' ) );
 
-		// Schedule garbage collection if not already scheduled.
-		if ( ! wp_next_scheduled( 'scrutinizer_cleanup_passwords' ) ) {
-			wp_schedule_event( time(), 'hourly', 'scrutinizer_cleanup_passwords' );
+		// Schedule garbage collection — only check on admin/cron to avoid
+		// a wp_next_scheduled() DB query on every frontend page load.
+		if ( is_admin() || wp_doing_cron() ) {
+			if ( ! wp_next_scheduled( 'scrutinizer_cleanup_passwords' ) ) {
+				wp_schedule_event( time(), 'hourly', 'scrutinizer_cleanup_passwords' );
+			}
 		}
 	}
 
