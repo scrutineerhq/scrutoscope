@@ -5281,9 +5281,14 @@
 				shareData.enqueued_assets = profileData.enqueued_assets;
 			}
 
-			// Diagnostics: separate fetch if requested
 			if ( sections.indexOf( 'diagnostics' ) !== -1 ) {
-				$.get( scrutinizerAdmin.apiBase + '/v1/diagnostics', function( diag ) {
+				$.ajax( {
+					url: scrutinizerAdmin.apiBase + 'diagnostics',
+					method: 'GET',
+					beforeSend: function( xhr ) {
+						xhr.setRequestHeader( 'X-WP-Nonce', scrutinizerAdmin.restNonce );
+					}
+				} ).done( function( diag ) {
 					shareData.diagnostics = diag;
 					encryptAndUpload( shareData, ttlDays, burnAfterReading, passphrase );
 				} ).fail( function() {

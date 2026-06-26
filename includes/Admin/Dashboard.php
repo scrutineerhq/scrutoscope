@@ -100,6 +100,7 @@ class Dashboard {
 				'retentionDays'        => (int) get_option( 'scrutinizer_retention_days', 30 ),
 				'maxPerRoute'          => (int) get_option( 'scrutinizer_max_per_route', 100 ),
 				'apiBase'              => rest_url( 'scrutinizer/v1/' ),
+				'restNonce'            => wp_create_nonce( 'wp_rest' ),
 				'diagnosticsFields'    => \Scrutinizer\Api\Diagnostics::get_enabled_fields(),
 				'diagnosticsOptIn'     => \Scrutinizer\Api\Diagnostics::OPT_IN_FIELDS,
 				'queryProfiling'       => scrutinizer_query_profiling_state(),
