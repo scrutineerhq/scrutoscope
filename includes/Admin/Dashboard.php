@@ -193,7 +193,7 @@ class Dashboard {
 				<div class="scrutinizer-home-faq">
 					<div class="scrutinizer-faq-item">
 						<strong><?php echo esc_html__( 'Will this slow down my site?', 'scrutinizer' ); ?></strong>
-						<p><?php echo esc_html__( 'Instrumentation adds 2–5 ms per request. Background measurement samples a fraction of traffic. Your visitors will not notice.', 'scrutinizer' ); ?></p>
+						<p><?php echo esc_html__( 'Non-profiled requests add under 2 ms. Profiled requests record full traces. The sample rate controls how often the full cost is paid.', 'scrutinizer' ); ?></p>
 					</div>
 					<div class="scrutinizer-faq-item">
 						<strong><?php echo esc_html__( 'Does any data leave my server?', 'scrutinizer' ); ?></strong>
