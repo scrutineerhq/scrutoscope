@@ -5,15 +5,6 @@
 
 ---
 
-### WordPress.org slug is not pre-reservable
-
-**What happened:** Early planning assumed the slug `scrutinizer` could be claimed before submission. WordPress.org assigns plugin slugs at final submission time — there's no reservation system.
-
-**Don't:** Reference a specific wp.org slug in documentation, URLs, or code as though it's guaranteed.
-**Do:** Use the plugin's own domain (`scrutineer.dev/scrutinizer`) as the canonical Plugin URI. Accept that the wp.org slug may differ from the package name.
-
----
-
 ### Server Request Duration ≠ page load time
 
 **What happened (P3 era):** P3 reported "page load time" which users interpreted as what Chrome DevTools showed. The metric was actually server execution time. Support tickets followed.
@@ -92,15 +83,6 @@
 
 **Don't:** Use PHP 8.x features anywhere in the main plugin code. Don't assume CI catching it is enough — devs run code locally on newer PHP and miss the error.
 **Do:** Test on PHP 7.4 in CI. Use docblock `@var` annotations for type hints. Class properties use defaults and runtime checks, not language-level type enforcement.
-
----
-
-### Shared hosting doesn't have `hrtime()`... wait, it does
-
-**What happened:** Initial concern that cheap shared hosts would run PHP < 7.3 without `hrtime()`. Reality: the minimum WP requirement is moving up, and the plugin requires PHP 7.4+ already, which guarantees `hrtime()`.
-
-**Don't:** Add a `microtime()` fallback "just in case."
-**Do:** Require PHP 7.4+ (which the plugin already does). `hrtime(true)` is guaranteed available. One code path, no fallbacks.
 
 ---
 

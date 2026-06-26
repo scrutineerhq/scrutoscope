@@ -7,14 +7,14 @@ The rules that never bend. Every PR, every refactor, every "quick fix" must pass
 - **Brand:** The Scrutineer Project (scrutineer.dev)
 - **Plugin:** Scrutinizer — WordPress Performance Profiler
 - **Org handle:** @scrutineerhq (everywhere)
-- **License:** GPL-2.0-or-later. FOSS everything: plugin, relay, CLI, Studio.
+- **License:** GPL-2.0-or-later. FOSS everything: plugin, relay, CLI, viewer.
 - **WP-CLI namespace:** `wp scrutinizer`
 
 ## Product philosophy
 
 1. **Profiler only.** Scrutinizer measures. It does not recommend, remediate, or prescribe. Read-only until overwhelming evidence says otherwise.
 2. **Local-first.** No automatic network requests from install, activation, update, or usage. The admin drives every action.
-3. **No silent collection.** No background telemetry, no crowdsourced benchmarks, no opt-out-required data flows.
+3. **No silent collection.** No background telemetry, no opt-out-required data flows. Background profiling is local and admin-configured.
 4. **Attribution ≠ causality.** Never say a plugin "caused" a regression. Say the largest observed increase in exclusive callback time was "associated with" it.
 5. **Honest measurement.** Never call Server Request Duration "page load." Never hide unattributed time. Never merge browser timing into server duration.
 6. **No monetization.** No paid tiers, lead funnels, licensing telemetry, or upsell gates.
@@ -49,8 +49,9 @@ The rules that never bend. Every PR, every refactor, every "quick fix" must pass
 
 ## Overhead budget
 
+Targets — not yet benchmarked. Do not hardcode specific numbers (e.g. "2-5ms") until measured.
+
 | Mode | Target |
 |---|---|
-| Standard | < 2% |
-| Deep | < 10% |
-| Background sampling | Near-zero average |
+| Session profiling | < 2% |
+| Background profiling | Near-zero average |

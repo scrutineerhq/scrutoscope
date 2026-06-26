@@ -10,23 +10,34 @@ scrutineer/
 ├── .github/workflows/      # CI (phpcs + phpunit matrix)
 ├── assets/
 │   ├── css/dashboard.css   # Admin dashboard styles
-│   └── js/dashboard.js     # Admin dashboard behavior
+│   ├── js/dashboard.js     # Admin dashboard behavior
+│   └── mu-plugin/          # Early boot mu-plugin template
 ├── includes/
 │   ├── Admin/
-│   │   ├── Ajax.php        # AJAX handlers (start, stop, delete, share)
+│   │   ├── Ajax.php        # AJAX handlers (31 handlers)
 │   │   └── Dashboard.php   # wp-admin page registration and rendering
-│   ├── CLI/                # WP-CLI commands (M5)
-│   ├── Profiler/
-│   │   ├── Attribution.php # Callback → plugin/theme/core resolution
-│   │   ├── CallStack.php   # Nested callback tracking, exclusive/inclusive
-│   │   ├── Instrumentor.php# Hook callback wrapping
-│   │   ├── Profiler.php    # Orchestrator — init, collect, finalize
-│   │   ├── Report.php      # Profile → structured report, comparison, regression
-│   │   ├── Session.php     # Activation URL, cookie management, session lifecycle
-│   │   └── Storage.php     # wpdb table for captured profiles
-│   └── Share/              # Report sharing, capability links (M4)
+│   ├── Api/
+│   │   ├── ApplicationPassword.php # App password lifecycle
+│   │   ├── Diagnostics.php # Diagnostics data collector
+│   │   ├── Prompt.php      # /v1/prompt content
+│   │   ├── RestApi.php     # REST endpoint registration (6 endpoints)
+│   │   └── Sanitizer.php   # Output sanitization (paths, creds, PII)
+│   ├── Cli/
+│   │   └── Commands.php    # WP-CLI subcommands (7 commands)
+│   ├── Diagnostics/
+│   │   └── Cron.php        # Cron inventory and scheduling
+│   └── Profiler/
+│       ├── Attribution.php # Callback → plugin/theme/core resolution
+│       ├── CallStack.php   # Nested callback tracking, exclusive/inclusive
+│       ├── Instrumentor.php# Hook callback wrapping
+│       ├── Profiler.php    # Orchestrator — init, collect, finalize
+│       ├── QueryReducer.php# SQL → verb + table(s) reduction
+│       ├── Report.php      # Profile → structured report, comparison, regression
+│       ├── Session.php     # Activation URL, cookie management, session lifecycle
+│       └── Storage.php     # wpdb table for captured profiles
 ├── languages/              # i18n .pot/.po/.mo
 ├── tests/                  # PHPUnit tests
+├── uninstall.php           # Clean removal (table, options, cron, app passwords)
 ├── scrutinizer.php         # Plugin entry point, autoloader, bootstrap hooks
 ├── composer.json           # Dev dependencies: phpcs, phpunit
 └── phpcs.xml.dist          # WordPress-Extra coding standards
@@ -137,18 +148,26 @@ Single custom table: `{$wpdb->prefix}scrutinizer_profiles`
 
 ```sql
 CREATE TABLE {prefix}scrutinizer_profiles (
-    id            BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    session_id    VARCHAR(64)   NOT NULL,
-    request_uri   VARCHAR(2048) NOT NULL,
-    route_fingerprint VARCHAR(255) NOT NULL,
-    request_method VARCHAR(10)  NOT NULL,
-    duration_ns   BIGINT UNSIGNED NOT NULL,
-    profile_data  LONGTEXT      NOT NULL,  -- JSON
-    profile_mode  VARCHAR(20)   NOT NULL DEFAULT 'standard',
-    created_at    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_session (session_id),
-    INDEX idx_route (route_fingerprint),
-    INDEX idx_created (created_at)
+    id              BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    session_id      VARCHAR(64)     NOT NULL DEFAULT '',
+    profile_type    VARCHAR(20)     NOT NULL DEFAULT 'session',  -- 'session' or 'background'
+    request_url     TEXT            NOT NULL,
+    request_method  VARCHAR(10)     NOT NULL DEFAULT 'GET',
+    route_class     VARCHAR(50)     NOT NULL DEFAULT '',
+    route_key       VARCHAR(255)    NOT NULL DEFAULT '',
+    duration_ns     BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    user_role       VARCHAR(50)     NOT NULL DEFAULT 'anonymous',
+    profile_data    LONGTEXT        NOT NULL,  -- JSON
+    captured_at     DATETIME        NOT NULL DEFAULT '0000-00-00 00:00:00',
+    response_status SMALLINT UNSIGNED DEFAULT NULL,
+    is_pinned       TINYINT(1)      NOT NULL DEFAULT 0,
+    note            TEXT            NOT NULL,
+    tags            VARCHAR(255)    NOT NULL DEFAULT '',
+    KEY session_id (session_id),
+    KEY profile_type (profile_type),
+    KEY route_key (route_key),
+    KEY is_pinned (is_pinned),
+    KEY response_status (response_status)
 ) {$charset_collate};
 ```
 
@@ -206,7 +225,7 @@ Every handler: nonce check first, capability check second, work third. No except
 
 - **No `serialize()` / `unserialize()`** — JSON only for stored data. `unserialize` is a known PHP attack vector.
 - **No direct `$_POST` / `$_GET` without sanitization** — `sanitize_text_field()`, `absint()`, etc.
-- **No `file_get_contents()` for remote URLs** — use `wp_remote_get()` when network access is needed (M4+).
+- **No `file_get_contents()` for remote URLs** — use `wp_remote_get()` when network access is needed.
 - **No `eval()`, `call_user_func()` from user input** — callbacks come from WP hook registry only.
 - **No `wp_die()` in non-AJAX contexts** without checking `wp_doing_ajax()`.
 - **No hardcoded capability strings** — use constants if capability names might change.
@@ -243,9 +262,16 @@ Tests are PHPUnit, following WP test conventions:
 | Change profiling session flow | `includes/Profiler/Session.php` |
 | Modify storage schema | `includes/Profiler/Storage.php` |
 | Change report/comparison logic | `includes/Profiler/Report.php` |
-| Add WP-CLI command | `includes/CLI/` (M5) |
-| Add sharing feature | `includes/Share/` (M4) |
+| Query sanitization/reduction | `includes/Profiler/QueryReducer.php` |
+| Add WP-CLI command | `includes/Cli/Commands.php` |
+| REST API endpoints | `includes/Api/RestApi.php` |
+| API prompt content | `includes/Api/Prompt.php` |
+| Application password lifecycle | `includes/Api/ApplicationPassword.php` |
+| Output sanitization (paths/creds) | `includes/Api/Sanitizer.php` |
+| Diagnostics data collector | `includes/Api/Diagnostics.php` |
+| Cron inventory | `includes/Diagnostics/Cron.php` |
 | Plugin constants/bootstrap | `scrutinizer.php` |
+| Clean uninstall | `uninstall.php` |
 | Coding standards config | `phpcs.xml.dist` |
 | CI workflow | `.github/workflows/ci.yml` |
 
@@ -301,12 +327,12 @@ Store as float in option `scrutinizer_sample_rate`.
 ## Profile Retention (D31)
 
 Settings (in gear panel):
-- Keep profiles for: [30] days (0 = forever)
-- Max profiles per route: [100] (0 = unlimited)
+- Keep profiles for: [7] days (default, configurable 7/14/30/never)
 - Pinned profiles: always kept
+- Shared profiles: always kept (exempt from TTL)
 
 Cleanup runs on a twice-daily WP cron event (`scrutinizer_cleanup_profiles`).
-Option keys: `scrutinizer_retention_days`, `scrutinizer_max_per_route`.
+Option key: `scrutinizer_retention_days`.
 
 ## Route Labels (F9)
 

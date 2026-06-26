@@ -62,29 +62,21 @@
 - [ ] **Route-matched comparison, not URL-based.** Baselines match by route fingerprint (route class + frontend/admin + anon/auth + cache state), not raw URL string.
   - _Verify:_ `Report::match_baseline()` uses `Profiler::route_fingerprint()`, not `$_SERVER['REQUEST_URI']`.
 
-## Overhead
-
-- [ ] **Standard mode < 2% overhead target.** Instrumentation in Standard mode must not add more than 2% to request duration on typical sites.
-  - _Verify:_ Benchmark test with reference plugin set.
-
-- [ ] **Deep mode < 10% overhead target.** Deep mode captures more data but stays under 10%.
-  - _Verify:_ Benchmark test with reference plugin set.
-
 ## Infrastructure
 
 - [ ] **Shared reports expire and auto-delete.** R2 lifecycle rules remove artifacts at user-selected expiry (1-30 days). No indefinite storage.
   - _Verify:_ R2 lifecycle policy matches object key path prefix scheme.
 
-- [ ] **Report viewer never executes uploaded content.** Hosted viewer at scrutineer.dev renders structured data. No HTML injection, no script execution from report content.
+- [ ] **Report viewer never executes uploaded content.** Hosted viewer at scrutinizer.dev renders structured data. No HTML injection, no script execution from report content.
   - _Verify:_ Viewer uses escaped template rendering, not `innerHTML` or `eval`.
 
-- [ ] **Revocation is immediate.** Revoking a shared report blocks all future retrieval from scrutineer.dev. No cache window, no grace period.
+- [ ] **Revocation is immediate.** Revoking a shared report blocks all future retrieval from scrutinizer.dev. No cache window, no grace period.
   - _Verify:_ Revocation updates control plane and purges edge cache in same request.
 
 ## Build & Quality
 
 - [ ] **WordPress Coding Standards enforced.** `phpcs` with WordPress-Extra ruleset passes with zero errors.
-  - _Verify:_ `vendor/bin/phpcs --standard=phpcs.xml.dist` — zero errors.
+  - _Verify:_ CI runs `phpcs --standard=phpcs.xml.dist` on every push.
 
 - [ ] **PHP 7.4 compatibility.** No typed properties (PHP 7.4), no enums (PHP 8.1), no readonly (PHP 8.1), no intersection types (PHP 8.1), no fibers (PHP 8.1). Union types allowed only in PHP 8.0+ code paths with fallback.
   - _Verify:_ CI matrix includes PHP 7.4 and tests pass.

@@ -2,13 +2,13 @@
 
 > Volatile snapshot of the project. Updated after significant sessions.
 
-**Last updated:** 2026-06-25 (Phase D — timeline interactivity + UX panel complete)
+**Last updated:** 2026-06-26
 
 ## Version
 
 - Plugin: `1.0.0`
-- Phase: 1 (Scrutinizer — profiler only)
-- Milestone: Phase C share improvements deployed
+- PHP: 7.4+
+- WordPress: 6.0+
 
 ## Codebase
 
@@ -16,84 +16,50 @@
 |-----------|--------|
 | Plugin bootstrap (`scrutinizer.php`) | ✅ Functional |
 | Profiler engine (`includes/Profiler/`) | ✅ Complete |
-| API (`includes/Api/`) | ✅ Complete — 6 endpoints |
-| Admin UI (`includes/Admin/`) | ✅ Functional — 24 AJAX handlers |
+| API (`includes/Api/`) | ✅ Complete — 6 REST endpoints |
+| Admin UI (`includes/Admin/`) | ✅ Functional — 31 AJAX handlers |
 | CSS/JS (`assets/`) | ✅ Complete — lazy-load, trace explorer, share w/ gzip |
-| WP-CLI (`includes/CLI/`) | ✅ Complete — 7 commands |
+| WP-CLI (`includes/Cli/`) | ✅ Complete — 7 subcommands |
 | Share relay (`scrutinizer.dev`) | ✅ Deployed — CF Worker + R2 + KV |
-| Viewer (`scrutinizer.dev/view`) | ✅ File upload drop zone |
+| Viewer (`scrutinizer.dev/view`) | ✅ File upload + relay decryption |
+| Landing page (`scrutineer.dev`) | ✅ Deployed — CF Worker |
 | Tests (`tests/`) | ⬜ Empty |
-
-## What Changed This Session (June 25)
-
-### PHPCS / CI Fixes
-- Dashboard.php: embedded PHP tags moved to own lines, indentation fixed
-- Commands.php: added missing @param doc for mu_plugin()
-- CI: all green on latest push
-
-### GitHub Issues Templates
-- Bug report template (WP/PHP versions, steps to reproduce, environment)
-- Feature request template (problem, solution, alternatives)
-- Config: blank issues disabled, links to docs
-
-### Share Data Enrichment
-- Timeline: offset_ns/wall_ns → offset_ms/duration_ms, added source_type for viewer color-coding
-- Trace: parse raw IDs (callback@hook:priority) into structured objects with callback, phase, source, source_type, ms durations
-- HTTP Calls: flatten nested caller object to top-level caller string + source_type + source_name
-- Sources: include display name alongside slug
-
-### Relay Viewer Upgrade (code-ready, blocked on CF creds)
-- HTTP Calls tab: table with URL, Method, Status, Source, Duration
-- Autoloaded Options tab: total size card + option table
-- Enqueued Assets tab: scripts/styles tables with handles and sizes
-- HTTP Calls metric card in summary row
-- Timeline segment tooltips CSS (hover labels)
-- Brand color: wordmark uses Scrutineer teal (#15B7A4)
-
-### Landing Pages (code-ready, blocked on CF creds)
-- scrutineer.dev/ — Org hub, links to /scrutinizer, "v1.0.0 — Available now"
-- scrutineer.dev/scrutinizer — Product page with P3 badge, feature grid, trust grid
-- scrutineer.dev/about — "Why is this free?" community-gift page
-- ES module format fixed (export default instead of addEventListener)
-- Relay worker landing page updated with Scrutineer branding
-
-### Phase D: Timeline Interactivity + UX Panel Completion
-- Timeline zoom/pan: scroll-to-zoom (up to 40×), drag-to-pan, zoom buttons (+/-/reset)
-- Rich hover tooltips on timeline segments (callback, source, duration, share %)
-- Counter-scaled text labels (milestones, HTTP lollipops, axis ticks)
-- F10: SVG trend sparkline in route drilldown (last 50 profiles, stats row)
-- F15: `/v1/manifest` endpoint — public JSON API manifest for AI agent discovery
-- F17: API audit log — tracks endpoint, IP, user agent, timestamp (last 100 entries)
-- F18: Instrumentation overhead notice in background measurement controls
-
-### Phase C: Share Improvements
-- Gzip compression before AES-256-GCM encryption (CompressionStream API)
-- Relay migrated from KV to R2 for report storage (10MB limit, up from 2MB)
-- KV retained for rate limiting only
-- Viewer decompresses after decryption (DecompressionStream API)
-- File upload drop zone at scrutinizer.dev/view (D39)
-- Viewer branding: "Scrutinizer Report" with mono wordmark
-- Button states: Compressing → Encrypting → Uploading
 
 ## Milestones
 
 | Milestone | Status |
 |-----------|--------|
-| M0-M2 | ✅ Complete |
-| M2.5 — AI Agent API | ✅ Complete |
-| UX Panel | ✅ 18/18 implemented |
+| M1 — Core Instrumentation | ✅ Complete |
+| M2 — Deep Mode & Timeline | ✅ Complete |
+| M2.5 — AI Agent API & Sharing | ✅ Complete |
+| M3 — Compare Workflow | ✅ Complete |
+| M4 — Report Sharing | ✅ Complete (absorbed into M2.5) |
 | M5 — WP-CLI | ✅ Complete |
-| M4 — Report Sharing | ✅ Complete |
-| Soft Launch | ✅ Ready |
-| M3 — Compare Workflow | ⬜ Not started |
-| M6 — wp.org | ⬜ Not started |
+| M5.5 — Data Lifecycle & Share Mgmt | ✅ Complete |
+| UX Panel (18 findings) | ✅ 18/18 implemented |
+| M5.6 — Cron Profiling Integration | ⬜ Not started |
+| M6 — wp.org Submission | 🔧 In progress |
+
+## M6 Progress
+
+Done:
+- `uninstall.php` (clean teardown)
+- `handle_prompt` → proper REST response
+- API log → custom table
+- Cron registration optimization
+- Contrast/a11y fixes, milestone clipping, queries pill labels
+- Shared reports ledger + profile TTL (7d default, configurable)
+
+Remaining:
+- i18n (JS + PHP string wrapping, .pot generation)
+- a11y (ARIA tab pattern, focus trap, screen reader announcements)
+- Relay viewer CSP header
+- Tab active-state visual consistency
+- wp.org readme (readme.txt, screenshots, FAQ, changelog)
+- Security audit (activation flow, cookies, CSRF, nonces)
+- wp.org submission
 
 ## Next Up
 
-- M6 — wp.org prep (i18n, readme.txt, screenshots, security audit)
-- Shared hosting benchmarking
-- Bug cluster #1 timeline interactivity ✅ (shipped)
-- Bug cluster #9 agent UI ✅ (already shipped)
-- F13: contextual help tooltips for jargon terms (COULD)
-- LinkedIn launch post
-- Beta launch (Google Form + LinkedIn)
+- M6 completion (i18n, a11y, wp.org readme, security audit)
+- M5.6 cron profiling integration
