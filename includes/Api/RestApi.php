@@ -215,7 +215,7 @@ class RestApi {
 						$ip = trim( explode( ',', $ip )[0] );
 					}
 					if ( filter_var( $ip, FILTER_VALIDATE_IP ) ) {
-						return $ip;
+						return self::hash_ip( $ip );
 					}
 				}
 			}
@@ -225,11 +225,27 @@ class RestApi {
 		if ( ! empty( $_SERVER['REMOTE_ADDR'] ) ) {
 			$ip = sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
 			if ( filter_var( $ip, FILTER_VALIDATE_IP ) ) {
-				return $ip;
+				return self::hash_ip( $ip );
 			}
 		}
 
 		return 'unknown';
+	}
+
+	/**
+	 * Hash an IP address for GDPR-compliant storage.
+	 *
+	 * Uses HMAC-SHA256 with the site's AUTH_SALT as key, producing a
+	 * consistent pseudonymous identifier that can't be reversed to the
+	 * original IP. The same IP always produces the same hash on this
+	 * installation, so log entries remain groupable.
+	 *
+	 * @param string $ip Raw IP address.
+	 * @return string First 16 hex chars of HMAC-SHA256 digest.
+	 */
+	private static function hash_ip( $ip ) {
+		$key = defined( 'AUTH_SALT' ) ? AUTH_SALT : 'scrutinizer-fallback-salt';
+		return substr( hash_hmac( 'sha256', $ip, $key ), 0, 16 );
 	}
 
 	/**
