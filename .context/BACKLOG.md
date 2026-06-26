@@ -110,19 +110,19 @@ Sharing architecture redesigned June 23, 2026. Zero-knowledge relay pulled into 
 ## M5.5 — Data Lifecycle & Share Management
 
 ### Shared Reports Manager
-- [ ] Shared reports ledger — track all shared reports (relay URL, expiry, creation date, source profile ID)
-- [ ] "My Shared Reports" view in the API tab — list active shares with status, expiry countdown, and link
-- [ ] Revoke/expire shared reports from the ledger (DELETE to relay)
-- [ ] Re-copy share link from the ledger (link persists after initial share)
-- [ ] Share button should not hide the link — ledger is the durable record
+- [x] Shared reports ledger — track all shared reports (relay URL, expiry, creation date, source profile ID)
+- [x] "My Shared Reports" view in the API tab — list active shares with status, expiry countdown, and link
+- [x] Revoke/expire shared reports from the ledger (DELETE to relay)
+- [x] Re-copy share link from the ledger (link persists after initial share)
+- [x] Share button should not hide the link — ledger is the durable record
 
 ### Profile TTL & Expiry
-- [ ] Default 7-day TTL on profiles — auto-prune expired profiles via WP-Cron
-- [ ] Pinned profiles exempt from TTL (pin = keep forever)
-- [ ] Shared profiles exempt from TTL (or extend to match share expiry)
-- [ ] TTL indicator in History tab — show time remaining, highlight expiring-soon (e.g. <24h)
-- [ ] Settings: configurable default TTL (7d/14d/30d/never)
-- [ ] Clear visual language: pin to keep, share to export, everything else expires
+- [x] Default 7-day TTL on profiles — auto-prune expired profiles via WP-Cron
+- [x] Pinned profiles exempt from TTL (pin = keep forever)
+- [x] Shared profiles exempt from TTL (or extend to match share expiry)
+- [x] TTL indicator in History tab — show time remaining, highlight expiring-soon (e.g. <24h)
+- [x] Settings: configurable default TTL (7d/14d/30d/never)
+- [x] Clear visual language: pin to keep, share to export, everything else expires
 
 ## M5.6 — Cron Profiling Integration
 
@@ -140,9 +140,9 @@ Code review: `workspace/your_files/scrutineer-panel-review-june25.md`
 Visual review: `workspace/your_files/scrutineer-visual-review-june25.md`
 
 #### Critical (blocks launch)
-- [ ] `uninstall.php` — clean up DB tables (profiles, api_log), options, cron events, app passwords, transients
-- [ ] Delete empty `includes/Share/` directory
-- [ ] Delete duplicate `includes/CLI/` (correct path is `includes/Cli/`)
+- [x] `uninstall.php` — clean up DB tables (profiles, api_log), options, cron events, app passwords, transients
+- [x] Delete empty `includes/Share/` directory
+- [x] Delete duplicate `includes/CLI/` (correct path is `includes/Cli/`)
 
 #### High — i18n (1.0 requirement, decided June 25)
 - [ ] Wrap all JS dashboard strings in `wp.i18n.__()`
@@ -160,16 +160,16 @@ Visual review: `workspace/your_files/scrutineer-visual-review-june25.md`
 - [ ] (1.1) Screen reader announcements for dynamic content
 
 #### High — code fixes
-- [ ] `handle_prompt` — replace raw `echo`/`exit` with proper WP REST response
-- [ ] API access log — move from `wp_options` to new `wp_scrutinizer_api_log` table
+- [x] `handle_prompt` — replace raw `echo`/`exit` with proper WP REST response
+- [x] API access log — move from `wp_options` to new `wp_scrutinizer_api_log` table
 - [ ] Relay viewer — add Content-Security-Policy header
-- [ ] Cron registration — avoid re-registering on every `plugins_loaded`
+- [x] Cron registration — avoid re-registering on every `plugins_loaded`
 
 #### Visual polish
-- [ ] Timeline milestone label clipping at edges
+- [x] Timeline milestone label clipping at edges
 - [ ] Tab active-state consistency (blue underline vs dark border)
-- [ ] Queries tab "—" source pill → meaningful label ("Core" or "Unattributed")
-- [ ] Borderline contrast fixes on secondary text elements
+- [x] Queries tab "—" source pill → meaningful label ("Core" or "Unattributed")
+- [x] Borderline contrast fixes on secondary text elements
 
 #### Existing items
 - [ ] i18n .pot generation
