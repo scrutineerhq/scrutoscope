@@ -98,6 +98,8 @@ class Dashboard {
 				'backgroundSampleRate' => (float) get_option( 'scrutinizer_sample_rate', 10 ),
 				'onlySuccessful'       => (bool) get_option( 'scrutinizer_only_successful', false ),
 				'retentionDays'        => (int) get_option( 'scrutinizer_retention_days', 7 ),
+				'trustProxyHeaders'    => (bool) get_option( 'scrutinizer_trust_proxy_headers', false ),
+				'detectedProxyHeaders' => self::detect_proxy_headers(),
 				'maxPerRoute'          => (int) get_option( 'scrutinizer_max_per_route', 100 ),
 				'apiBase'              => rest_url( 'scrutinizer/v1/' ),
 				'restNonce'            => wp_create_nonce( 'wp_rest' ),
@@ -312,5 +314,29 @@ class Dashboard {
 			</div>
 		</div>
 		<?php
+	}
+
+	/**
+	 * Detect which proxy headers are present on the current request.
+	 *
+	 * Used to auto-recommend the trust-proxy-headers setting.
+	 *
+	 * @return array List of detected header names (empty if none).
+	 */
+	private static function detect_proxy_headers() {
+		$check   = array(
+			'HTTP_CF_CONNECTING_IP' => 'CF-Connecting-IP',
+			'HTTP_X_FORWARDED_FOR'  => 'X-Forwarded-For',
+			'HTTP_X_REAL_IP'        => 'X-Real-IP',
+		);
+		$found = array();
+
+		foreach ( $check as $server_key => $header_name ) {
+			if ( ! empty( $_SERVER[ $server_key ] ) ) {
+				$found[] = $header_name;
+			}
+		}
+
+		return $found;
 	}
 }

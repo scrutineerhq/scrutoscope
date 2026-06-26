@@ -205,7 +205,7 @@ class RestApi {
 		 *
 		 * @param bool $trust Default false.
 		 */
-		if ( apply_filters( 'scrutinizer_trust_proxy_headers', false ) ) {
+		if ( apply_filters( 'scrutinizer_trust_proxy_headers', (bool) get_option( 'scrutinizer_trust_proxy_headers', false ) ) ) {
 			$headers = array( 'HTTP_CF_CONNECTING_IP', 'HTTP_X_FORWARDED_FOR', 'HTTP_X_REAL_IP', 'REMOTE_ADDR' );
 			foreach ( $headers as $header ) {
 				if ( ! empty( $_SERVER[ $header ] ) ) {

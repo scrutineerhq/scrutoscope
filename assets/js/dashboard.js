@@ -176,6 +176,7 @@
 		initBackgroundControls();
 		initQueryProfilingControls();
 		initRetentionControls();
+		initProxySettings();
 	}
 
 	/* ------------------------------------------------------------------ */
@@ -1068,6 +1069,60 @@
 				if ( response.success ) {
 					scrutinizerAdmin.retentionDays = response.data.retention_days;
 					var $saved = $( '#scrutinizer-retention-saved' );
+					$saved.show();
+					setTimeout( function() {
+						$saved.fadeOut( 300 );
+					}, 2000 );
+				}
+			} );
+		} );
+	}
+
+	/* ------------------------------------------------------------------ */
+	/*  Proxy header trust settings                                        */
+	/* ------------------------------------------------------------------ */
+
+	function initProxySettings() {
+		var trusted  = !! scrutinizerAdmin.trustProxyHeaders;
+		var detected = scrutinizerAdmin.detectedProxyHeaders || [];
+
+		var html = '<div class="scrutinizer-proxy-controls">';
+		html += '<h3>Client IP Detection</h3>';
+		html += '<label class="scrutinizer-toggle-label">';
+		html += '<input type="checkbox" id="scrutinizer-proxy-toggle"' + ( trusted ? ' checked' : '' ) + '> ';
+		html += 'Trust proxy headers for client IP</label>';
+		html += '<p class="description">When enabled, Scrutineer reads headers like <code>X-Forwarded-For</code> or <code>CF-Connecting-IP</code> to identify the real client IP. Enable this only if your site is behind a reverse proxy or CDN (e.g. Cloudflare, Nginx, a load balancer). Otherwise, these headers can be spoofed by visitors.</p>';
+
+		// Auto-detect recommendation.
+		if ( detected.length > 0 ) {
+			html += '<p class="scrutinizer-proxy-recommendation scrutinizer-proxy-detected">';
+			html += '<span class="dashicons dashicons-yes-alt"></span> ';
+			html += 'Detected: <strong>' + esc( detected.join( ', ' ) ) + '</strong>. ';
+			html += 'Your site appears to be behind a proxy. <strong>Recommended: enable.</strong>';
+			html += '</p>';
+		} else {
+			html += '<p class="scrutinizer-proxy-recommendation scrutinizer-proxy-none">';
+			html += '<span class="dashicons dashicons-info-outline"></span> ';
+			html += 'No proxy headers detected on this request. ';
+			html += 'If you are not behind a proxy or CDN, <strong>leave this disabled.</strong>';
+			html += '</p>';
+		}
+
+		html += '<span id="scrutinizer-proxy-saved" class="scrutinizer-saved-notice" style="display:none;">\u2713 Saved</span>';
+		html += '</div>';
+
+		$( '.scrutinizer-retention-controls' ).after( html );
+
+		$( '#scrutinizer-proxy-toggle' ).on( 'change', function() {
+			var enabled = $( this ).is( ':checked' );
+			$.post( scrutinizerAdmin.ajaxUrl, {
+				action:  'scrutinizer_save_proxy_trust',
+				nonce:   scrutinizerAdmin.nonce,
+				enabled: enabled ? 1 : 0
+			}, function( response ) {
+				if ( response.success ) {
+					scrutinizerAdmin.trustProxyHeaders = response.data.enabled;
+					var $saved = $( '#scrutinizer-proxy-saved' );
 					$saved.show();
 					setTimeout( function() {
 						$saved.fadeOut( 300 );

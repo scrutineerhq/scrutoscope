@@ -3502,3 +3502,60 @@ details.scrutinizer-term > .scrutinizer-term-explain {
 .scrutinizer-retention-row select {
 	min-width: 140px;
 }
+
+/* Proxy header trust */
+.scrutinizer-proxy-controls {
+	margin-top: 20px;
+	padding-top: 16px;
+	border-top: 1px solid #f0f0f1;
+}
+
+.scrutinizer-proxy-controls h3 {
+	margin: 0 0 6px;
+}
+
+.scrutinizer-proxy-controls .description {
+	margin: 4px 0 12px;
+	color: #646970;
+}
+
+.scrutinizer-proxy-controls .description code {
+	font-size: 12px;
+	padding: 1px 5px;
+	background: #f0f0f1;
+	border-radius: 3px;
+}
+
+.scrutinizer-proxy-recommendation {
+	display: flex;
+	align-items: flex-start;
+	gap: 4px;
+	margin: 12px 0 4px;
+	padding: 8px 12px;
+	border-radius: 4px;
+	font-size: 13px;
+	line-height: 1.5;
+}
+
+.scrutinizer-proxy-recommendation .dashicons {
+	flex-shrink: 0;
+	margin-top: 1px;
+}
+
+.scrutinizer-proxy-detected {
+	background: #edf7ed;
+	color: #1e4620;
+}
+
+.scrutinizer-proxy-detected .dashicons {
+	color: #00a32a;
+}
+
+.scrutinizer-proxy-none {
+	background: #f0f0f1;
+	color: #50575e;
+}
+
+.scrutinizer-proxy-none .dashicons {
+	color: #646970;
+}
