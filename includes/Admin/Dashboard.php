@@ -149,7 +149,9 @@ class Dashboard {
 		?>
 		<div class="wrap" id="scrutinizer-dashboard">
 			<h1>
+				<a href="#" id="scrutinizer-home-link" style="text-decoration:none;color:inherit;">
 				<?php echo esc_html__( 'Scrutinizer', 'scrutinizer' ); ?>
+				</a>
 				<button type="button" class="scrutinizer-gear-toggle" title="<?php echo esc_attr__( 'Settings', 'scrutinizer' ); ?>" aria-label="<?php echo esc_attr__( 'Settings', 'scrutinizer' ); ?>" aria-expanded="false" aria-controls="scrutinizer-settings-panel">
 					<span class="dashicons dashicons-admin-generic"></span>
 				</button>
