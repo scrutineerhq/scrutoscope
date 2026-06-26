@@ -107,6 +107,16 @@ function scrutinizer_activate() {
 	if ( ! wp_next_scheduled( 'scrutinizer_cleanup_profiles' ) ) {
 		wp_schedule_event( time(), 'twicedaily', 'scrutinizer_cleanup_profiles' );
 	}
+
+	// Install early boot timer mu-plugin.
+	$source  = SCRUTINIZER_DIR . 'assets/mu-plugin/scrutinizer-early.php';
+	$mu_file = WPMU_PLUGIN_DIR . '/scrutinizer-early.php';
+	if ( file_exists( $source ) && ! file_exists( $mu_file ) ) {
+		if ( ! is_dir( WPMU_PLUGIN_DIR ) ) {
+			wp_mkdir_p( WPMU_PLUGIN_DIR );
+		}
+		copy( $source, $mu_file );
+	}
 }
 register_activation_hook( __FILE__, 'scrutinizer_activate' );
 
