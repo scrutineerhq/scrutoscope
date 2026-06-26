@@ -51,6 +51,7 @@ class Ajax {
 		add_action( 'wp_ajax_scrutinizer_delete_share', array( __CLASS__, 'delete_share' ) );
 		add_action( 'wp_ajax_scrutinizer_save_retention', array( __CLASS__, 'save_retention' ) );
 		add_action( 'wp_ajax_scrutinizer_save_proxy_trust', array( __CLASS__, 'save_proxy_trust' ) );
+		add_action( 'wp_ajax_scrutinizer_save_background_filters', array( __CLASS__, 'save_background_filters' ) );
 	}
 
 	/**
@@ -1234,6 +1235,44 @@ class Ajax {
 				'message' => $enabled
 					? __( 'Proxy headers will be trusted for client IP detection.', 'scrutinizer' )
 					: __( 'Only REMOTE_ADDR will be used for client IP detection.', 'scrutinizer' ),
+			)
+		);
+	}
+
+	/**
+	 * Save background profiling filter settings.
+	 */
+	public static function save_background_filters() {
+		check_ajax_referer( 'scrutinizer_nonce', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error(
+				array( 'message' => __( 'Permission denied.', 'scrutinizer' ) ),
+				403
+			);
+		}
+
+		$user_scope = isset( $_POST['user_scope'] ) ? sanitize_text_field( wp_unslash( $_POST['user_scope'] ) ) : 'all';
+		if ( ! in_array( $user_scope, array( 'all', 'anonymous', 'logged_in' ), true ) ) {
+			$user_scope = 'all';
+		}
+
+		$exclude_paths = '';
+		if ( isset( $_POST['exclude_paths'] ) ) {
+			// Sanitize each line individually, strip empty lines.
+			$raw   = sanitize_textarea_field( wp_unslash( $_POST['exclude_paths'] ) );
+			$lines = array_filter( array_map( 'trim', explode( "\n", $raw ) ) );
+			$exclude_paths = implode( "\n", $lines );
+		}
+
+		update_option( 'scrutinizer_user_scope', $user_scope, true );
+		update_option( 'scrutinizer_exclude_paths', $exclude_paths, true );
+
+		wp_send_json_success(
+			array(
+				'user_scope'    => $user_scope,
+				'exclude_paths' => $exclude_paths,
+				'message'       => __( 'Background profiling filters saved.', 'scrutinizer' ),
 			)
 		);
 	}

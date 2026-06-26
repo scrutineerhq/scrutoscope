@@ -171,6 +171,29 @@ class Profiler {
 			return false;
 		}
 
+		// User scope filter.
+		$user_scope = get_option( 'scrutinizer_user_scope', 'all' );
+		if ( 'anonymous' === $user_scope && is_user_logged_in() ) {
+			return false;
+		}
+		if ( 'logged_in' === $user_scope && ! is_user_logged_in() ) {
+			return false;
+		}
+
+		// Exclude paths filter.
+		$exclude_paths = get_option( 'scrutinizer_exclude_paths', '' );
+		if ( ! empty( $exclude_paths ) && isset( $_SERVER['REQUEST_URI'] ) ) {
+			$request_path = wp_parse_url( $_SERVER['REQUEST_URI'], PHP_URL_PATH );
+			if ( $request_path ) {
+				$patterns = array_filter( array_map( 'trim', explode( "\n", $exclude_paths ) ) );
+				foreach ( $patterns as $pattern ) {
+					if ( self::path_matches( $request_path, $pattern ) ) {
+						return false;
+					}
+				}
+			}
+		}
+
 		$rate = (float) get_option( 'scrutinizer_sample_rate', 10 );
 		$rate = max( 0.0, min( 100.0, $rate ) );
 
@@ -185,6 +208,22 @@ class Profiler {
 		// Random value 0–100000, rate scaled to same range.
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.rand_mt_rand
 		return mt_rand( 1, 100000 ) <= (int) round( $rate * 1000 );
+	}
+
+	/**
+	 * Check if a request path matches a simple wildcard pattern.
+	 *
+	 * Supports * as a wildcard for any number of characters.
+	 * Patterns are matched case-insensitively.
+	 *
+	 * @param string $path    The request path.
+	 * @param string $pattern The pattern to match (e.g. /wp-admin/*).
+	 * @return bool
+	 */
+	private static function path_matches( $path, $pattern ) {
+		// Escape regex special chars, then convert * to .* wildcard.
+		$regex = str_replace( '\*', '.*', preg_quote( $pattern, '#' ) );
+		return (bool) preg_match( '#^' . $regex . '$#i', $path );
 	}
 
 	/**

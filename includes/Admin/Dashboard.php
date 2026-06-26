@@ -100,6 +100,8 @@ class Dashboard {
 				'retentionDays'        => (int) get_option( 'scrutinizer_retention_days', 7 ),
 				'trustProxyHeaders'    => (bool) get_option( 'scrutinizer_trust_proxy_headers', false ),
 				'detectedProxyHeaders' => self::detect_proxy_headers(),
+				'userScope'            => get_option( 'scrutinizer_user_scope', 'all' ),
+				'excludePaths'         => get_option( 'scrutinizer_exclude_paths', '' ),
 				'maxPerRoute'          => (int) get_option( 'scrutinizer_max_per_route', 100 ),
 				'apiBase'              => rest_url( 'scrutinizer/v1/' ),
 				'restNonce'            => wp_create_nonce( 'wp_rest' ),

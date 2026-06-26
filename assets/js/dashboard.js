@@ -561,6 +561,27 @@
 			} );
 		} );
 
+		// Background profiling filters.
+		$( document ).on( 'click', '#scrutinizer-save-filters', function() {
+			var $btn = $( this );
+			$btn.prop( 'disabled', true ).text( 'Saving\u2026' );
+			$.post( scrutinizerAdmin.ajaxUrl, {
+				action:        'scrutinizer_save_background_filters',
+				nonce:         scrutinizerAdmin.nonce,
+				user_scope:    $( 'input[name="scrutinizer-user-scope"]:checked' ).val(),
+				exclude_paths: $( '#scrutinizer-exclude-paths' ).val()
+			}, function( response ) {
+				$btn.prop( 'disabled', false ).text( 'Save filters' );
+				if ( response.success ) {
+					showNotice( response.data.message, 'success' );
+					scrutinizerAdmin.userScope = response.data.user_scope;
+					scrutinizerAdmin.excludePaths = response.data.exclude_paths;
+				}
+			} ).fail( function() {
+				$btn.prop( 'disabled', false ).text( 'Save filters' );
+			} );
+		} );
+
 		// Route filter dropdown.
 		$( document ).on( 'change', '#scrutinizer-route-filter', function() {
 			routeFilter = $( this ).val();
@@ -906,6 +927,24 @@
 		html += '<span class="scrutinizer-rate-custom">or <input type="number" id="scrutinizer-custom-rate" min="0" max="100" step="0.1" value="' + currentRate + '">%</span>';
 		html += '</div>';
 		html += '</div>';
+
+		// User scope filter.
+		var scopeVal = scrutinizerAdmin.userScope || 'all';
+		html += '<div class="scrutinizer-filter-controls' + ( scrutinizerAdmin.backgroundEnabled ? '' : ' hidden' ) + '" id="scrutinizer-filter-group">';
+		html += '<label>Measure requests from</label>';
+		html += '<div class="scrutinizer-scope-options">';
+		html += '<label class="scrutinizer-radio-label"><input type="radio" name="scrutinizer-user-scope" value="all"' + ( scopeVal === 'all' ? ' checked' : '' ) + '> All users</label>';
+		html += '<label class="scrutinizer-radio-label"><input type="radio" name="scrutinizer-user-scope" value="anonymous"' + ( scopeVal === 'anonymous' ? ' checked' : '' ) + '> Anonymous visitors only</label>';
+		html += '<label class="scrutinizer-radio-label"><input type="radio" name="scrutinizer-user-scope" value="logged_in"' + ( scopeVal === 'logged_in' ? ' checked' : '' ) + '> Logged-in users only</label>';
+		html += '</div>';
+
+		// Exclude paths.
+		var excludeVal = scrutinizerAdmin.excludePaths || '';
+		html += '<label style="margin-top:12px;">Exclude paths <span class="scrutinizer-label-hint">(one per line, * wildcard)</span></label>';
+		html += '<textarea id="scrutinizer-exclude-paths" rows="3" class="scrutinizer-exclude-textarea" placeholder="/wp-admin/*&#10;/wp-json/*">' + esc( excludeVal ) + '</textarea>';
+		html += '<button type="button" class="button scrutinizer-save-filters" id="scrutinizer-save-filters">Save filters</button>';
+		html += '</div>';
+
 		html += '<p class="scrutinizer-overhead-note">Non-profiled requests add under 2 ms. Profiled requests include full hook instrumentation and trace storage. Unattributed time in each profile includes this cost.</p>';
 		if ( currentRate >= 50 ) {
 			html += '<p class="scrutinizer-overhead-note" style="color:#d63638;font-weight:500;">\u26a0 High capture rate. Each profile generates 2\u201310 MB of trace data. Not recommended for production sites or servers with limited disk/memory.</p>';
@@ -924,8 +963,10 @@
 
 		if ( enabled ) {
 			$( '#scrutinizer-rate-group' ).removeClass( 'hidden' );
+			$( '#scrutinizer-filter-group' ).removeClass( 'hidden' );
 		} else {
 			$( '#scrutinizer-rate-group' ).addClass( 'hidden' );
+			$( '#scrutinizer-filter-group' ).addClass( 'hidden' );
 		}
 
 		$.post( scrutinizerAdmin.ajaxUrl, {
