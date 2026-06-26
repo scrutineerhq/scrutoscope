@@ -2849,7 +2849,8 @@
 	align-items: center;
 	gap: 4px;
 	font-size: 13px;
-	padding: 4px 12px;
+	padding: 6px 12px !important;
+	line-height: 1;
 }
 
 .scrutinizer-revoke-link:hover {
@@ -2860,7 +2861,8 @@
 	font-size: 16px;
 	width: 16px;
 	height: 16px;
-	line-height: 16px;
+	line-height: 1;
+	vertical-align: middle;
 }
 
 /* Inline feedback for save/revoke (F11) */
