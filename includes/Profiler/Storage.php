@@ -565,6 +565,11 @@ class Storage {
 			$vals[]  = $args['route_key'];
 		}
 
+		if ( ! empty( $args['route_class'] ) ) {
+			$where[] = 'route_class = %s';
+			$vals[]  = $args['route_class'];
+		}
+
 		if ( ! empty( $args['tag'] ) ) {
 			$where[] = 'tags LIKE %s';
 			$vals[]  = '%' . $wpdb->esc_like( $args['tag'] ) . '%';

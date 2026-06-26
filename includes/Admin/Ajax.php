@@ -864,6 +864,9 @@ class Ajax {
 		if ( ! empty( $_GET['route_key'] ) ) {
 			$args['route_key'] = sanitize_text_field( wp_unslash( $_GET['route_key'] ) );
 		}
+		if ( ! empty( $_GET['route_class'] ) ) {
+			$args['route_class'] = sanitize_text_field( wp_unslash( $_GET['route_class'] ) );
+		}
 		if ( ! empty( $_GET['tag'] ) ) {
 			$args['tag'] = sanitize_text_field( wp_unslash( $_GET['tag'] ) );
 		}

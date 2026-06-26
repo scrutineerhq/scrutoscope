@@ -663,6 +663,7 @@
 
 		// History filters — reset to page 1 on any filter change.
 		$( document ).on( 'change', '#scrutinizer-history-route', function() { historyPage = 1; fetchHistory(); } );
+		$( document ).on( 'change', '#scrutinizer-history-type', function() { historyPage = 1; fetchHistory(); } );
 		$( document ).on( 'input', '#scrutinizer-history-tag', function() { historyPage = 1; debounceHistory(); } );
 		$( document ).on( 'change', '#scrutinizer-history-pinned', function() { historyPage = 1; fetchHistory(); } );
 		$( document ).on( 'change', '#scrutinizer-history-from, #scrutinizer-history-to', function() { historyPage = 1; fetchHistory(); } );
@@ -3188,6 +3189,7 @@
 		var srcMap   = buildSourceMap( sources );
 		var queryMap = buildQueryCountMap( queries );
 		var httpMap  = buildHttpCountMap( httpCalls );
+		var memMap   = buildMemoryDeltaMap( sources );
 		var entries  = [];
 
 		for ( var i = 0; i < rawTrace.length; i++ ) {
@@ -3207,6 +3209,9 @@
 				entry.http_count = httpMap.bySource[ srcInfo.slug ] || 0;
 			}
 
+			// Memory delta from sources per-callback data.
+			entry.mem_delta = memMap[ entry._callback ] || 0;
+
 			entries.push( entry );
 		}
 
@@ -3225,6 +3230,19 @@
 					name: src.name || src.slug || 'unknown',
 					slug: src.slug || ''
 				};
+			}
+		}
+		return map;
+	}
+
+	/** Build a map: callback_name to memory_delta (bytes) from sources per-callback data. */
+	function buildMemoryDeltaMap( sources ) {
+		var map = {};
+		for ( var i = 0; i < sources.length; i++ ) {
+			var cbs = sources[ i ].callbacks || [];
+			for ( var j = 0; j < cbs.length; j++ ) {
+				var cb = cbs[ j ];
+				map[ cb.callback ] = ( map[ cb.callback ] || 0 ) + ( cb.memory_delta || 0 );
 			}
 		}
 		return map;
@@ -3300,11 +3318,13 @@
 		var hasAjax = false;
 		var hasCheckout = false;
 		var hasAuth = false;
-		for ( var i = 0; i < traceEntries.length && ( ! hasAjax || ! hasCheckout || ! hasAuth ); i++ ) {
+		var hasMemHeavy = false;
+		for ( var i = 0; i < traceEntries.length && ( ! hasAjax || ! hasCheckout || ! hasAuth || ! hasMemHeavy ); i++ ) {
 			var h = traceEntries[ i ]._hook;
 			if ( ! hasAjax && ( h.indexOf( 'wp_ajax_' ) === 0 || h.indexOf( 'wp_ajax_nopriv_' ) === 0 ) ) { hasAjax = true; }
 			if ( ! hasCheckout && h.indexOf( 'woocommerce_checkout' ) !== -1 ) { hasCheckout = true; }
 			if ( ! hasAuth && ( h.indexOf( 'wp_authenticate' ) !== -1 || h.indexOf( 'login_' ) === 0 || h.indexOf( 'auth_cookie' ) !== -1 ) ) { hasAuth = true; }
+			if ( ! hasMemHeavy && Math.abs( traceEntries[ i ].mem_delta || 0 ) > 102400 ) { hasMemHeavy = true; }
 		}
 		if ( hasAjax ) {
 			html += '<button type="button" class="scrutinizer-trace-pill" data-pill="ajax">AJAX</button>';
@@ -3314,6 +3334,9 @@
 		}
 		if ( hasAuth ) {
 			html += '<button type="button" class="scrutinizer-trace-pill" data-pill="login">Login/Auth</button>';
+		}
+		if ( hasMemHeavy ) {
+			html += '<button type="button" class="scrutinizer-trace-pill" data-pill="mem-heavy">Memory Heavy</button>';
 		}
 
 		// Saved searches placeholder.
@@ -3460,6 +3483,10 @@
 					e._hook.indexOf( 'login_' ) === 0 ||
 					e._hook.indexOf( 'auth_cookie' ) !== -1;
 			} );
+		}
+		if ( activePills[ 'mem-heavy' ] ) {
+			var sorted = result.slice().sort( function( a, b ) { return Math.abs( b.mem_delta || 0 ) - Math.abs( a.mem_delta || 0 ); } );
+			result = sorted.slice( 0, 10 );
 		}
 
 		return result;
@@ -3797,6 +3824,16 @@
 		}
 		html += '</select>';
 
+		// Request type dropdown (route_class).
+		html += '<select id="scrutinizer-history-type">';
+		html += '<option value="">' + esc( scrutinizerAdmin.i18n.allTypes || 'All types' ) + '</option>';
+		html += '<option value="frontend">Frontend</option>';
+		html += '<option value="wp-admin">Admin</option>';
+		html += '<option value="admin-ajax">AJAX</option>';
+		html += '<option value="rest-api">REST API</option>';
+		html += '<option value="cron">Cron</option>';
+		html += '</select>';
+
 		// Tag filter.
 		html += '<input type="text" id="scrutinizer-history-tag" placeholder="' + esc( scrutinizerAdmin.i18n.filterByTag || 'Filter by tag…' ) + '" />';
 
@@ -3833,6 +3870,7 @@
 		};
 
 		var route = $( '#scrutinizer-history-route' ).val();
+		var type  = $( '#scrutinizer-history-type' ).val();
 		var tag   = $( '#scrutinizer-history-tag' ).val();
 		var pinned = $( '#scrutinizer-history-pinned' ).is( ':checked' );
 		var from  = $( '#scrutinizer-history-from' ).val();
@@ -3840,6 +3878,9 @@
 
 		if ( route ) {
 			params.route_key = route;
+		}
+		if ( type ) {
+			params.route_class = type;
 		}
 		if ( tag ) {
 			params.tag = tag;
