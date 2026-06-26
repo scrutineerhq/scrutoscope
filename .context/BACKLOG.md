@@ -97,10 +97,8 @@ Sharing architecture redesigned June 23, 2026. Zero-knowledge relay pulled into 
 - [x] Timeline segment tooltips with callback name and duration
 - [x] Share data enrichment: timeline ms conversion, trace parsing, HTTP calls flattening
 
-## M5 — External Diagnostics and WP-CLI
+## M5 — WP-CLI ✅ Complete
 
-- [ ] Yoke integration — on-demand external diagnostics panel
-- [ ] Attribution display — `via ns.lol ↗` / `via certs.lol ↗` links
 - [x] WP-CLI: `wp scrutinizer list` — list saved profiles with filters
 - [x] WP-CLI: `wp scrutinizer show <id>` — display profile detail
 - [x] WP-CLI: `wp scrutinizer delete <id>` — delete profile
