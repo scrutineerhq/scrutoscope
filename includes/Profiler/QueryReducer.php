@@ -32,7 +32,7 @@ class QueryReducer {
 	 *
 	 * @var array<string>
 	 */
-	private static $table_preceding = array( 'FROM', 'JOIN', 'INTO', 'UPDATE', 'TABLE' );
+	private static $table_preceding = array( 'FROM', 'JOIN', 'STRAIGHT_JOIN', 'INTO', 'UPDATE', 'TABLE' );
 
 	/**
 	 * SQL keywords that are NOT table names.
@@ -201,7 +201,7 @@ class QueryReducer {
 				$next       = $tokens[ $j ];
 				$next_upper = strtoupper( $next );
 
-				// Skip modifier keywords (INNER, LEFT, etc.).
+				// Skip modifier keywords (INNER, LEFT, OUTFILE, etc.).
 				if ( isset( self::$keyword_set[ $next_upper ] ) ) {
 					continue;
 				}
@@ -211,26 +211,102 @@ class QueryReducer {
 					break;
 				}
 
-				$table_name = self::strip_quotes( $next );
+				// Resolve a (possibly schema-qualified) table reference.
+				list( $table_name, $j ) = self::read_table_ref( $tokens, $len, $j );
 
-				// Skip value placeholders and numeric tokens.
-				if ( preg_match( '/^[%\d\'"]/', $table_name ) ) {
+				// Skip value placeholders, numbers, and @user variables.
+				if ( '' === $table_name || preg_match( '/^[%\d\'"@]/', $table_name ) ) {
 					break;
 				}
 
-				// Skip CTE aliases — not real tables.
-				if ( isset( $cte_names[ strtolower( $table_name ) ] ) ) {
-					$i = $j;
-					break;
+				if ( ! isset( $cte_names[ strtolower( $table_name ) ] ) ) {
+					$tables[] = $table_name;
+				}
+				$i = $j;
+
+				// Continue capturing comma-separated tables (FROM a, b, c),
+				// stepping over an optional alias after each (FROM a x, b y).
+				$pos = self::skip_alias( $tokens, $len, $i + 1 );
+				while ( $pos < $len && ',' === $tokens[ $pos ] ) {
+					$k = $pos + 1;
+					while ( $k < $len && isset( self::$keyword_set[ strtoupper( $tokens[ $k ] ) ] ) ) {
+						++$k;
+					}
+					if ( $k >= $len || '(' === $tokens[ $k ] ) {
+						break;
+					}
+					list( $next_table, $k ) = self::read_table_ref( $tokens, $len, $k );
+					if ( '' === $next_table || preg_match( '/^[%\d\'"@]/', $next_table ) ) {
+						break;
+					}
+					if ( ! isset( $cte_names[ strtolower( $next_table ) ] ) ) {
+						$tables[] = $next_table;
+					}
+					$i   = $k;
+					$pos = self::skip_alias( $tokens, $len, $i + 1 );
 				}
 
-				$tables[] = $table_name;
-				$i        = $j;
 				break;
 			}
 		}
 
 		return $tables;
+	}
+
+	/**
+	 * Resolve a table reference starting at $j, collapsing schema-qualified
+	 * names (db.table, `db`.`table`) to their trailing segment so the schema
+	 * name is dropped and the real table is kept.
+	 *
+	 * @param array<string> $tokens Token list.
+	 * @param int           $len    Token count.
+	 * @param int           $j      Index of the first identifier token.
+	 * @return array{0: string, 1: int} Unquoted table name and the end index.
+	 */
+	private static function read_table_ref( $tokens, $len, $j ) {
+		$name = self::strip_quotes( $tokens[ $j ] );
+		while ( isset( $tokens[ $j + 1 ] ) && '.' === $tokens[ $j + 1 ] && isset( $tokens[ $j + 2 ] ) ) {
+			$j   += 2;
+			$name = self::strip_quotes( $tokens[ $j ] );
+		}
+		return array( $name, $j );
+	}
+
+	/**
+	 * Step over an optional table alias ("AS x" or a bare "x") so a following
+	 * comma can be detected in old-style joins (FROM a x, b y).
+	 *
+	 * @param array<string> $tokens Token list.
+	 * @param int           $len    Token count.
+	 * @param int           $pos    Index just after a captured table.
+	 * @return int Index after the alias (unchanged when there is none).
+	 */
+	private static function skip_alias( $tokens, $len, $pos ) {
+		if ( $pos >= $len ) {
+			return $pos;
+		}
+		if ( 'AS' === strtoupper( $tokens[ $pos ] ) ) {
+			++$pos;
+			if ( $pos < $len && self::is_identifier_token( $tokens[ $pos ] ) ) {
+				++$pos;
+			}
+			return $pos;
+		}
+		if ( self::is_identifier_token( $tokens[ $pos ] )
+			&& ! isset( self::$keyword_set[ strtoupper( $tokens[ $pos ] ) ] ) ) {
+			++$pos;
+		}
+		return $pos;
+	}
+
+	/**
+	 * Whether a token begins an identifier (letter, underscore, or quote).
+	 *
+	 * @param string $tok Token.
+	 * @return bool
+	 */
+	private static function is_identifier_token( $tok ) {
+		return '' !== $tok && (bool) preg_match( '/^[A-Za-z_`\[]/', $tok );
 	}
 
 	/**
@@ -336,15 +412,34 @@ class QueryReducer {
 				continue;
 			}
 
-			// Structural punctuation — parentheses, commas, semicolons.
-			if ( '(' === $ch || ')' === $ch || ',' === $ch || ';' === $ch ) {
+			// Structural punctuation — parentheses, commas, semicolons, and the
+			// dot. The dot is kept as its own token so qualified identifiers
+			// (db.table) can be resolved to their trailing segment instead of
+			// being mistaken for "schema name + alias".
+			if ( '(' === $ch || ')' === $ch || ',' === $ch || ';' === $ch || '.' === $ch ) {
 				$tokens[] = $ch;
 				++$i;
 				continue;
 			}
 
+			// User / system variable (@var, @@global): collapse to a single
+			// token so it is recognized and skipped in table position
+			// (e.g. SELECT ... INTO @var) rather than leaking "var" as a table.
+			if ( '@' === $ch ) {
+				$start = $i;
+				++$i;
+				if ( $i < $len && '@' === $sql[ $i ] ) {
+					++$i;
+				}
+				while ( $i < $len && ( ctype_alnum( $sql[ $i ] ) || '_' === $sql[ $i ] ) ) {
+					++$i;
+				}
+				$tokens[] = substr( $sql, $start, $i - $start );
+				continue;
+			}
+
 			// Operators — discard.
-			if ( false !== strpos( '=<>!+-*/%&|^~.@', $ch ) ) {
+			if ( false !== strpos( '=<>!+-*/%&|^~', $ch ) ) {
 				++$i;
 				while ( $i < $len && false !== strpos( '=<>!', $sql[ $i ] ) ) {
 					++$i;
@@ -492,6 +587,11 @@ class QueryReducer {
 				'CHECK',
 				'REPAIR',
 				'TRUNCATE',
+				// SELECT ... INTO OUTFILE/DUMPFILE '<path>' — the keyword after
+				// INTO is not a table; skip it so the path is never treated as
+				// one.
+				'OUTFILE',
+				'DUMPFILE',
 			)
 		);
 	}
