@@ -17,17 +17,30 @@
   'use strict';
 
   /* ------------------------------------------------------------------ *
-   * Theme (fresh / default-light only — other schemes are explorations) *
+   * Themes. fresh = light (WP admin). dark = for a dark host (the relay   *
+   * viewer's dark mode). Picked per render via opts.scheme.              *
    * ------------------------------------------------------------------ */
-  var TH = {
-    cardBg: '#fff', cardBorder: '#c3c4c7', line: '#dcdcde', lineSoft: '#f0f0f1', shadow: '0 1px 1px rgba(0,0,0,.04)',
-    text: '#1d2327', sub: '#50575e', muted: '#787c82', faint: '#a7aaad', accent: '#2271b1', accentText: '#fff',
-    tabBar: '#fdfdfd', viewportBg: '#fbfbfc', viewportBorder: '#e6e7e8', laneLabel: '#b0b3b6', laneBorder: '#f0f0f1',
-    gridline: 'rgba(0,0,0,.04)', tick: '#909499', bandLabel: '#5d646d', btnBg: '#fff', btnText: '#50575e',
-    ctlBorder: '#c3c4c7', resetBg: '#f6f7f7', miniBg: '#f3f4f5', selHead: '#f6f7f7', swatchBorder: 'rgba(0,0,0,.08)',
-    unattrFill: '#eef0f3', hatch: '#c2c8d0', memStroke: '#7c3aed', memFill: 'rgba(124,58,237,0.13)',
-    readBg: 'rgba(34,113,177,.07)', queryBar: '#aeb4bd', queryStorm: '#475569'
+  var THEMES = {
+    fresh: {
+      cardBg: '#fff', cardBorder: '#c3c4c7', line: '#dcdcde', lineSoft: '#f0f0f1', shadow: '0 1px 1px rgba(0,0,0,.04)',
+      text: '#1d2327', sub: '#50575e', muted: '#787c82', faint: '#a7aaad', accent: '#2271b1', accentText: '#fff',
+      tabBar: '#fdfdfd', viewportBg: '#fbfbfc', viewportBorder: '#e6e7e8', laneLabel: '#b0b3b6', laneBorder: '#f0f0f1',
+      gridline: 'rgba(0,0,0,.04)', tick: '#909499', bandLabel: '#5d646d', btnBg: '#fff', btnText: '#50575e',
+      ctlBorder: '#c3c4c7', resetBg: '#f6f7f7', miniBg: '#f3f4f5', selHead: '#f6f7f7', swatchBorder: 'rgba(0,0,0,.08)',
+      unattrFill: '#eef0f3', hatch: '#c2c8d0', memStroke: '#7c3aed', memFill: 'rgba(124,58,237,0.13)',
+      readBg: 'rgba(34,113,177,.07)', queryBar: '#aeb4bd', queryStorm: '#475569'
+    },
+    dark: {
+      cardBg: '#161b22', cardBorder: '#30363d', line: '#30363d', lineSoft: '#21262d', shadow: '0 1px 2px rgba(0,0,0,.5)',
+      text: '#e6edf3', sub: '#b1bac4', muted: '#8b949e', faint: '#6e7681', accent: '#4f9fe0', accentText: '#0b1418',
+      tabBar: '#0d1117', viewportBg: '#0d1117', viewportBorder: '#30363d', laneLabel: '#6e7681', laneBorder: '#21262d',
+      gridline: 'rgba(255,255,255,.05)', tick: '#8b949c', bandLabel: '#9aa3ad', btnBg: '#21262d', btnText: '#c9d1d9',
+      ctlBorder: '#30363d', resetBg: '#21262d', miniBg: '#0d1117', selHead: '#161b22', swatchBorder: 'rgba(255,255,255,.12)',
+      unattrFill: '#30363d', hatch: '#545d68', memStroke: '#b18cf0', memFill: 'rgba(177,140,240,0.16)',
+      readBg: 'rgba(79,159,224,.12)', queryBar: '#6e7681', queryStorm: '#aab2bd'
+    }
   };
+  var TH = THEMES.fresh;
 
   // Okabe-Ito colour-blind-safe palette for plugins, assigned by COST RANK
   // (top plugin -> first colour) so any real plugin slug gets a distinct hue —
@@ -445,6 +458,7 @@
 
   function render(container, profileData, opts) {
     opts = opts || {};
+    TH = THEMES[opts.scheme === 'dark' ? 'dark' : 'fresh'];
     var model = deriveModel(profileData);
     RANK_COLORS = model.pluginColors || {};
     ensureDeutFilter();
