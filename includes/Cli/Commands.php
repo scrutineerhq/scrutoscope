@@ -387,6 +387,26 @@ class Commands {
 	}
 
 	/**
+	 * Rebuild the long-term route-stats aggregate from stored profiles.
+	 *
+	 * The aggregate is maintained incrementally as profiles are saved; run this
+	 * to backfill installs that predate it, or after a bulk import.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp scrutinizer rebuild-stats
+	 *
+	 * @subcommand rebuild-stats
+	 *
+	 * @param array $args       Positional arguments.
+	 * @param array $assoc_args Associative arguments.
+	 */
+	public function rebuild_stats( $args, $assoc_args ) {
+		$count = Storage::rebuild_route_stats();
+		WP_CLI::success( "Rebuilt route stats from {$count} profiles." );
+	}
+
+	/**
 	 * Show profiler status.
 	 *
 	 * ## OPTIONS
