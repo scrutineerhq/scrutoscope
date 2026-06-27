@@ -2066,6 +2066,7 @@
 		// Tab: Metadata.
 		html += '<div class="scrutinizer-tab-content" id="scrutinizer-tab-metadata" style="display:none">';
 		html += renderMetadata( request, summary );
+		html += renderDevSignals( data.dev_signals || [] );
 		html += '</div>';
 
 		$( '#scrutinizer-detail-content' ).html( html );
@@ -2770,6 +2771,47 @@
 			html += '<tr><td>' + __( 'Enqueued Assets', 'scrutinizer' ) + '</td><td>' + summary.asset_count + ( summary.asset_total_size ? ' (' + formatBytes( summary.asset_total_size ) + ')' : '' ) + '</td></tr>';
 		}
 		html += '</tbody></table>';
+		return html;
+	}
+
+	/* ------------------------------------------------------------------ */
+	/*  Developer signals (deprecations + doing_it_wrong)                  */
+	/* ------------------------------------------------------------------ */
+
+	// Surface deprecations and _doing_it_wrong() notices triggered during the
+	// request, attributed to the source that triggered them. Counts only.
+	function renderDevSignals( signals ) {
+		if ( ! signals || 0 === signals.length ) {
+			return '';
+		}
+		var typeLabels = {
+			deprecated_function: __( 'Deprecated function', 'scrutinizer' ),
+			deprecated_hook: __( 'Deprecated hook', 'scrutinizer' ),
+			deprecated_argument: __( 'Deprecated argument', 'scrutinizer' ),
+			deprecated_file: __( 'Deprecated file', 'scrutinizer' ),
+			doing_it_wrong: __( 'Doing it wrong', 'scrutinizer' )
+		};
+		var html = '<div class="scrutinizer-dev-signals">';
+		html += '<h4>' + esc( __( 'Developer signals', 'scrutinizer' ) ) + '</h4>';
+		html += '<p class="description">' + esc( __( 'Deprecations and _doing_it_wrong() notices triggered during this request, and which source triggered each. Counts only — no argument values.', 'scrutinizer' ) ) + '</p>';
+		html += '<table class="scrutinizer-subsystem-table"><thead><tr>' +
+			'<th>' + esc( __( 'Signal', 'scrutinizer' ) ) + '</th>' +
+			'<th>' + esc( __( 'API', 'scrutinizer' ) ) + '</th>' +
+			'<th>' + esc( __( 'Since', 'scrutinizer' ) ) + '</th>' +
+			'<th>' + esc( __( 'Triggered by', 'scrutinizer' ) ) + '</th>' +
+			'<th class="num">' + esc( __( 'Count', 'scrutinizer' ) ) + '</th></tr></thead><tbody>';
+		for ( var i = 0; i < signals.length; i++ ) {
+			var s   = signals[ i ];
+			var lbl = typeLabels[ s.type ] || s.type;
+			html += '<tr>' +
+				'<td>' + esc( lbl ) + '</td>' +
+				'<td><code>' + esc( s.name ) + '</code></td>' +
+				'<td>' + esc( s.version || '—' ) + '</td>' +
+				'<td>' + esc( s.source || '—' ) + '</td>' +
+				'<td class="num">' + ( s.count || 0 ).toLocaleString() + '</td>' +
+				'</tr>';
+		}
+		html += '</tbody></table></div>';
 		return html;
 	}
 

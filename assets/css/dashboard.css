@@ -524,19 +524,22 @@
 	margin-top: 0;
 }
 
-/* ----- Core subsystem breakdown ----- */
-.scrutinizer-core-subsystems {
+/* ----- Core subsystem breakdown + developer signals ----- */
+.scrutinizer-core-subsystems,
+.scrutinizer-dev-signals {
 	margin-top: 24px;
 	padding-top: 20px;
 	border-top: 1px solid #dcdcde;
 }
 
-.scrutinizer-core-subsystems h4 {
+.scrutinizer-core-subsystems h4,
+.scrutinizer-dev-signals h4 {
 	margin: 0 0 4px;
 	font-size: 13px;
 }
 
-.scrutinizer-core-subsystems .description {
+.scrutinizer-core-subsystems .description,
+.scrutinizer-dev-signals .description {
 	margin: 0 0 12px;
 	font-size: 12px;
 	color: #646970;

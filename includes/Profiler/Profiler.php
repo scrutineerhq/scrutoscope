@@ -97,6 +97,14 @@ class Profiler {
 	private $phase_memory = array();
 
 	/**
+	 * Aggregated core-developer signals (deprecations + doing_it_wrong),
+	 * keyed by type|name|source so repeats coalesce into a count.
+	 *
+	 * @var array<string, array>
+	 */
+	private $dev_signals = array();
+
+	/**
 	 * Completed external HTTP call records.
 	 *
 	 * @var array<int, array>
@@ -313,6 +321,16 @@ class Profiler {
 		add_filter( 'pre_http_request', array( $this, 'track_http_start' ), 1, 3 );
 		add_filter( 'http_response', array( $this, 'track_http_end' ), PHP_INT_MAX, 3 );
 
+		// Core-developer signals: deprecations + doing_it_wrong. Captured only
+		// while profiling (non-profiled requests pay nothing). Aggregate only —
+		// the API name, the version, and the triggering source; never argument
+		// values.
+		add_action( 'deprecated_function_run', array( $this, 'record_deprecated_function' ), 10, 3 );
+		add_action( 'deprecated_hook_run', array( $this, 'record_deprecated_hook' ), 10, 4 );
+		add_action( 'deprecated_argument_run', array( $this, 'record_deprecated_argument' ), 10, 3 );
+		add_action( 'deprecated_file_included', array( $this, 'record_deprecated_file' ), 10, 4 );
+		add_action( 'doing_it_wrong_run', array( $this, 'record_doing_it_wrong' ), 10, 3 );
+
 		// Catch late-registered hooks at key lifecycle points.
 		add_action( 'wp_loaded', array( $this, 'reinstrument' ), PHP_INT_MAX );
 		add_action( 'admin_init', array( $this, 'reinstrument' ), PHP_INT_MAX );
@@ -453,6 +471,7 @@ class Profiler {
 			'query_count'        => self::get_query_count(),
 			'queries'            => $this->get_query_log(),
 			'http_calls'         => $this->build_http_calls(),
+			'dev_signals'        => $this->build_dev_signals(),
 			'autoloaded_options' => self::get_autoloaded_options(),
 			'enqueued_assets'    => self::get_enqueued_assets(),
 			// Background sampling profiles anonymous visitor traffic, so the
@@ -793,6 +812,135 @@ class Profiler {
 			'caller'      => implode( ', ', $caller_parts ),
 			'attribution' => $attribution,
 		);
+	}
+
+	/**
+	 * Record a deprecated-function signal (deprecated_function_run).
+	 *
+	 * @param string $function_name Deprecated function name.
+	 * @param string $replacement   Suggested replacement (not stored).
+	 * @param string $version       Version it was deprecated in.
+	 */
+	public function record_deprecated_function( $function_name, $replacement, $version ) {
+		$this->add_dev_signal( 'deprecated_function', (string) $function_name, (string) $version );
+	}
+
+	/**
+	 * Record a deprecated-hook signal (deprecated_hook_run).
+	 *
+	 * @param string $hook        Deprecated hook name.
+	 * @param string $replacement Suggested replacement (not stored).
+	 * @param string $version     Version it was deprecated in.
+	 * @param string $message     Optional message (not stored).
+	 */
+	public function record_deprecated_hook( $hook, $replacement, $version, $message ) {
+		$this->add_dev_signal( 'deprecated_hook', (string) $hook, (string) $version );
+	}
+
+	/**
+	 * Record a deprecated-argument signal (deprecated_argument_run).
+	 *
+	 * @param string $function_name Function called with a deprecated argument.
+	 * @param string $message       Optional message (not stored).
+	 * @param string $version       Version.
+	 */
+	public function record_deprecated_argument( $function_name, $message, $version ) {
+		$this->add_dev_signal( 'deprecated_argument', (string) $function_name, (string) $version );
+	}
+
+	/**
+	 * Record a deprecated-file signal (deprecated_file_included).
+	 *
+	 * @param string $old_file    Deprecated file path (only the basename is kept).
+	 * @param string $replacement Suggested replacement (not stored).
+	 * @param string $version     Version.
+	 * @param string $message     Optional message (not stored).
+	 */
+	public function record_deprecated_file( $old_file, $replacement, $version, $message ) {
+		$this->add_dev_signal( 'deprecated_file', basename( (string) $old_file ), (string) $version );
+	}
+
+	/**
+	 * Record a _doing_it_wrong() signal (doing_it_wrong_run).
+	 *
+	 * @param string $function_name Function used incorrectly.
+	 * @param string $message       Message (not stored).
+	 * @param string $version       Version.
+	 */
+	public function record_doing_it_wrong( $function_name, $message, $version ) {
+		$this->add_dev_signal( 'doing_it_wrong', (string) $function_name, (string) $version );
+	}
+
+	/**
+	 * Accumulate a dev signal, coalescing repeats by type + name + source.
+	 *
+	 * @param string $type    Signal type.
+	 * @param string $name    API name (function / hook / file).
+	 * @param string $version Version string.
+	 */
+	private function add_dev_signal( $type, $name, $version ) {
+		$src = $this->dev_signal_source();
+		$key = $type . '|' . $name . '|' . $src['slug'];
+		if ( ! isset( $this->dev_signals[ $key ] ) ) {
+			$this->dev_signals[ $key ] = array(
+				'type'        => $type,
+				'name'        => $name,
+				'version'     => $version,
+				'source'      => $src['name'],
+				'source_type' => $src['type'],
+				'count'       => 0,
+			);
+		}
+		++$this->dev_signals[ $key ]['count'];
+	}
+
+	/**
+	 * Attribute the caller that triggered a dev signal to its plugin/theme.
+	 *
+	 * Walks the backtrace to the first frame outside WordPress core and the
+	 * profiler, then classifies it. Returns the source attribution — never a
+	 * path or line.
+	 *
+	 * @return array{type: string, slug: string, name: string}
+	 */
+	private function dev_signal_source() {
+		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_debug_backtrace
+		$trace = debug_backtrace( DEBUG_BACKTRACE_IGNORE_ARGS, 25 );
+		foreach ( $trace as $frame ) {
+			$f = isset( $frame['file'] ) ? wp_normalize_path( $frame['file'] ) : '';
+			if ( '' === $f
+				|| false !== strpos( $f, '/includes/Profiler/' )
+				|| false !== strpos( $f, '/wp-includes/' )
+				|| false !== strpos( $f, '/wp-admin/' )
+			) {
+				continue;
+			}
+			$attr = Attribution::classify( $f );
+			if ( 'unknown' !== $attr['type'] ) {
+				return $attr;
+			}
+		}
+		return array(
+			'type' => 'unknown',
+			'slug' => '',
+			'name' => 'unknown',
+		);
+	}
+
+	/**
+	 * Build the aggregated dev-signals list, ordered by count (desc).
+	 *
+	 * @return array<int, array>
+	 */
+	private function build_dev_signals() {
+		$signals = array_values( $this->dev_signals );
+		usort(
+			$signals,
+			function ( $a, $b ) {
+				return $b['count'] <=> $a['count'];
+			}
+		);
+		return $signals;
 	}
 
 	/**
