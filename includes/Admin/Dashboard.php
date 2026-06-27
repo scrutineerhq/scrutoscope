@@ -66,10 +66,20 @@ class Dashboard {
 			SCRUTINIZER_VERSION . '.' . filemtime( SCRUTINIZER_DIR . 'assets/css/dashboard.css' )
 		);
 
+		// Shared, framework-agnostic timeline renderer — the same module the
+		// relay viewer embeds, so both viewing surfaces render identically.
+		wp_enqueue_script(
+			'scrutinizer-timeline',
+			SCRUTINIZER_URL . 'assets/js/scrutinizer-timeline.js',
+			array(),
+			SCRUTINIZER_VERSION . '.' . filemtime( SCRUTINIZER_DIR . 'assets/js/scrutinizer-timeline.js' ),
+			true
+		);
+
 		wp_enqueue_script(
 			'scrutinizer-dashboard',
 			SCRUTINIZER_URL . 'assets/js/dashboard.js',
-			array( 'jquery', 'wp-i18n' ),
+			array( 'jquery', 'wp-i18n', 'scrutinizer-timeline' ),
 			SCRUTINIZER_VERSION . '.' . filemtime( SCRUTINIZER_DIR . 'assets/js/dashboard.js' ),
 			true
 		);
