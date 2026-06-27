@@ -167,6 +167,7 @@ class Report {
 				'ajax_action' => isset( $request_metadata['ajax_action'] ) ? $request_metadata['ajax_action'] : '',
 			),
 			'phase_markers'      => isset( $request_metadata['phase_markers'] ) ? $request_metadata['phase_markers'] : array(),
+			'memory_samples'     => isset( $request_metadata['memory_samples'] ) ? $request_metadata['memory_samples'] : array(),
 			'queries'            => isset( $request_metadata['queries'] ) ? $request_metadata['queries'] : array(),
 			'http_calls'         => $http_calls,
 			'autoloaded_options' => isset( $request_metadata['autoloaded_options'] ) ? $request_metadata['autoloaded_options'] : array(),
