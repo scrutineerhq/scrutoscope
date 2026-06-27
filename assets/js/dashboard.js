@@ -1575,6 +1575,7 @@
 		var html = '<div id="scrutinizer-route-detail">';
 		html += '<button type="button" class="button button-link" id="scrutinizer-back-to-list">← Back to routes</button>';
 		html += '<h2>' + esc( currentRoute ) + '</h2>';
+		html += '<div id="scrutinizer-route-regression" class="scrutinizer-regression-banner" style="display:none"></div>';
 
 		// Trend sparkline.
 		if ( routeData && routeData.length >= 2 ) {
@@ -1586,6 +1587,49 @@
 
 		$( '#scrutinizer-results' ).after( html );
 		renderRouteTable( routeData );
+		loadRouteRegression( currentRoute );
+	}
+
+	/* ------------------------------------------------------------------ */
+	/*  Route regression verdict (recent window vs older baseline)         */
+	/* ------------------------------------------------------------------ */
+
+	function loadRouteRegression( routeKey ) {
+		$.get( scrutinizerAdmin.ajaxUrl, {
+			action:    'scrutinizer_get_route_regression',
+			nonce:     scrutinizerAdmin.nonce,
+			route_key: routeKey
+		}, function( response ) {
+			// Only render if we're still on the same route (async guard).
+			if ( response && response.success && currentRoute === routeKey ) {
+				renderRegressionBanner( response.data );
+			}
+		} );
+	}
+
+	function renderRegressionBanner( data ) {
+		var el = $( '#scrutinizer-route-regression' );
+		if ( ! el.length || ! data ) {
+			return;
+		}
+
+		var verdict = data.verdict || 'insufficient_data';
+		var labels  = {
+			likely_regression:   'Likely Regression',
+			difference_observed: 'Difference observed',
+			within_noise:        'Within noise',
+			insufficient_data:   ''
+		};
+
+		el.attr( 'class', 'scrutinizer-regression-banner verdict-' + verdict );
+
+		var html = '';
+		if ( labels[ verdict ] ) {
+			html += '<span class="scrutinizer-verdict-badge">' + esc( labels[ verdict ] ) + '</span>';
+		}
+		html += '<span class="scrutinizer-verdict-message">' + esc( data.message || '' ) + '</span>';
+
+		el.html( html ).show();
 	}
 
 	/* ------------------------------------------------------------------ */
