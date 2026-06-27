@@ -524,6 +524,53 @@
 	margin-top: 0;
 }
 
+/* ----- Core subsystem breakdown ----- */
+.scrutinizer-core-subsystems {
+	margin-top: 24px;
+	padding-top: 20px;
+	border-top: 1px solid #dcdcde;
+}
+
+.scrutinizer-core-subsystems h4 {
+	margin: 0 0 4px;
+	font-size: 13px;
+}
+
+.scrutinizer-core-subsystems .description {
+	margin: 0 0 12px;
+	font-size: 12px;
+	color: #646970;
+}
+
+.scrutinizer-subsystem-table {
+	width: 100%;
+	border-collapse: collapse;
+	margin-top: 12px;
+	font-size: 13px;
+}
+
+.scrutinizer-subsystem-table th,
+.scrutinizer-subsystem-table td {
+	padding: 5px 10px;
+	text-align: left;
+	border-bottom: 1px solid #f0f0f1;
+}
+
+.scrutinizer-subsystem-table th.num,
+.scrutinizer-subsystem-table td.num {
+	text-align: right;
+	font-variant-numeric: tabular-nums;
+}
+
+.scrutinizer-subsystem-swatch {
+	display: inline-block;
+	width: 10px;
+	height: 10px;
+	border-radius: 2px;
+	margin-right: 8px;
+	vertical-align: middle;
+}
+
 .scrutinizer-source-table th,
 .scrutinizer-source-table td {
 	padding: 8px 12px;

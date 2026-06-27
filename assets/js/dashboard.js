@@ -2013,6 +2013,7 @@
 		// Tab: Sources.
 		html += '<div class="scrutinizer-tab-content" id="scrutinizer-tab-sources" style="display:none">';
 		html += renderSourceTable( sources, summary );
+		html += renderCoreSubsystems( data.core_subsystems || [] );
 		html += '</div>';
 
 		// Tab: Queries.
@@ -2193,6 +2194,66 @@
 
 		html += '</tbody></table>';
 		return html;
+	}
+
+	/* ------------------------------------------------------------------ */
+	/*  Core subsystem breakdown (core-dev troubleshooting)                */
+	/* ------------------------------------------------------------------ */
+
+	// Break the single "WordPress Core" source open into subsystems
+	// (Query / Blocks / REST API / Assets / i18n...), so a core developer can
+	// see where core time actually goes. Aggregate only — labels + totals.
+	function renderCoreSubsystems( subsystems ) {
+		if ( ! subsystems || 0 === subsystems.length ) {
+			return '';
+		}
+		var totalNs = 0;
+		var i;
+		for ( i = 0; i < subsystems.length; i++ ) {
+			totalNs += subsystems[ i ].exclusive_ns || 0;
+		}
+		if ( totalNs <= 0 ) {
+			return '';
+		}
+
+		var html = '<div class="scrutinizer-core-subsystems">';
+		html += '<h4>' + esc( __( 'WordPress Core — subsystem breakdown', 'scrutinizer' ) ) + '</h4>';
+		html += '<p class="description">' + esc( __( 'Where the time inside the single "core" bucket goes. Aggregate only — labels and totals, never file paths.', 'scrutinizer' ) ) + '</p>';
+
+		html += '<div class="scrutinizer-source-bar">';
+		for ( i = 0; i < subsystems.length; i++ ) {
+			var seg    = subsystems[ i ];
+			var segPct = ( ( seg.exclusive_ns || 0 ) / totalNs ) * 100;
+			if ( segPct < 0.5 ) {
+				continue;
+			}
+			html += '<div class="segment" style="width:' + segPct.toFixed( 2 ) + '%;background:' + coreSubsystemColor( i ) + '" title="' + esc( seg.subsystem ) + ': ' + ( seg.exclusive_ns / 1e6 ).toFixed( 2 ) + ' ms"></div>';
+		}
+		html += '</div>';
+
+		html += '<table class="scrutinizer-subsystem-table"><thead><tr>' +
+			'<th>' + esc( __( 'Subsystem', 'scrutinizer' ) ) + '</th>' +
+			'<th class="num">' + esc( __( 'Exclusive', 'scrutinizer' ) ) + '</th>' +
+			'<th class="num">' + esc( __( 'Calls', 'scrutinizer' ) ) + '</th>' +
+			'<th class="num">%</th></tr></thead><tbody>';
+		for ( i = 0; i < subsystems.length; i++ ) {
+			var sub    = subsystems[ i ];
+			var subPct = ( ( sub.exclusive_ns || 0 ) / totalNs ) * 100;
+			html += '<tr>' +
+				'<td><span class="scrutinizer-subsystem-swatch" style="background:' + coreSubsystemColor( i ) + '"></span>' + esc( sub.subsystem ) + '</td>' +
+				'<td class="num">' + ( sub.exclusive_ns / 1e6 ).toFixed( 2 ) + ' ms</td>' +
+				'<td class="num">' + ( sub.call_count || 0 ).toLocaleString() + '</td>' +
+				'<td class="num">' + subPct.toFixed( 1 ) + '%</td>' +
+				'</tr>';
+		}
+		html += '</tbody></table></div>';
+		return html;
+	}
+
+	// Stable palette for core subsystem segments (cycles for the long tail).
+	function coreSubsystemColor( index ) {
+		var palette = [ '#2271b1', '#e69f00', '#56b4e9', '#009e73', '#cc79a7', '#d55e00', '#0072b2', '#7c3aed', '#b45309', '#0f9d77', '#9a4708', '#646970' ];
+		return palette[ index % palette.length ];
 	}
 
 	/* ------------------------------------------------------------------ */
