@@ -1442,10 +1442,17 @@
 .scrutinizer-history-filters select,
 .scrutinizer-history-filters input[type="text"],
 .scrutinizer-history-filters input[type="date"] {
-	padding: 4px 8px;
 	border: 1px solid #c3c4c7;
 	border-radius: 3px;
 	font-size: 12px;
+}
+
+/* Padding is only applied to the text/date inputs. Native <select> controls
+   render oddly (inconsistent height, clipped arrow) when given custom padding,
+   so they keep the WP-admin default sizing. */
+.scrutinizer-history-filters input[type="text"],
+.scrutinizer-history-filters input[type="date"] {
+	padding: 4px 8px;
 }
 
 .scrutinizer-history-filters select {
