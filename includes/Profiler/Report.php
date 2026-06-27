@@ -588,6 +588,35 @@ class Report {
 	}
 
 	/**
+	 * Build the full regression-verdict payload for a route from its baseline +
+	 * current sample windows (from Storage::get_route_comparison_samples()).
+	 *
+	 * Pure: runs compare_route() + describe_change() and shapes the response the
+	 * REST endpoint and the dashboard AJAX handler both return, so the verdict
+	 * is computed in exactly one place.
+	 *
+	 * @param array $samples { @type array[] $baseline, @type array[] $current }.
+	 * @return array { verdict, message, fingerprint, delta_ns, delta_ms, pct_change, sample_count }.
+	 */
+	public static function regression_summary( array $samples ) {
+		$baseline = isset( $samples['baseline'] ) && is_array( $samples['baseline'] ) ? $samples['baseline'] : array();
+		$current  = isset( $samples['current'] ) && is_array( $samples['current'] ) ? $samples['current'] : array();
+
+		$result   = self::compare_route( $baseline, $current );
+		$delta_ns = isset( $result['delta_ns'] ) ? (int) $result['delta_ns'] : 0;
+
+		return array(
+			'verdict'      => isset( $result['verdict'] ) ? $result['verdict'] : 'insufficient_data',
+			'message'      => self::describe_change( $result ),
+			'fingerprint'  => isset( $result['fingerprint'] ) ? $result['fingerprint'] : '',
+			'delta_ns'     => $delta_ns,
+			'delta_ms'     => round( $delta_ns / 1e6, 1 ),
+			'pct_change'   => isset( $result['pct_change'] ) ? $result['pct_change'] : 0,
+			'sample_count' => isset( $result['sample_count'] ) ? $result['sample_count'] : array(),
+		);
+	}
+
+	/**
 	 * Integer median of a list of values.
 	 *
 	 * @param int[] $values Values.

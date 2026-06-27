@@ -9,6 +9,7 @@ namespace Scrutinizer\Admin;
 
 use Scrutinizer\Profiler\Session;
 use Scrutinizer\Profiler\Storage;
+use Scrutinizer\Profiler\Report;
 use Scrutinizer\Api\Sanitizer;
 
 // Every action in this file is registered through self::add_ajax(), which runs
@@ -38,6 +39,7 @@ class Ajax {
 		'get_profiles',
 		'get_profiles_grouped',
 		'get_route_profiles',
+		'get_route_regression',
 		'get_profile_detail',
 		'delete_profile',
 		'delete_profiles_bulk',
@@ -221,6 +223,27 @@ class Ajax {
 		$profiles = Storage::get_profiles_for_route( $route_key );
 
 		wp_send_json_success( array( 'profiles' => $profiles ) );
+	}
+
+	/**
+	 * Get the regression verdict for a route (recent window vs older baseline).
+	 */
+	public static function get_route_regression() {
+		$route_key = '';
+		if ( isset( $_GET['route_key'] ) ) {
+			$route_key = sanitize_text_field( wp_unslash( $_GET['route_key'] ) );
+		}
+
+		if ( empty( $route_key ) ) {
+			wp_send_json_error(
+				array( 'message' => __( 'No route specified.', 'scrutinizer' ) ),
+				400
+			);
+		}
+
+		$samples = Storage::get_route_comparison_samples( $route_key );
+
+		wp_send_json_success( Report::regression_summary( $samples ) );
 	}
 
 	/**

@@ -614,20 +614,7 @@ class RestApi {
 		$baseline  = $baseline > 0 ? $baseline : 10;
 
 		$samples = Storage::get_route_comparison_samples( $route_key, $current, $baseline );
-		$result  = Report::compare_route( $samples['baseline'], $samples['current'] );
-
-		$delta_ns = isset( $result['delta_ns'] ) ? (int) $result['delta_ns'] : 0;
-
-		$data = array(
-			'route'        => $route_key,
-			'fingerprint'  => isset( $result['fingerprint'] ) ? $result['fingerprint'] : '',
-			'verdict'      => isset( $result['verdict'] ) ? $result['verdict'] : 'insufficient_data',
-			'message'      => Report::describe_change( $result ),
-			'delta_ns'     => $delta_ns,
-			'delta_ms'     => round( $delta_ns / 1e6, 1 ),
-			'pct_change'   => isset( $result['pct_change'] ) ? $result['pct_change'] : 0,
-			'sample_count' => isset( $result['sample_count'] ) ? $result['sample_count'] : array(),
-		);
+		$data    = array_merge( array( 'route' => $route_key ), Report::regression_summary( $samples ) );
 
 		return new \WP_REST_Response( Sanitizer::sanitize( $data ), 200 );
 	}
