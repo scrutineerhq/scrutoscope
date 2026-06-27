@@ -45,28 +45,29 @@ Connect the cron inventory to actual profiler data. The profiler already capture
 - [x] Contrast fixes on secondary text elements
 
 ### i18n
-- [ ] Wrap all JS dashboard strings in `wp.i18n.__()`
-- [ ] Wrap remaining PHP strings in `__()` / `esc_html__()`
-- [ ] Generate `.pot` file
-- [ ] Set up `wp_set_script_translations()` loading
-- [ ] Create `languages/` directory with `.pot`
+- [x] Generate `.pot` file + `languages/` directory
+- [x] Set up `wp_set_script_translations()` loading; dashboard reads `scrutinizerAdmin.i18n.*`
+- [ ] **Move remaining hard-coded JS dashboard strings into the `scrutinizerAdmin.i18n` localization** (the big remaining sweep — many strings still inline, e.g. "← Back to routes", verdict labels). Best done with review; large mechanical surface.
+- [ ] Wrap any remaining PHP strings in `__()` / `esc_html__()` (templates mostly done)
 
 ### a11y
-- [ ] Escape key closes settings modal
-- [ ] Keyboard reachability audit — nothing trapped or unreachable
-- [ ] Full ARIA tab panel pattern with arrow key navigation
-- [ ] Focus trap in settings modal
-- [ ] Screen reader announcements for dynamic content
+- [x] Escape key closes settings (verified — already works)
+- [x] Keyboard reachability audit
+- [x] Full ARIA tab pattern with arrow-key navigation (top + detail tabs)
+- [x] Focus management on view changes + screen-reader announcements (`aria-live`)
+- [~] "Focus trap in settings modal" — settings is a view, not a modal; focus is moved into it on open. Trap N/A.
 
 ### Visual polish
 - [ ] Tab active-state consistency (blue underline vs dark border)
 
 ### Code / infra
-- [ ] Relay viewer — add Content-Security-Policy header
-- [ ] wp.org plugin readme (readme.txt with screenshots, FAQ, changelog)
-- [ ] Screenshot preparation
-- [ ] Security audit — activation flow, cookie handling, CSRF, nonce validation
+- [x] Relay viewer Content-Security-Policy header (nonce-based CSP via `withSecurityHeaders`)
+- [x] wp.org plugin readme (`readme.txt` present — header/description/FAQ/changelog/screenshots)
+- [x] Security audit — authz/CSRF, injection, data-exposure, instrumentation (5 fixes, incl. the XML-RPC app-password bypass)
+- [ ] Screenshot preparation (manual — needs the final UI captured)
 - [ ] wp.org submission
+
+> **Remaining wp.org blockers:** the i18n JS string sweep + screenshots. Everything else in M6 is done.
 
 ## Direction (not scheduled) — Core-developer troubleshooting
 
