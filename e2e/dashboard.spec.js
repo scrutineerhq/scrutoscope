@@ -32,8 +32,9 @@ test('routes view renders rows and the top tabs', async ({ page }) => {
   await expect(page.locator('tbody tr').first()).toBeVisible({ timeout: 15000 });
   await expect(page.locator('#scrutinizer-route-filter')).toBeVisible();
   await expect(page.locator('#scrutinizer-route-search')).toBeVisible();
+  // Top tabs carry the ARIA tab role (set by applyTabRoles).
   for (const t of ['Routes', 'History', 'Cron', 'API']) {
-    await expect(page.getByRole('button', { name: t, exact: true }).first()).toBeVisible();
+    await expect(page.getByRole('tab', { name: t, exact: true }).first()).toBeVisible();
   }
 });
 
@@ -42,7 +43,7 @@ test('History, Cron and API tabs render without PHP errors', async ({ page }) =>
   await page.click('#scrutinizer-home-profiles');
   await page.waitForTimeout(2000);
   for (const t of ['History', 'Cron', 'API', 'Routes']) {
-    await page.getByRole('button', { name: t, exact: true }).first().click();
+    await page.getByRole('tab', { name: t, exact: true }).first().click();
     await page.waitForTimeout(1200);
     expectNoPhpErrors(await page.locator('body').innerText());
   }

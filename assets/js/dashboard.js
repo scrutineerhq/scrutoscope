@@ -1243,6 +1243,7 @@
 		$( '.wrap > h1' ).first().hide();
 		$( '#scrutinizer-settings-view' ).show();
 		currentView = 'settings';
+		moveFocus( '#scrutinizer-settings-view h2, #scrutinizer-settings-view' );
 	}
 
 	/* ------------------------------------------------------------------ */
@@ -1657,6 +1658,7 @@
 		$( '#scrutinizer-results' ).after( html );
 		renderRouteTable( routeData );
 		loadRouteRegression( currentRoute );
+		moveFocus( '#scrutinizer-route-detail h2' );
 	}
 
 	/* ------------------------------------------------------------------ */
@@ -3923,6 +3925,7 @@
 
 		// Decorate the detail tabs (ARIA roles + roving tabindex) on open.
 		applyTabRoles();
+		moveFocus( '#scrutinizer-detail .scrutinizer-tabs, #scrutinizer-detail' );
 	}
 
 	/* ------------------------------------------------------------------ */
@@ -5014,13 +5017,30 @@
 	/* ------------------------------------------------------------------ */
 
 	function showNotice( message, type ) {
-		var $notice = $( '<div class="scrutinizer-notice ' + type + '">' + esc( message ) + '</div>' );
+		// role=alert (assertive) for errors, role=status (polite) otherwise, so
+		// screen readers announce the notice.
+		var role    = ( 'error' === type ) ? 'alert' : 'status';
+		var $notice = $( '<div class="scrutinizer-notice ' + type + '" role="' + role + '">' + esc( message ) + '</div>' );
 		$( '#scrutinizer-dashboard h1' ).after( $notice );
 		setTimeout( function() {
 			$notice.fadeOut( 300, function() {
 				$notice.remove();
 			} );
 		}, 4000 );
+	}
+
+	/**
+	 * Move keyboard focus to a freshly-rendered view heading/region so screen-
+	 * reader and keyboard users land in the new content after a view change.
+	 *
+	 * @param {string} selector Target element selector.
+	 */
+	function moveFocus( selector ) {
+		var $el = $( selector ).first();
+		if ( ! $el.length ) {
+			return;
+		}
+		$el.attr( 'tabindex', '-1' ).trigger( 'focus' );
 	}
 
 	function esc( str ) {
