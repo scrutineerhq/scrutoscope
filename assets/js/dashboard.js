@@ -768,6 +768,7 @@
 			if ( ! ids.length ) {
 				return;
 			}
+			// translators: %d is the number of selected profiles to delete.
 			if ( ! confirm( sprintf( __( 'Delete %d profile(s)?', 'scrutinizer' ), ids.length ) ) ) {
 				return;
 			}
@@ -1044,6 +1045,7 @@
 			html += __( 'SAVEQUERIES is enabled in your configuration. Full query coverage from boot.', 'scrutinizer' );
 		} else {
 			html += '<span class="scrutinizer-qp-badge blocked">wp-config.php</span> ';
+			// translators: %s is the SAVEQUERIES constant value (e.g. false).
 			html += sprintf( __( 'SAVEQUERIES is set to %s — Scrutineer can\'t override a defined constant.', 'scrutinizer' ), '<code>false</code>' );
 		}
 		html += '</p>';
@@ -1159,6 +1161,7 @@
 		if ( detected.length > 0 ) {
 			html += '<p class="scrutinizer-proxy-recommendation scrutinizer-proxy-detected">';
 			html += '<span class="dashicons dashicons-yes-alt"></span> ';
+			// translators: %s is the list of detected proxy headers or services.
 			html += sprintf( __( 'Detected: %s.', 'scrutinizer' ), '<strong>' + esc( detected.join( ', ' ) ) + '</strong>' ) + ' ';
 			html += __( 'Your site appears to be behind a proxy.', 'scrutinizer' ) + ' <strong>' + __( 'Recommended: enable.', 'scrutinizer' ) + '</strong>';
 			html += '</p>';
@@ -1309,6 +1312,7 @@
 		html += '<span class="dashicons dashicons-yes-alt"></span>';
 		html += '<strong>' + __( 'URL copied to clipboard', 'scrutinizer' ) + '</strong>';
 		html += '</div>';
+		// translators: 1: the "incognito window" label, 2: a keyboard shortcut, 3: the "Stop Profiling" button label.
 		html += '<p>' + sprintf( __( 'Open an %1$s (%2$s), paste the URL, and browse your site. Come back here and click %3$s when done.', 'scrutinizer' ), '<strong>' + __( 'incognito window', 'scrutinizer' ) + '</strong>', shortcut, '<strong>' + __( 'Stop Profiling', 'scrutinizer' ) + '</strong>' ) + '</p>';
 		html += '<div class="scrutinizer-url-box">';
 		html += '<input type="text" readonly class="widefat" id="scrutinizer-visitor-url" value="' + esc( url ) + '" />';
@@ -1492,6 +1496,7 @@
 		} ).fail( function( xhr ) {
 			var msg = __( 'Could not load routes.', 'scrutinizer' );
 			if ( xhr.status === 403 || xhr.responseText === '-1' || xhr.responseText === '0' ) {
+				// translators: 1: opening link tag, 2: closing link tag.
 				msg = sprintf( __( 'Session expired. Please %1$sreload the page%2$s.', 'scrutinizer' ), '<a href="' + window.location.href + '">', '</a>' );
 			}
 			$( '#scrutinizer-profile-list' ).html(
@@ -1844,11 +1849,13 @@
 		if ( historyPages > 1 ) {
 			html += '<div class="scrutinizer-pagination">';
 			html += '<a href="#" id="scrutinizer-page-prev" class="button' + ( historyPage <= 1 ? ' disabled' : '' ) + '">' + __( '&laquo; Previous', 'scrutinizer' ) + '</a>';
+			// translators: 1: current page number, 2: total number of pages, 3: total profile count.
 			html += '<span class="scrutinizer-page-info">' + sprintf( __( 'Page %1$d of %2$d (%3$d profiles)', 'scrutinizer' ), historyPage, historyPages, historyTotal ) + '</span>';
 			html += '<a href="#" id="scrutinizer-page-next" class="button' + ( historyPage >= historyPages ? ' disabled' : '' ) + '">' + __( 'Next &raquo;', 'scrutinizer' ) + '</a>';
 			html += '</div>';
 		} else if ( historyTotal > 0 ) {
 			html += '<div class="scrutinizer-pagination">';
+			// translators: %d is the total number of profiles.
 			html += '<span class="scrutinizer-page-info">' + sprintf( __( '%d profiles', 'scrutinizer' ), historyTotal ) + '</span>';
 			html += '</div>';
 		}
@@ -1951,6 +1958,7 @@
 		html += '<div class="scrutinizer-detail-header">';
 		html += '<h3>' + headerLabel + '</h3>';
 		if ( request.referer ) {
+			// translators: %s is the referring URL (referer).
 			html += '<div class="scrutinizer-referer">' + sprintf( __( '↩ triggered from %s', 'scrutinizer' ), '<code>' + esc( request.referer ) + '</code>' ) + '</div>';
 		}
 		html += '</div>';
@@ -1970,18 +1978,23 @@
 		html += '<button class="scrutinizer-tab active" data-tab="timeline">' + __( 'Timeline', 'scrutinizer' ) + '</button>';
 		html += '<button class="scrutinizer-tab" data-tab="sources">' + __( 'Sources', 'scrutinizer' ) + '</button>';
 		if ( queries.length > 0 ) {
+			// translators: %d is the number of database queries.
 			html += '<button class="scrutinizer-tab" data-tab="queries">' + sprintf( __( 'Queries (%d)', 'scrutinizer' ), queries.length ) + '</button>';
 		}
 		if ( httpCalls.length > 0 ) {
+			// translators: %d is the number of HTTP calls.
 			html += '<button class="scrutinizer-tab" data-tab="http">' + sprintf( __( 'HTTP Calls (%d)', 'scrutinizer' ), httpCalls.length ) + '</button>';
 		}
 		if ( ( assets.counts && ( assets.counts.scripts + assets.counts.styles ) > 0 ) ) {
+			// translators: %d is the number of assets (scripts and styles).
 			html += '<button class="scrutinizer-tab" data-tab="assets">' + sprintf( __( 'Assets (%d)', 'scrutinizer' ), ( assets.counts.scripts + assets.counts.styles ) ) + '</button>';
 		}
 		if ( autoloadOpts.count > 0 ) {
+			// translators: %d is the number of autoloaded options.
 			html += '<button class="scrutinizer-tab" data-tab="options">' + sprintf( __( 'Options (%d)', 'scrutinizer' ), autoloadOpts.count ) + '</button>';
 		}
 		if ( traceCount > 0 ) {
+			// translators: %s is the number of trace callbacks.
 			html += '<button class="scrutinizer-tab" data-tab="trace">' + sprintf( __( 'Trace (%s)', 'scrutinizer' ), traceCount.toLocaleString() ) + '</button>';
 		}
 		html += '<button class="scrutinizer-tab" data-tab="metadata">' + __( 'Metadata', 'scrutinizer' ) + '</button>';
@@ -2042,6 +2055,7 @@
 				// Trace not loaded yet — show placeholder.
 				html += '<div class="scrutinizer-trace-loading">';
 				html += '<span class="spinner is-active" style="float:none;margin:0 8px 0 0;"></span>';
+				// translators: %s is the number of callbacks being loaded.
 				html += sprintf( __( 'Loading %s callbacks\u2026', 'scrutinizer' ), traceCount.toLocaleString() );
 				html += '</div>';
 			}
@@ -2140,11 +2154,13 @@
 				html += '<tr class="scrutinizer-unknown-row">';
 				html += '<td>';
 				html += '<details class="scrutinizer-unknown-expand">';
+				// translators: %d is the number of callbacks.
 				html += '<summary>' + esc( src.name || src.slug ) + ' <span class="scrutinizer-muted">' + sprintf( __( '(%d callbacks)', 'scrutinizer' ), src.callbacks.length ) + '</span></summary>';
 				html += '<div class="scrutinizer-unknown-detail">';
 				for ( var u = 0; u < src.callbacks.length; u++ ) {
 					var cb = src.callbacks[ u ];
 					var cbMs = cb.exclusive_ns ? ( cb.exclusive_ns / 1e6 ).toFixed( 2 ) + ' ms' : '';
+					// translators: %d is the number of times the callback was called.
 					var cbCalls = cb.call_count ? sprintf( __( '%d calls', 'scrutinizer' ), cb.call_count ) : '';
 					html += '<div class="scrutinizer-unknown-callback">';
 					html += '<code>' + esc( cb.callback || cb.id || 'anonymous' ) + '</code>';
@@ -2253,8 +2269,12 @@
 
 		// Total summary line.
 		html += '<div class="scrutinizer-queries-summary">';
-		html += sprintf( __( '%1$s totaling %2$s', 'scrutinizer' ), '<strong>' + sprintf( __( '%d queries', 'scrutinizer' ), queries.length ) + '</strong>', '<strong>' + totalQueryMs.toFixed( 1 ) + ' ms</strong>' );
+		// translators: %d is the number of queries.
+		var queryCountLabel = '<strong>' + sprintf( __( '%d queries', 'scrutinizer' ), queries.length ) + '</strong>';
+		// translators: 1: a count label, 2: a total (time or size).
+		html += sprintf( __( '%1$s totaling %2$s', 'scrutinizer' ), queryCountLabel, '<strong>' + totalQueryMs.toFixed( 1 ) + ' ms</strong>' );
 		if ( duplicateCount > 0 ) {
+			// translators: %d is the number of duplicate query patterns.
 			html += ' \u00b7 <span class="scrutinizer-duplicate-flag">' + sprintf( __( '%d duplicate patterns', 'scrutinizer' ), duplicateCount ) + '</span>';
 		}
 		html += '</div>';
@@ -2464,7 +2484,10 @@
 		}
 
 		var html = '<div class="scrutinizer-queries-summary">';
-		html += sprintf( __( '%1$s totaling %2$s', 'scrutinizer' ), '<strong>' + sprintf( __( '%d external HTTP calls', 'scrutinizer' ), httpCalls.length ) + '</strong>', '<strong>' + totalHttpMs.toFixed( 1 ) + ' ms</strong>' );
+		// translators: %d is the number of external HTTP calls.
+		var httpCountLabel = '<strong>' + sprintf( __( '%d external HTTP calls', 'scrutinizer' ), httpCalls.length ) + '</strong>';
+		// translators: 1: a count label, 2: a total (time or size).
+		html += sprintf( __( '%1$s totaling %2$s', 'scrutinizer' ), httpCountLabel, '<strong>' + totalHttpMs.toFixed( 1 ) + ' ms</strong>' );
 		html += '</div>';
 
 		html += renderHttpCallsTableBody( httpCalls );
@@ -2533,9 +2556,12 @@
 		var counts    = assets.counts || {};
 
 		var html = '<div class="scrutinizer-queries-summary">';
+		// translators: %d is the number of scripts.
 		html += '<strong>' + sprintf( __( '%d scripts', 'scrutinizer' ), ( counts.scripts || 0 ) ) + '</strong>';
+		// translators: %d is the number of stylesheets.
 		html += ' + <strong>' + sprintf( __( '%d stylesheets', 'scrutinizer' ), ( counts.styles || 0 ) ) + '</strong>';
 		if ( totalSize > 0 ) {
+			// translators: %s is the total asset size on disk.
 			html += ' ' + sprintf( __( 'totaling %s on disk', 'scrutinizer' ), '<strong>' + formatBytes( totalSize ) + '</strong>' );
 		}
 		html += '</div>';
@@ -2611,7 +2637,10 @@
 		}
 
 		var html = '<div class="scrutinizer-queries-summary">';
-		html += sprintf( __( '%1$s totaling %2$s', 'scrutinizer' ), '<strong>' + sprintf( __( '%d autoloaded options', 'scrutinizer' ), count ) + '</strong>', '<strong>' + formatBytes( totalSize ) + '</strong>' );
+		// translators: %d is the number of autoloaded options.
+		var optionCountLabel = '<strong>' + sprintf( __( '%d autoloaded options', 'scrutinizer' ), count ) + '</strong>';
+		// translators: 1: a count label, 2: a total (time or size).
+		html += sprintf( __( '%1$s totaling %2$s', 'scrutinizer' ), optionCountLabel, '<strong>' + formatBytes( totalSize ) + '</strong>' );
 		if ( totalSize > 1048576 ) { // > 1 MB.
 			html += ' <span class="scrutinizer-options-warning">' + __( '⚠ Over 1 MB — this adds latency to every request', 'scrutinizer' ) + '</span>';
 		} else if ( totalSize > 524288 ) { // > 512 KB.
@@ -2996,6 +3025,7 @@
 
 		// Show more button.
 		html += '<div class="scrutinizer-trace-more" id="scrutinizer-trace-more-wrap" style="display:none">';
+		// translators: %d is the number of additional rows to show.
 		html += '<button type="button" class="button" id="scrutinizer-trace-show-more">' + sprintf( __( 'Show %d more', 'scrutinizer' ), tracePageSize ) + '</button>';
 		html += '</div>';
 
@@ -3151,11 +3181,14 @@
 		$( '.scrutinizer-trace-pill.active' ).each( function() { filterCount++; } );
 
 		var showing = Math.min( traceShown, traceFiltered.length );
+		// translators: 1: number of callbacks shown, 2: total number of callbacks.
 		var statusText = sprintf( __( 'Showing %1$s of %2$s callbacks', 'scrutinizer' ), showing.toLocaleString(), traceFiltered.length.toLocaleString() );
 		if ( traceFiltered.length !== traceEntries.length ) {
+			// translators: %s is the total number of callbacks before filtering.
 			statusText += ' ' + sprintf( __( '(filtered from %s)', 'scrutinizer' ), traceEntries.length.toLocaleString() );
 		}
 		if ( filterCount > 0 ) {
+			// translators: %d is the number of active filters.
 			statusText += ' \u00b7 ' + sprintf( __( '%d filters active', 'scrutinizer' ), filterCount );
 		}
 
@@ -3243,6 +3276,7 @@
 		if ( 'history' === activeTopTab ) {
 			$back.attr( 'id', 'scrutinizer-back-to-history' ).text( scrutinizerAdmin.i18n.backToHistory || '← Back to history' );
 		} else if ( currentRoute ) {
+			// translators: %s is the route name.
 			$back.attr( 'id', 'scrutinizer-back-to-route' ).text( sprintf( __( '← Back to %s', 'scrutinizer' ), truncate( currentRoute, 40 ) ) );
 		} else {
 			$back.attr( 'id', 'scrutinizer-back-to-list' ).text( __( '← Back to routes', 'scrutinizer' ) );
@@ -3619,6 +3653,7 @@
 		var count = Object.keys( compareChecked ).length;
 		if ( count > 0 ) {
 			$( '#scrutinizer-bulk-bar' ).show();
+			// translators: %d is the number of selected profiles.
 			$( '#scrutinizer-bulk-count' ).text( sprintf( __( '%d selected', 'scrutinizer' ), count ) );
 			if ( 2 === count ) {
 				$( '#scrutinizer-compare-btn' ).show();
@@ -3751,6 +3786,7 @@
 			// Hook name.
 			html += '<td class="scrutinizer-cron-hook"><code>' + esc( ev.hook ) + '</code>';
 			if ( ev.args && ev.args.length > 0 ) {
+				// translators: %d is the number of cron event arguments.
 				html += ' <span class="scrutinizer-muted">' + sprintf( __( '(%d args)', 'scrutinizer' ), ev.args.length ) + '</span>';
 			}
 			html += '</td>';
@@ -3792,6 +3828,7 @@
 		// Available schedules.
 		if ( schedules.length > 0 ) {
 			html += '<details class="scrutinizer-cron-schedules">';
+			// translators: %d is the number of registered cron schedules.
 			html += '<summary>' + sprintf( __( 'Registered Schedules (%d)', 'scrutinizer' ), schedules.length ) + '</summary>';
 			html += '<table class="scrutinizer-profile-table scrutinizer-cron-schedule-table widefat"><thead><tr><th>' + __( 'Name', 'scrutinizer' ) + '</th><th>' + __( 'Interval', 'scrutinizer' ) + '</th><th>' + __( 'Display', 'scrutinizer' ) + '</th></tr></thead><tbody>';
 			for ( var j = 0; j < schedules.length; j++ ) {
@@ -3828,8 +3865,10 @@
 
 		// Relative time.
 		if ( overdue ) {
+			// translators: %s is a human-readable time interval (e.g. "5 minutes").
 			html += '<span class="scrutinizer-cron-status-overdue">' + sprintf( __( '%s ago', 'scrutinizer' ), humanInterval( overdueBy ) ) + '</span>';
 		} else {
+			// translators: %s is a human-readable time interval (e.g. "5 minutes").
 			html += sprintf( __( 'in %s', 'scrutinizer' ), humanInterval( Math.abs( diff ) ) );
 		}
 
@@ -3985,6 +4024,7 @@
 		html += '<div class="scrutinizer-inline-compare-header">';
 		html += '<span class="scrutinizer-verdict-badge ' + verdict.cls + '">' + verdict.label + '</span>';
 		html += '<span class="scrutinizer-compare-summary">';
+		// translators: %s is the method and URL of the profile being compared against.
 		html += sprintf( __( 'Compared to %s', 'scrutinizer' ), '<strong>' + esc( ( reqB.method || '' ) + ' ' + truncate( reqB.url || b.request_url || '', 40 ) ) + '</strong>' );
 		html += ' <small>(' + esc( b.captured_at || '' ) + ')</small>';
 		html += '</span>';
@@ -4458,6 +4498,7 @@
 		// --- Diagnostics sharing fields ---
 		html += '<div class="scrutinizer-api-section">';
 		html += '<h3 class="scrutinizer-api-heading"><span class="dashicons dashicons-admin-tools"></span> ' + __( 'Diagnostics Sharing', 'scrutinizer' ) + '</h3>';
+		// translators: %s is the diagnostics endpoint path.
 		html += '<p class="scrutinizer-api-desc">' + sprintf( __( 'Choose which server environment details to include when an agent reads %s.', 'scrutinizer' ), '<code>/v1/diagnostics</code>' ) + ' ';
 		html += __( 'These fields are opt-in — nothing is shared unless you check it.', 'scrutinizer' ) + '</p>';
 		html += '<div class="scrutinizer-diagnostics-checkboxes">';
@@ -4494,6 +4535,7 @@
 		html += '<tr><td><code>GET</code></td><td><code>/v1/manifest</code></td><td>' + __( 'Machine-readable API manifest for AI agent discovery (public)', 'scrutinizer' ) + '</td></tr>';
 		html += '</tbody></table>';
 		if ( apiBase ) {
+			// translators: %s is the API base URL.
 			html += '<p class="scrutinizer-api-base">' + sprintf( __( 'Base URL: %s', 'scrutinizer' ), '<code>' + esc( apiBase ) + '</code>' ) + '</p>';
 		}
 		html += '</div>';
@@ -4502,8 +4544,10 @@
 		html += '<div class="scrutinizer-api-section">';
 		html += '<h3 class="scrutinizer-api-heading"><span class="dashicons dashicons-lock"></span> ' + __( 'Shared Reports', 'scrutinizer' ) + '</h3>';
 		html += '<p class="scrutinizer-api-desc">' + __( 'Encrypted, self-destructing links you\u2019ve shared. Data is encrypted in your browser before upload &mdash; the relay server never sees your report contents.', 'scrutinizer' ) + '</p>';
+		// translators: 1: the "History" tab label, 2: the "Share" button label.
 		html += '<p class="scrutinizer-api-desc">' + sprintf( __( 'To share: open a profile from the %1$s tab, then click %2$s in the toolbar.', 'scrutinizer' ), '<strong>' + __( 'History', 'scrutinizer' ) + '</strong>', '<strong>' + __( 'Share', 'scrutinizer' ) + '</strong>' ) + '</p>';
 		html += '<div id="scrutinizer-shared-reports-content"><p class="scrutinizer-empty">' + __( 'Loading\u2026', 'scrutinizer' ) + '</p></div>';
+		// translators: %s is the relay service name.
 		html += '<p class="scrutinizer-api-desc" style="color:#50575e;font-size:12px;">' + sprintf( __( 'Powered by %s &mdash; zero-knowledge encrypted relay.', 'scrutinizer' ), '<code>scrutinizer.dev</code>' ) + '</p>';
 		html += '</div>';
 
@@ -4569,12 +4613,19 @@
 					copyToClipboard( d.prompt );
 
 					// Show success.
-					var ttlLabel = d.ttl_hours <= 1 ? __( '1 hour', 'scrutinizer' ) : sprintf( __( '%d hours', 'scrutinizer' ), d.ttl_hours );
+					var ttlLabel;
+					if ( d.ttl_hours <= 1 ) {
+						ttlLabel = __( '1 hour', 'scrutinizer' );
+					} else {
+						// translators: %d is the number of hours until access expires.
+						ttlLabel = sprintf( __( '%d hours', 'scrutinizer' ), d.ttl_hours );
+					}
 					$( '#scrutinizer-api-key-result' )
 						.html(
 							'<div class="scrutinizer-api-success">' +
 							'<span class="dashicons dashicons-yes-alt"></span> ' +
 							'<strong>' + __( 'Prompt copied to clipboard.', 'scrutinizer' ) + '</strong> ' +
+							// translators: %s is the time until access expires (e.g. "2 hours").
 							sprintf( __( 'Paste it into your AI agent. Access expires in %s.', 'scrutinizer' ), esc( ttlLabel ) ) +
 							'</div>'
 						)
@@ -4683,8 +4734,10 @@
 					var days = Math.ceil( diff / 86400000 );
 					if ( days <= 1 ) {
 						var hours = Math.ceil( diff / 3600000 );
+						// translators: %d is the number of hours remaining.
 						expiryLabel = '<span style="color:#dba617;">' + sprintf( __( '%dh remaining', 'scrutinizer' ), hours ) + '</span>';
 					} else {
+						// translators: %d is the number of days remaining.
 						expiryLabel = sprintf( __( '%dd remaining', 'scrutinizer' ), days );
 					}
 				}
@@ -4822,6 +4875,7 @@
 
 		html += '</tbody></table>';
 		if ( entries.length > 50 ) {
+			// translators: %d is the total number of log entries.
 			html += '<p class="scrutinizer-api-desc" style="margin-top:8px">' + sprintf( __( 'Showing 50 of %d entries.', 'scrutinizer' ), entries.length ) + '</p>';
 		}
 		$container.html( html );
@@ -5242,6 +5296,7 @@
 					html += '<input type="text" readonly value="' + esc( shareUrl ) + '" id="scrutinizer-share-url" />';
 					html += '<button type="button" class="button" id="scrutinizer-share-copy">' + __( 'Copy', 'scrutinizer' ) + '</button>';
 					html += '</div>';
+					// translators: %s is the expiration date and time.
 					html += '<p class="description">' + sprintf( __( 'Expires: %s', 'scrutinizer' ), esc( new Date( resp.expires_at ).toLocaleString() ) ) + '</p>';
 					html += '<button type="button" class="button scrutinizer-btn-danger" id="scrutinizer-share-revoke" data-id="' + esc( resp.id ) + '" data-token="' + esc( resp.revoke_token ) + '">';
 					html += '<span class="dashicons dashicons-dismiss"></span> ' + __( 'Revoke', 'scrutinizer' ) + '</button>';
@@ -5282,6 +5337,7 @@
 		.catch( function( err ) {
 			console.error( 'Share error:', err );
 			$btn.prop( 'disabled', false ).html( '<span class="dashicons dashicons-lock"></span> ' + __( 'Encrypt &amp; Share', 'scrutinizer' ) );
+			// translators: %s is the error message.
 			$result.html( '<p class="scrutinizer-share-error">' + sprintf( __( 'Encryption failed: %s', 'scrutinizer' ), esc( err.message || __( 'Unknown error', 'scrutinizer' ) ) ) + '</p>' ).show();
 		} );
 	}
@@ -5312,6 +5368,7 @@
 
 			// Guard against relay's 10 MB limit.
 			if ( bodyStr.length > 10000000 ) {
+				// translators: %s is the report size in megabytes.
 				reject( new Error( sprintf( __( 'Report too large (%s MB). Try unchecking Trace and Timeline.', 'scrutinizer' ), ( bodyStr.length / 1048576 ).toFixed( 1 ) ) ) );
 				return;
 			}
@@ -5404,6 +5461,7 @@
 			} else {
 				$btn.prop( 'disabled', false );
 				$( '#scrutinizer-share-result' ).append(
+					// translators: %s is the error message.
 					'<p class="scrutinizer-share-error">' + sprintf( __( 'Revocation failed: %s', 'scrutinizer' ), esc( data.error || __( 'Unknown error', 'scrutinizer' ) ) ) + '</p>'
 				);
 			}
