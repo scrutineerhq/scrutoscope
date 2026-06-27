@@ -239,9 +239,11 @@ class Instrumentor {
 				}
 			}
 		} catch ( \ReflectionException $e ) {
-			// Can't reflect — assume no reference params rather than
-			// skipping instrumentation for an unresolvable callback.
-			return false;
+			// Can't reflect — we cannot prove the callback is free of
+			// by-reference params, and wrapping one of those breaks its
+			// contract (and has broken login before — see GOTCHAS). Fail
+			// closed: treat it as having reference params so it is skipped.
+			return true;
 		}
 
 		return false;
