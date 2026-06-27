@@ -5,6 +5,47 @@ All notable changes to Scrutinizer will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-06-27
+
+### Added
+
+- **Redesigned Request Timeline** — a cost-sorted "who owns the time" bar names the culprit at a glance, over a chronological timeline with WordPress lifecycle phase markers. Unattributed time is always shown (never hidden); HTTP waits and database-query density get their own lanes; memory is drawn as a growth curve. Colour-blind-safe (Okabe–Ito) palette with a deuteranopia toggle, plus zoom and pan.
+- **One shared timeline renderer** (`scrutinizer-timeline.js`) drives both the dashboard and the relay viewer — byte-identical, with a checksum test in each repo that fails CI on drift.
+- **Memory-over-time sampling** — the profiler samples `memory_get_usage()` at each lifecycle phase marker, emitting an honest `memory_samples[]` curve (peak still reported separately).
+- **Regression detection** — a verdict (`likely_regression` / `difference_observed` / `within_noise` / `insufficient_data`) from a three-threshold classifier, plus a long-term route-stats aggregate that compares across windows outliving the 7-day profile TTL (cross-deploy). Detection only — never a gate.
+- **Long-term route-statistics aggregate** with automatic retention pruning so it can't grow unbounded.
+- **Internationalization** — dashboard JS strings wrapped for translation via `wp.i18n`.
+
+### Security
+
+- Fixed a bypass where a Scrutineer Application Password (scoped to REST + a short TTL) could be used over **XML-RPC**, skipping both scope and expiry — now rejected at the authentication layer for any non-REST use.
+- WP-CLI `export` runs the read-time sanitizer; the report-sharing path re-reduces SQL; the early-boot mu-plugin is removed on deactivation; the autoloader rejects path-traversal class names.
+
+### Accessibility
+
+- Full ARIA tab pattern with arrow-key navigation, focus management on view changes, and `aria-live` announcements for dynamic content.
+
+## [1.0.3] - 2026-06-26
+
+### Security
+
+- GDPR-compliant IP hashing — API log stores HMAC-SHA256 pseudonyms, not raw IPs.
+- Activation tokens bound to the issuing admin user ID.
+- Proxy header spoofing fix (REMOTE_ADDR only by default).
+- Query strings stripped from profile URLs at write time.
+
+### Added
+
+- Background profiling filters — user scope (all/anonymous/logged-in) and path exclusions.
+- Proxy trust settings with auto-detection.
+- Full-page settings view replaces the settings modal.
+
+### Improved
+
+- Profile data compressed with gzip (smaller database footprint).
+- Overhead claims updated with real benchmark numbers.
+- Settings page polish — card hierarchy, callout notes, layout fixes.
+
 ## [1.0.2] - 2026-06-26
 
 ### Improved

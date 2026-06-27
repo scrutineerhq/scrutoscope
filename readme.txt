@@ -1,9 +1,9 @@
 === Scrutinizer ===
 Contributors: scrutineerhq
-Tags: performance, profiling, debug, optimization, profiler
+Tags: performance, profiler, p3, p3-profiler, profiling
 Requires at least: 6.0
 Tested up to: 7.0
-Stable tag: 1.0.3
+Stable tag: 1.1.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -25,7 +25,7 @@ Scrutinizer is a read-only profiling plugin for WordPress. It instruments every 
 * **Autoloaded Options** — Option names, sizes, and sources contributing to autoload bloat
 * **Enqueued Assets** — Scripts and stylesheets with sizes and dependency chains
 * **Hook Execution Trace** — Full callback tree by WordPress lifecycle phase
-* **Timeline** — Visual timeline with phase milestone markers
+* **Timeline** — Redesigned request timeline: a cost-sorted ownership bar names the culprit, over a chronological view with phase markers, HTTP and query-density lanes, and a memory curve
 
 = Key Features =
 
@@ -75,6 +75,16 @@ Yes. Scrutinizer profiles any WordPress request, including WooCommerce pages, AJ
 Yes, with a low sample rate (0.1% or 1%). Scrutinizer is designed for background capture at scale. Use higher rates for focused debugging.
 
 == Changelog ==
+
+= 1.1.0 =
+* New: Redesigned Request Timeline — a cost-sorted "who owns the time" bar names the culprit at a glance, over a chronological timeline with WordPress lifecycle phase markers. Unattributed time is always shown (never hidden); HTTP waits and database-query density get their own lanes; memory is drawn as a growth curve. Colour-blind-safe palette with a deuteranopia toggle, plus zoom and pan.
+* New: One shared timeline renderer — a profile looks identical in the dashboard and in a shared report.
+* New: Memory over time — the profiler samples memory at each lifecycle phase, so the timeline shows an honest growth curve with the peak labelled.
+* New: Regression detection — Scrutinizer reports a verdict (Likely regression / Difference observed / Within noise / Insufficient data) by comparing a route against its own history. A long-term aggregate compares across windows that outlive the 7-day profile retention, so the signal survives deploys. Detection only — it never blocks or changes anything.
+* New: Long-term route-statistics aggregate, pruned automatically so it can't grow unbounded.
+* Security: Fixed a bypass where a Scrutineer Application Password could be used over XML-RPC outside its intended REST scope and short expiry; also hardened the WP-CLI export, the report-sharing path, deactivation cleanup, and the autoloader.
+* Accessibility: Full keyboard tab navigation (arrow keys), focus moves into each view on change, and screen-reader announcements for dynamic updates.
+* i18n: Dashboard interface strings are now translatable.
 
 = 1.0.3 =
 * Security: GDPR-compliant IP hashing — API log stores HMAC-SHA256 pseudonyms, not raw IPs
@@ -135,6 +145,9 @@ Yes, with a low sample rate (0.1% or 1%). Scrutinizer is designed for background
 4. Share — Zero-knowledge encrypted report sharing
 
 == Upgrade Notice ==
+
+= 1.1.0 =
+A major update: the redesigned Request Timeline, memory-over-time sampling, regression detection with cross-deploy history, accessibility and translation support, and security hardening.
 
 = 1.0.3 =
 Security hardening (IP hashing, token binding, proxy spoofing fix), background profiling filters, full-page settings view.
