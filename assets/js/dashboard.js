@@ -18,6 +18,11 @@
 		? window.wp.i18n.__
 		: function( s ) { return s; };
 
+	// wp.i18n sprintf for interpolated strings, with an identity fallback.
+	var sprintf = ( window.wp && window.wp.i18n && window.wp.i18n.sprintf )
+		? window.wp.i18n.sprintf
+		: function( f ) { return f; };
+
 	var pollingTimer  = null;
 	var fetchingGrouped = false;  // Guard against piling up grouped requests.
 	var currentView   = 'grouped'; // 'grouped', 'route', 'detail', 'history', 'compare'
@@ -145,14 +150,14 @@
 	/* ------------------------------------------------------------------ */
 
 	var rolePillConfig = {
-		administrator: { label: '🔒 admin', cls: 'role-admin' },
-		editor:        { label: 'editor', cls: 'role-editor' },
-		author:        { label: 'author', cls: 'role-editor' },
-		contributor:   { label: 'contributor', cls: 'role-subscriber' },
-		subscriber:    { label: 'subscriber', cls: 'role-subscriber' },
-		customer:      { label: 'customer', cls: 'role-subscriber' },
-		authenticated: { label: 'authenticated', cls: 'role-subscriber' },
-		anonymous:     { label: '👤 anonymous', cls: 'role-anonymous' }
+		administrator: { label: __( '🔒 admin', 'scrutinizer' ), cls: 'role-admin' },
+		editor:        { label: __( 'editor', 'scrutinizer' ), cls: 'role-editor' },
+		author:        { label: __( 'author', 'scrutinizer' ), cls: 'role-editor' },
+		contributor:   { label: __( 'contributor', 'scrutinizer' ), cls: 'role-subscriber' },
+		subscriber:    { label: __( 'subscriber', 'scrutinizer' ), cls: 'role-subscriber' },
+		customer:      { label: __( 'customer', 'scrutinizer' ), cls: 'role-subscriber' },
+		authenticated: { label: __( 'authenticated', 'scrutinizer' ), cls: 'role-subscriber' },
+		anonymous:     { label: __( '👤 anonymous', 'scrutinizer' ), cls: 'role-anonymous' }
 	};
 
 	function rolePill( role ) {
@@ -489,7 +494,7 @@
 				return;
 			}
 
-			var name = window.prompt( 'Name this saved search:' );
+			var name = window.prompt( __( 'Name this saved search:', 'scrutinizer' ) );
 			if ( ! name ) { return; }
 
 			var saved = loadSavedSearches();
@@ -570,21 +575,21 @@
 		// Background profiling filters.
 		$( document ).on( 'click', '#scrutinizer-save-filters', function() {
 			var $btn = $( this );
-			$btn.prop( 'disabled', true ).text( 'Saving\u2026' );
+			$btn.prop( 'disabled', true ).text( __( 'Saving\u2026', 'scrutinizer' ) );
 			$.post( scrutinizerAdmin.ajaxUrl, {
 				action:        'scrutinizer_save_background_filters',
 				nonce:         scrutinizerAdmin.nonce,
 				user_scope:    $( 'input[name="scrutinizer-user-scope"]:checked' ).val(),
 				exclude_paths: $( '#scrutinizer-exclude-paths' ).val()
 			}, function( response ) {
-				$btn.prop( 'disabled', false ).text( 'Save filters' );
+				$btn.prop( 'disabled', false ).text( __( 'Save filters', 'scrutinizer' ) );
 				if ( response.success ) {
 					showNotice( response.data.message, 'success' );
 					scrutinizerAdmin.userScope = response.data.user_scope;
 					scrutinizerAdmin.excludePaths = response.data.exclude_paths;
 				}
 			} ).fail( function() {
-				$btn.prop( 'disabled', false ).text( 'Save filters' );
+				$btn.prop( 'disabled', false ).text( __( 'Save filters', 'scrutinizer' ) );
 			} );
 		} );
 
@@ -607,10 +612,10 @@
 			var $content = $( '.scrutinizer-qp-detail-content' );
 			if ( $content.is( ':visible' ) ) {
 				$content.slideUp( 150 );
-				$( this ).text( 'Details' );
+				$( this ).text( __( 'Details', 'scrutinizer' ) );
 			} else {
 				$content.slideDown( 150 );
-				$( this ).text( 'Less' );
+				$( this ).text( __( 'Less', 'scrutinizer' ) );
 			}
 		} );
 
@@ -763,7 +768,7 @@
 			if ( ! ids.length ) {
 				return;
 			}
-			if ( ! confirm( 'Delete ' + ids.length + ' profile' + ( ids.length > 1 ? 's' : '' ) + '?' ) ) {
+			if ( ! confirm( sprintf( __( 'Delete %d profile(s)?', 'scrutinizer' ), ids.length ) ) ) {
 				return;
 			}
 			$.post( scrutinizerAdmin.ajaxUrl, {
@@ -777,7 +782,7 @@
 				if ( resp && resp.success ) {
 					showNotice( resp.data.message );
 				} else {
-					showNotice( 'Failed to delete profiles.', 'error' );
+					showNotice( __( 'Failed to delete profiles.', 'scrutinizer' ), 'error' );
 				}
 			} );
 		} );
@@ -799,7 +804,7 @@
 				if ( resp && resp.success ) {
 					showNotice( resp.data.message );
 				} else {
-					showNotice( 'Failed to pin profiles.', 'error' );
+					showNotice( __( 'Failed to pin profiles.', 'scrutinizer' ), 'error' );
 				}
 			} );
 		} );
@@ -821,7 +826,7 @@
 				if ( resp && resp.success ) {
 					showNotice( resp.data.message );
 				} else {
-					showNotice( 'Failed to unpin profiles.', 'error' );
+					showNotice( __( 'Failed to unpin profiles.', 'scrutinizer' ), 'error' );
 				}
 			} );
 		} );
@@ -919,19 +924,19 @@
 	function initBackgroundControls() {
 		var currentRate = parseFloat( scrutinizerAdmin.backgroundSampleRate ) || 10;
 		var snaps = [
-			{ value: 0.1, label: 'light' },
-			{ value: 1, label: 'moderate' },
-			{ value: 10, label: 'detailed' },
-			{ value: 100, label: 'every request' }
+			{ value: 0.1, label: __( 'light', 'scrutinizer' ) },
+			{ value: 1, label: __( 'moderate', 'scrutinizer' ) },
+			{ value: 10, label: __( 'detailed', 'scrutinizer' ) },
+			{ value: 100, label: __( 'every request', 'scrutinizer' ) }
 		];
 
 		var html = '<div class="scrutinizer-bg-controls">';
-		html += '<h3>Background Measurement</h3>';
+		html += '<h3>' + __( 'Background Measurement', 'scrutinizer' ) + '</h3>';
 		html += '<label class="scrutinizer-toggle-label">';
 		html += '<input type="checkbox" id="scrutinizer-bg-toggle"' + ( scrutinizerAdmin.backgroundEnabled ? ' checked' : '' ) + '> ';
-		html += 'Automatically measure requests in the background</label>';
+		html += __( 'Automatically measure requests in the background', 'scrutinizer' ) + '</label>';
 		html += '<div class="scrutinizer-rate-control' + ( scrutinizerAdmin.backgroundEnabled ? '' : ' hidden' ) + '" id="scrutinizer-rate-group">';
-		html += '<label>Capture rate</label>';
+		html += '<label>' + __( 'Capture rate', 'scrutinizer' ) + '</label>';
 		html += '<div class="scrutinizer-rate-snaps">';
 		for ( var i = 0; i < snaps.length; i++ ) {
 			var snap = snaps[ i ];
@@ -939,34 +944,34 @@
 			html += '<button type="button" class="scrutinizer-rate-snap' + active + '" data-rate="' + snap.value + '">';
 			html += snap.value + '%<span class="scrutinizer-rate-snap-label">' + esc( snap.label ) + '</span></button>';
 		}
-		html += '<span class="scrutinizer-rate-custom">or <input type="number" id="scrutinizer-custom-rate" min="0" max="100" step="0.1" value="' + currentRate + '">%</span>';
+		html += '<span class="scrutinizer-rate-custom">' + __( 'or', 'scrutinizer' ) + ' <input type="number" id="scrutinizer-custom-rate" min="0" max="100" step="0.1" value="' + currentRate + '">%</span>';
 		html += '</div>';
 		html += '</div>';
 
 		// User scope filter.
 		var scopeVal = scrutinizerAdmin.userScope || 'all';
 		html += '<div class="scrutinizer-filter-controls' + ( scrutinizerAdmin.backgroundEnabled ? '' : ' hidden' ) + '" id="scrutinizer-filter-group">';
-		html += '<label>Measure requests from</label>';
+		html += '<label>' + __( 'Measure requests from', 'scrutinizer' ) + '</label>';
 		html += '<div class="scrutinizer-scope-options">';
-		html += '<label class="scrutinizer-radio-label"><input type="radio" name="scrutinizer-user-scope" value="all"' + ( scopeVal === 'all' ? ' checked' : '' ) + '> All users</label>';
-		html += '<label class="scrutinizer-radio-label"><input type="radio" name="scrutinizer-user-scope" value="anonymous"' + ( scopeVal === 'anonymous' ? ' checked' : '' ) + '> Anonymous visitors only</label>';
-		html += '<label class="scrutinizer-radio-label"><input type="radio" name="scrutinizer-user-scope" value="logged_in"' + ( scopeVal === 'logged_in' ? ' checked' : '' ) + '> Logged-in users only</label>';
+		html += '<label class="scrutinizer-radio-label"><input type="radio" name="scrutinizer-user-scope" value="all"' + ( scopeVal === 'all' ? ' checked' : '' ) + '> ' + __( 'All users', 'scrutinizer' ) + '</label>';
+		html += '<label class="scrutinizer-radio-label"><input type="radio" name="scrutinizer-user-scope" value="anonymous"' + ( scopeVal === 'anonymous' ? ' checked' : '' ) + '> ' + __( 'Anonymous visitors only', 'scrutinizer' ) + '</label>';
+		html += '<label class="scrutinizer-radio-label"><input type="radio" name="scrutinizer-user-scope" value="logged_in"' + ( scopeVal === 'logged_in' ? ' checked' : '' ) + '> ' + __( 'Logged-in users only', 'scrutinizer' ) + '</label>';
 		html += '</div>';
 
 		// Exclude paths.
 		var excludeVal = scrutinizerAdmin.excludePaths || '';
-		html += '<label style="margin-top:12px;">Exclude paths <span class="scrutinizer-label-hint">(one per line, * wildcard)</span></label>';
+		html += '<label style="margin-top:12px;">' + __( 'Exclude paths', 'scrutinizer' ) + ' <span class="scrutinizer-label-hint">' + __( '(one per line, * wildcard)', 'scrutinizer' ) + '</span></label>';
 		html += '<textarea id="scrutinizer-exclude-paths" rows="3" class="scrutinizer-exclude-textarea" placeholder="/wp-admin/*&#10;/wp-json/*">' + esc( excludeVal ) + '</textarea>';
-		html += '<button type="button" class="button scrutinizer-save-filters" id="scrutinizer-save-filters">Save filters</button>';
+		html += '<button type="button" class="button scrutinizer-save-filters" id="scrutinizer-save-filters">' + __( 'Save filters', 'scrutinizer' ) + '</button>';
 
 		html += '<label class="scrutinizer-toggle-label" style="margin-top:16px;">';
 		html += '<input type="checkbox" id="scrutinizer-only-success"' + ( scrutinizerAdmin.onlySuccessful ? ' checked' : '' ) + '> ';
-		html += 'Only capture successful requests (HTTP 200)</label>';
+		html += __( 'Only capture successful requests (HTTP 200)', 'scrutinizer' ) + '</label>';
 		html += '</div>';
 
-		html += '<p class="scrutinizer-overhead-note">Non-profiled requests add about 2 ms or less. A profiled request brings up full hook instrumentation and trace storage — around 250 ms in our benchmarks, though it varies widely with your plugins, hardware, and load. Unattributed time in each profile includes this cost.</p>';
+		html += '<p class="scrutinizer-overhead-note">' + __( 'Non-profiled requests add about 2 ms or less. A profiled request brings up full hook instrumentation and trace storage — around 250 ms in our benchmarks, though it varies widely with your plugins, hardware, and load. Unattributed time in each profile includes this cost.', 'scrutinizer' ) + '</p>';
 		if ( currentRate >= 50 ) {
-			html += '<p class="scrutinizer-overhead-note" style="color:#d63638;font-weight:500;">\u26a0 High capture rate. Each profile generates 2\u201310 MB of trace data. Not recommended for production sites or servers with limited disk/memory.</p>';
+			html += '<p class="scrutinizer-overhead-note" style="color:#d63638;font-weight:500;">' + __( '\u26a0 High capture rate. Each profile generates 2\u201310 MB of trace data. Not recommended for production sites or servers with limited disk/memory.', 'scrutinizer' ) + '</p>';
 		}
 		html += '</div>';
 
@@ -1018,11 +1023,11 @@
 
 		var html = '<div class="scrutinizer-qp-controls">';
 		html += '<div class="scrutinizer-qp-header">';
-		html += '<h3>Query Profiling</h3>';
+		html += '<h3>' + __( 'Query Profiling', 'scrutinizer' ) + '</h3>';
 
 		// Toggle switch.
 		html += '<label class="scrutinizer-switch' + ( canToggle ? '' : ' disabled' ) + '">';
-		html += '<input type="checkbox" id="scrutinizer-qp-toggle" aria-label="Enable query profiling"';
+		html += '<input type="checkbox" id="scrutinizer-qp-toggle" aria-label="' + esc( __( 'Enable query profiling', 'scrutinizer' ) ) + '"';
 		html += ( isOn ? ' checked' : '' );
 		html += ( canToggle ? '' : ' disabled' );
 		html += '>';
@@ -1033,19 +1038,19 @@
 		// Status description — adapts to all three states.
 		html += '<p class="scrutinizer-qp-desc">';
 		if ( canToggle ) {
-			html += 'Record individual SQL query timing for the density heatmap and Queries tab.';
+			html += __( 'Record individual SQL query timing for the density heatmap and Queries tab.', 'scrutinizer' );
 		} else if ( isOn ) {
 			html += '<span class="scrutinizer-qp-badge">wp-config.php</span> ';
-			html += 'SAVEQUERIES is enabled in your configuration. Full query coverage from boot.';
+			html += __( 'SAVEQUERIES is enabled in your configuration. Full query coverage from boot.', 'scrutinizer' );
 		} else {
 			html += '<span class="scrutinizer-qp-badge blocked">wp-config.php</span> ';
-			html += 'SAVEQUERIES is set to <code>false</code> — Scrutineer can\'t override a defined constant.';
+			html += sprintf( __( 'SAVEQUERIES is set to %s — Scrutineer can\'t override a defined constant.', 'scrutinizer' ), '<code>false</code>' );
 		}
 		html += '</p>';
 
 		// Progressive detail — technical users click through, everyone else ignores it.
 		html += '<div class="scrutinizer-qp-detail">';
-		html += '<a href="#" class="scrutinizer-qp-more">Details</a>';
+		html += '<a href="#" class="scrutinizer-qp-more">' + __( 'Details', 'scrutinizer' ) + '</a>';
 		html += '<div class="scrutinizer-qp-detail-content" style="display:none;">';
 
 		if ( canToggle ) {
@@ -1092,17 +1097,17 @@
 	function initRetentionControls() {
 		var current = parseInt( scrutinizerAdmin.retentionDays, 10 ) || 7;
 		var options = [
-			{ value: 7, label: '7 days' },
-			{ value: 14, label: '14 days' },
-			{ value: 30, label: '30 days' },
-			{ value: 0, label: 'Never (keep all)' }
+			{ value: 7, label: __( '7 days', 'scrutinizer' ) },
+			{ value: 14, label: __( '14 days', 'scrutinizer' ) },
+			{ value: 30, label: __( '30 days', 'scrutinizer' ) },
+			{ value: 0, label: __( 'Never (keep all)', 'scrutinizer' ) }
 		];
 
 		var html = '<div class="scrutinizer-retention-controls">';
-		html += '<h3>Profile Retention</h3>';
-		html += '<p class="description">Unpinned profiles older than this are automatically deleted. Pinned and shared profiles are kept regardless.</p>';
+		html += '<h3>' + __( 'Profile Retention', 'scrutinizer' ) + '</h3>';
+		html += '<p class="description">' + __( 'Unpinned profiles older than this are automatically deleted. Pinned and shared profiles are kept regardless.', 'scrutinizer' ) + '</p>';
 		html += '<div class="scrutinizer-retention-row">';
-		html += '<label for="scrutinizer-retention-select">Auto-expire after </label>';
+		html += '<label for="scrutinizer-retention-select">' + __( 'Auto-expire after', 'scrutinizer' ) + ' </label>';
 		html += '<select id="scrutinizer-retention-select">';
 		for ( var i = 0; i < options.length; i++ ) {
 			var opt = options[ i ];
@@ -1110,7 +1115,7 @@
 			html += '<option value="' + opt.value + '"' + selected + '>' + esc( opt.label ) + '</option>';
 		}
 		html += '</select>';
-		html += '<span id="scrutinizer-retention-saved" class="scrutinizer-saved-notice" style="display:none;">\u2713 Saved</span>';
+		html += '<span id="scrutinizer-retention-saved" class="scrutinizer-saved-notice" style="display:none;">\u2713 ' + __( 'Saved', 'scrutinizer' ) + '</span>';
 		html += '</div>';
 		html += '</div>';
 
@@ -1144,28 +1149,28 @@
 		var detected = scrutinizerAdmin.detectedProxyHeaders || [];
 
 		var html = '<div class="scrutinizer-proxy-controls">';
-		html += '<h3>Client IP Detection</h3>';
+		html += '<h3>' + __( 'Client IP Detection', 'scrutinizer' ) + '</h3>';
 		html += '<label class="scrutinizer-toggle-label">';
 		html += '<input type="checkbox" id="scrutinizer-proxy-toggle"' + ( trusted ? ' checked' : '' ) + '> ';
-		html += 'Trust proxy headers for client IP</label>';
+		html += __( 'Trust proxy headers for client IP', 'scrutinizer' ) + '</label>';
 		html += '<p class="description">When enabled, Scrutineer reads headers like <code>X-Forwarded-For</code> or <code>CF-Connecting-IP</code> to identify the real client IP. Enable this only if your site is behind a reverse proxy or CDN (e.g. Cloudflare, Nginx, a load balancer). Otherwise, these headers can be spoofed by visitors.</p>';
 
 		// Auto-detect recommendation.
 		if ( detected.length > 0 ) {
 			html += '<p class="scrutinizer-proxy-recommendation scrutinizer-proxy-detected">';
 			html += '<span class="dashicons dashicons-yes-alt"></span> ';
-			html += 'Detected: <strong>' + esc( detected.join( ', ' ) ) + '</strong>. ';
-			html += 'Your site appears to be behind a proxy. <strong>Recommended: enable.</strong>';
+			html += sprintf( __( 'Detected: %s.', 'scrutinizer' ), '<strong>' + esc( detected.join( ', ' ) ) + '</strong>' ) + ' ';
+			html += __( 'Your site appears to be behind a proxy.', 'scrutinizer' ) + ' <strong>' + __( 'Recommended: enable.', 'scrutinizer' ) + '</strong>';
 			html += '</p>';
 		} else {
 			html += '<p class="scrutinizer-proxy-recommendation scrutinizer-proxy-none">';
 			html += '<span class="dashicons dashicons-info-outline"></span> ';
-			html += 'No proxy headers detected on this request. ';
-			html += 'If you are not behind a proxy or CDN, <strong>leave this disabled.</strong>';
+			html += __( 'No proxy headers detected on this request.', 'scrutinizer' ) + ' ';
+			html += __( 'If you are not behind a proxy or CDN,', 'scrutinizer' ) + ' <strong>' + __( 'leave this disabled.', 'scrutinizer' ) + '</strong>';
 			html += '</p>';
 		}
 
-		html += '<span id="scrutinizer-proxy-saved" class="scrutinizer-saved-notice" style="display:none;">\u2713 Saved</span>';
+		html += '<span id="scrutinizer-proxy-saved" class="scrutinizer-saved-notice" style="display:none;">\u2713 ' + __( 'Saved', 'scrutinizer' ) + '</span>';
 		html += '</div>';
 
 		$( '#scrutinizer-settings-network' ).append( html );
@@ -1272,7 +1277,7 @@
 				} else {
 					// Open in new tab so the dashboard stays visible.
 					window.open( response.data.activation_url, '_blank' );
-					showNotice( 'Profiling started — measuring in the new tab. Results will appear here.', 'success' );
+					showNotice( __( 'Profiling started — measuring in the new tab. Results will appear here.', 'scrutinizer' ), 'success' );
 				}
 				// Start polling for results.
 				showStopButton();
@@ -1302,12 +1307,12 @@
 		var html = '<div class="scrutinizer-visitor-guidance">';
 		html += '<div class="scrutinizer-visitor-copied">';
 		html += '<span class="dashicons dashicons-yes-alt"></span>';
-		html += '<strong>URL copied to clipboard</strong>';
+		html += '<strong>' + __( 'URL copied to clipboard', 'scrutinizer' ) + '</strong>';
 		html += '</div>';
-		html += '<p>Open an <strong>incognito window</strong> (' + shortcut + '), paste the URL, and browse your site. Come back here and click <strong>Stop Profiling</strong> when done.</p>';
+		html += '<p>' + sprintf( __( 'Open an %1$s (%2$s), paste the URL, and browse your site. Come back here and click %3$s when done.', 'scrutinizer' ), '<strong>' + __( 'incognito window', 'scrutinizer' ) + '</strong>', shortcut, '<strong>' + __( 'Stop Profiling', 'scrutinizer' ) + '</strong>' ) + '</p>';
 		html += '<div class="scrutinizer-url-box">';
 		html += '<input type="text" readonly class="widefat" id="scrutinizer-visitor-url" value="' + esc( url ) + '" />';
-		html += '<button type="button" class="button" id="scrutinizer-visitor-copy">Copy again</button>';
+		html += '<button type="button" class="button" id="scrutinizer-visitor-copy">' + __( 'Copy again', 'scrutinizer' ) + '</button>';
 		html += '</div>';
 		html += '</div>';
 		$( '#scrutinizer-capture-status' ).html( html );
@@ -1352,9 +1357,9 @@
 			'<div class="scrutinizer-capture-active">' +
 			'<div class="scrutinizer-polling">' +
 				'<span class="spinner is-active"></span>' +
-				'<strong>Profiling active</strong>' +
+				'<strong>' + __( 'Profiling active', 'scrutinizer' ) + '</strong>' +
 			'</div>' +
-			'<p>Browse pages in the other tab. When done, click Stop Profiling below.</p>' +
+			'<p>' + __( 'Browse pages in the other tab. When done, click Stop Profiling below.', 'scrutinizer' ) + '</p>' +
 			'<button type="button" class="button button-secondary button-large" id="scrutinizer-stop">' +
 				scrutinizerAdmin.i18n.stopProfiling +
 			'</button>' +
@@ -1481,13 +1486,13 @@
 				}
 			} else {
 				$( '#scrutinizer-profile-list' ).html(
-					'<p class="scrutinizer-empty">Failed to load routes. Try refreshing the page.</p>'
+					'<p class="scrutinizer-empty">' + __( 'Failed to load routes. Try refreshing the page.', 'scrutinizer' ) + '</p>'
 				);
 			}
 		} ).fail( function( xhr ) {
-			var msg = 'Could not load routes.';
+			var msg = __( 'Could not load routes.', 'scrutinizer' );
 			if ( xhr.status === 403 || xhr.responseText === '-1' || xhr.responseText === '0' ) {
-				msg = 'Session expired. Please <a href="' + window.location.href + '">reload the page</a>.';
+				msg = sprintf( __( 'Session expired. Please %1$sreload the page%2$s.', 'scrutinizer' ), '<a href="' + window.location.href + '">', '</a>' );
 			}
 			$( '#scrutinizer-profile-list' ).html(
 				'<p class="scrutinizer-empty">' + msg + '</p>'
@@ -1503,10 +1508,10 @@
 		if ( ! groups || 0 === groups.length ) {
 			$list.html(
 				'<div class="scrutinizer-empty-state">' +
-				'<h3>No measurements yet</h3>' +
-				'<p>Start a profiling session to see where your server time goes, or turn on background measurement to capture requests automatically.</p>' +
+				'<h3>' + __( 'No measurements yet', 'scrutinizer' ) + '</h3>' +
+				'<p>' + __( 'Start a profiling session to see where your server time goes, or turn on background measurement to capture requests automatically.', 'scrutinizer' ) + '</p>' +
 				'<div class="scrutinizer-empty-actions">' +
-				'<button type="button" class="button button-primary" id="scrutinizer-empty-capture">Capture Profile</button>' +
+				'<button type="button" class="button button-primary" id="scrutinizer-empty-capture">' + __( 'Capture Profile', 'scrutinizer' ) + '</button>' +
 				'</div>' +
 				'</div>'
 			);
@@ -1544,30 +1549,30 @@
 
 		// Filter bar.
 		var html = '<div class="scrutinizer-filter-bar">';
-		html += '<label>Showing: <select id="scrutinizer-route-filter">';
-		html += '<option value="2xx"' + ( '2xx' === routeFilter ? ' selected' : '' ) + '>Pages that loaded</option>';
-		html += '<option value="non2xx"' + ( 'non2xx' === routeFilter ? ' selected' : '' ) + '>Other responses</option>';
-		html += '<option value=""' + ( '' === routeFilter ? ' selected' : '' ) + '>All requests</option>';
+		html += '<label>' + __( 'Showing:', 'scrutinizer' ) + ' <select id="scrutinizer-route-filter">';
+		html += '<option value="2xx"' + ( '2xx' === routeFilter ? ' selected' : '' ) + '>' + __( 'Pages that loaded', 'scrutinizer' ) + '</option>';
+		html += '<option value="non2xx"' + ( 'non2xx' === routeFilter ? ' selected' : '' ) + '>' + __( 'Other responses', 'scrutinizer' ) + '</option>';
+		html += '<option value=""' + ( '' === routeFilter ? ' selected' : '' ) + '>' + __( 'All requests', 'scrutinizer' ) + '</option>';
 		html += '</select></label>';
-		html += '<input type="search" id="scrutinizer-route-search" placeholder="Search routes\u2026" value="' + esc( routeSearch ) + '" />';
+		html += '<input type="search" id="scrutinizer-route-search" placeholder="' + esc( __( 'Search routes\u2026', 'scrutinizer' ) ) + '" value="' + esc( routeSearch ) + '" />';
 		html += '</div>';
 
 		if ( 0 === filtered.length ) {
-			html += '<p class="scrutinizer-empty">No routes match the current filter.</p>';
+			html += '<p class="scrutinizer-empty">' + __( 'No routes match the current filter.', 'scrutinizer' ) + '</p>';
 			$list.html( html );
 			return;
 		}
 
 		html += '<table class="scrutinizer-profile-table widefat">';
 		html += '<thead><tr>';
-		html += sortHeader( 'Route', 'route_key' );
-		html += sortHeader( 'Method', 'request_method' );
-		html += sortHeader( 'Requests', 'request_count' );
-		html += sortHeader( 'Avg Duration', 'avg_duration_ns' );
-		html += sortHeader( 'Min', 'min_duration_ns' );
-		html += sortHeader( 'Max', 'max_duration_ns' );
-		html += sortHeader( 'Last Captured', 'last_captured' );
-		html += '<th>Type</th>';
+		html += sortHeader( __( 'Route', 'scrutinizer' ), 'route_key' );
+		html += sortHeader( __( 'Method', 'scrutinizer' ), 'request_method' );
+		html += sortHeader( __( 'Requests', 'scrutinizer' ), 'request_count' );
+		html += sortHeader( __( 'Avg Duration', 'scrutinizer' ), 'avg_duration_ns' );
+		html += sortHeader( __( 'Min', 'scrutinizer' ), 'min_duration_ns' );
+		html += sortHeader( __( 'Max', 'scrutinizer' ), 'max_duration_ns' );
+		html += sortHeader( __( 'Last Captured', 'scrutinizer' ), 'last_captured' );
+		html += '<th>' + __( 'Type', 'scrutinizer' ) + '</th>';
 		html += '</tr></thead><tbody>';
 
 		for ( var i = 0; i < filtered.length; i++ ) {
@@ -1576,7 +1581,7 @@
 			var minMs = ( parseInt( r.min_duration_ns, 10 ) / 1e6 ).toFixed( 1 );
 			var maxMs = ( parseInt( r.max_duration_ns, 10 ) / 1e6 ).toFixed( 1 );
 			var types = typeBadges( r.profile_types || '' );
-			var route = r.route_key || '(unknown)';
+			var route = r.route_key || __( '(unknown)', 'scrutinizer' );
 
 			// Two-line route label (F9).
 			var routeCell = '';
@@ -1649,7 +1654,7 @@
 		$( '#scrutinizer-route-detail' ).remove();
 
 		var html = '<div id="scrutinizer-route-detail">';
-		html += '<button type="button" class="button button-link" id="scrutinizer-back-to-list">← Back to routes</button>';
+		html += '<button type="button" class="button button-link" id="scrutinizer-back-to-list">' + __( '← Back to routes', 'scrutinizer' ) + '</button>';
 		html += '<h2>' + esc( currentRoute ) + '</h2>';
 		html += '<div id="scrutinizer-route-regression" class="scrutinizer-regression-banner" style="display:none"></div>';
 
@@ -1692,9 +1697,9 @@
 
 		var verdict = data.verdict || 'insufficient_data';
 		var labels  = {
-			likely_regression:   'Likely Regression',
-			difference_observed: 'Difference observed',
-			within_noise:        'Within noise',
+			likely_regression:   __( 'Likely Regression', 'scrutinizer' ),
+			difference_observed: __( 'Difference observed', 'scrutinizer' ),
+			within_noise:        __( 'Within noise', 'scrutinizer' ),
 			insufficient_data:   ''
 		};
 
@@ -1778,11 +1783,11 @@
 		html += '</svg>';
 		html += '</div>';
 		html += '<div class="scrutinizer-sparkline-stats">';
-		html += '<span class="sparkline-stat"><span class="sparkline-stat-label">Latest</span> ' + latest.toFixed( 0 ) + ' ms</span>';
-		html += '<span class="sparkline-stat"><span class="sparkline-stat-label">Average</span> ' + avg.toFixed( 0 ) + ' ms</span>';
-		html += '<span class="sparkline-stat"><span class="sparkline-stat-label">Min</span> ' + minVal.toFixed( 0 ) + ' ms</span>';
-		html += '<span class="sparkline-stat"><span class="sparkline-stat-label">Max</span> ' + maxVal.toFixed( 0 ) + ' ms</span>';
-		html += '<span class="sparkline-stat ' + trendCls + '"><span class="sparkline-stat-label">Trend</span> ' + trendLabel + '</span>';
+		html += '<span class="sparkline-stat"><span class="sparkline-stat-label">' + __( 'Latest', 'scrutinizer' ) + '</span> ' + latest.toFixed( 0 ) + ' ms</span>';
+		html += '<span class="sparkline-stat"><span class="sparkline-stat-label">' + __( 'Average', 'scrutinizer' ) + '</span> ' + avg.toFixed( 0 ) + ' ms</span>';
+		html += '<span class="sparkline-stat"><span class="sparkline-stat-label">' + __( 'Min', 'scrutinizer' ) + '</span> ' + minVal.toFixed( 0 ) + ' ms</span>';
+		html += '<span class="sparkline-stat"><span class="sparkline-stat-label">' + __( 'Max', 'scrutinizer' ) + '</span> ' + maxVal.toFixed( 0 ) + ' ms</span>';
+		html += '<span class="sparkline-stat ' + trendCls + '"><span class="sparkline-stat-label">' + __( 'Trend', 'scrutinizer' ) + '</span> ' + trendLabel + '</span>';
 		html += '</div>';
 		html += '</div>';
 
@@ -1793,7 +1798,7 @@
 		var $container = $( '#scrutinizer-route-profiles' );
 
 		if ( ! profiles || 0 === profiles.length ) {
-			$container.html( '<p class="scrutinizer-empty">No profiles for this route.</p>' );
+			$container.html( '<p class="scrutinizer-empty">' + __( 'No profiles for this route.', 'scrutinizer' ) + '</p>' );
 			return;
 		}
 
@@ -1802,13 +1807,13 @@
 		var html = '<table class="scrutinizer-profile-table widefat">';
 		html += '<thead><tr>';
 		html += sortHeader( scrutinizerAdmin.i18n.serverDuration, 'duration_ns' );
-		html += sortHeader( 'URL', 'request_url' );
-		html += sortHeader( 'Method', 'request_method' );
-		html += sortHeader( 'Route', 'route_class' );
-		html += '<th>Role</th>';
-		html += sortHeader( 'Captured', 'captured_at' );
-		html += '<th>Type</th>';
-		html += '<th>Actions</th>';
+		html += sortHeader( __( 'URL', 'scrutinizer' ), 'request_url' );
+		html += sortHeader( __( 'Method', 'scrutinizer' ), 'request_method' );
+		html += sortHeader( __( 'Route', 'scrutinizer' ), 'route_class' );
+		html += '<th>' + __( 'Role', 'scrutinizer' ) + '</th>';
+		html += sortHeader( __( 'Captured', 'scrutinizer' ), 'captured_at' );
+		html += '<th>' + __( 'Type', 'scrutinizer' ) + '</th>';
+		html += '<th>' + __( 'Actions', 'scrutinizer' ) + '</th>';
 		html += '</tr></thead><tbody>';
 
 		for ( var i = 0; i < profiles.length; i++ ) {
@@ -1826,9 +1831,9 @@
 			html += '<td>' + esc( p.captured_at ) + '</td>';
 			html += '<td>' + badge + '</td>';
 			html += '<td class="scrutinizer-actions">';
-			html += '<a href="#" class="scrutinizer-view-profile" data-profile-id="' + parseInt( p.id, 10 ) + '">View</a>';
+			html += '<a href="#" class="scrutinizer-view-profile" data-profile-id="' + parseInt( p.id, 10 ) + '">' + __( 'View', 'scrutinizer' ) + '</a>';
 			html += ' | ';
-			html += '<a href="#" class="scrutinizer-delete-profile" data-profile-id="' + parseInt( p.id, 10 ) + '">Delete</a>';
+			html += '<a href="#" class="scrutinizer-delete-profile" data-profile-id="' + parseInt( p.id, 10 ) + '">' + __( 'Delete', 'scrutinizer' ) + '</a>';
 			html += '</td>';
 			html += '</tr>';
 		}
@@ -1838,13 +1843,13 @@
 		// Pagination.
 		if ( historyPages > 1 ) {
 			html += '<div class="scrutinizer-pagination">';
-			html += '<a href="#" id="scrutinizer-page-prev" class="button' + ( historyPage <= 1 ? ' disabled' : '' ) + '">&laquo; Previous</a>';
-			html += '<span class="scrutinizer-page-info">Page ' + historyPage + ' of ' + historyPages + ' (' + historyTotal + ' profiles)</span>';
-			html += '<a href="#" id="scrutinizer-page-next" class="button' + ( historyPage >= historyPages ? ' disabled' : '' ) + '">Next &raquo;</a>';
+			html += '<a href="#" id="scrutinizer-page-prev" class="button' + ( historyPage <= 1 ? ' disabled' : '' ) + '">' + __( '&laquo; Previous', 'scrutinizer' ) + '</a>';
+			html += '<span class="scrutinizer-page-info">' + sprintf( __( 'Page %1$d of %2$d (%3$d profiles)', 'scrutinizer' ), historyPage, historyPages, historyTotal ) + '</span>';
+			html += '<a href="#" id="scrutinizer-page-next" class="button' + ( historyPage >= historyPages ? ' disabled' : '' ) + '">' + __( 'Next &raquo;', 'scrutinizer' ) + '</a>';
 			html += '</div>';
 		} else if ( historyTotal > 0 ) {
 			html += '<div class="scrutinizer-pagination">';
-			html += '<span class="scrutinizer-page-info">' + historyTotal + ' profile' + ( historyTotal !== 1 ? 's' : '' ) + '</span>';
+			html += '<span class="scrutinizer-page-info">' + sprintf( __( '%d profiles', 'scrutinizer' ), historyTotal ) + '</span>';
 			html += '</div>';
 		}
 
@@ -1928,12 +1933,12 @@
 		html += isPinned ? '<span class="dashicons dashicons-sticky"></span> ' + esc( scrutinizerAdmin.i18n.unpin || 'Unpin' ) : '<span class="dashicons dashicons-sticky"></span> ' + esc( scrutinizerAdmin.i18n.pin || 'Pin' );
 		html += '</button>';
 		html += '<label class="scrutinizer-pin-field"><span>' + esc( scrutinizerAdmin.i18n.note || 'Note' ) + ':</span>';
-		html += '<input type="text" id="scrutinizer-note-input" value="' + esc( profileNote ) + '" placeholder="Why did you take this measurement?" /></label>';
+		html += '<input type="text" id="scrutinizer-note-input" value="' + esc( profileNote ) + '" placeholder="' + esc( __( 'Why did you take this measurement?', 'scrutinizer' ) ) + '" /></label>';
 		html += '<label class="scrutinizer-pin-field"><span>' + esc( scrutinizerAdmin.i18n.tags || 'Tags' ) + ':</span>';
 		html += '<input type="text" id="scrutinizer-tags-input" value="' + esc( profileTags ) + '" placeholder="before-update, opcache, v2.1" /></label>';
-		html += '<button type="button" class="button" id="scrutinizer-share-btn" title="Share this report"><span class="dashicons dashicons-share-alt2"></span> Share</button>';
-		html += '<button type="button" class="button" id="scrutinizer-export-btn" title="Download raw profile as JSON"><span class="dashicons dashicons-download"></span> Export</button>';
-		html += '<button type="button" class="button" id="scrutinizer-compare-pick-btn" title="Compare with another profile"><span class="dashicons dashicons-randomize"></span> Compare</button>';
+		html += '<button type="button" class="button" id="scrutinizer-share-btn" title="' + esc( __( 'Share this report', 'scrutinizer' ) ) + '"><span class="dashicons dashicons-share-alt2"></span> ' + __( 'Share', 'scrutinizer' ) + '</button>';
+		html += '<button type="button" class="button" id="scrutinizer-export-btn" title="' + esc( __( 'Download raw profile as JSON', 'scrutinizer' ) ) + '"><span class="dashicons dashicons-download"></span> ' + __( 'Export', 'scrutinizer' ) + '</button>';
+		html += '<button type="button" class="button" id="scrutinizer-compare-pick-btn" title="' + esc( __( 'Compare with another profile', 'scrutinizer' ) ) + '"><span class="dashicons dashicons-randomize"></span> ' + __( 'Compare', 'scrutinizer' ) + '</button>';
 		html += '</div>';
 
 		// Header with role pill.
@@ -1946,40 +1951,40 @@
 		html += '<div class="scrutinizer-detail-header">';
 		html += '<h3>' + headerLabel + '</h3>';
 		if ( request.referer ) {
-			html += '<div class="scrutinizer-referer">↩ triggered from <code>' + esc( request.referer ) + '</code></div>';
+			html += '<div class="scrutinizer-referer">' + sprintf( __( '↩ triggered from %s', 'scrutinizer' ), '<code>' + esc( request.referer ) + '</code>' ) + '</div>';
 		}
 		html += '</div>';
 
 		// Metric cards row.
 		html += '<div class="scrutinizer-metric-cards">';
 		html += renderMetricCard( durMs + ' ms', scrutinizerAdmin.i18n.serverDuration, 'primary' );
-		html += renderMetricCard( formatBytes( summary.memory_peak || request.memory_peak || 0 ), 'Peak Memory', 'default' );
-		html += renderMetricCard( formatBytes( summary.memory_allocated || 0 ), 'Memory Used', summary.memory_allocated > 10485760 ? 'warning' : 'default' );
-		html += renderMetricCard( String( queryCount ), 'DB Queries', queryCount > 100 ? 'warning' : 'default' );
-		html += renderMetricCard( String( httpCount ), 'HTTP Calls', httpCount > 0 ? 'warning' : 'default' );
-		html += renderMetricCard( String( summary.callback_count || 0 ), 'Callbacks', 'default' );
+		html += renderMetricCard( formatBytes( summary.memory_peak || request.memory_peak || 0 ), __( 'Peak Memory', 'scrutinizer' ), 'default' );
+		html += renderMetricCard( formatBytes( summary.memory_allocated || 0 ), __( 'Memory Used', 'scrutinizer' ), summary.memory_allocated > 10485760 ? 'warning' : 'default' );
+		html += renderMetricCard( String( queryCount ), __( 'DB Queries', 'scrutinizer' ), queryCount > 100 ? 'warning' : 'default' );
+		html += renderMetricCard( String( httpCount ), __( 'HTTP Calls', 'scrutinizer' ), httpCount > 0 ? 'warning' : 'default' );
+		html += renderMetricCard( String( summary.callback_count || 0 ), __( 'Callbacks', 'scrutinizer' ), 'default' );
 		html += '</div>';
 
 		// Tab navigation.
 		html += '<div class="scrutinizer-tabs">';
-		html += '<button class="scrutinizer-tab active" data-tab="timeline">Timeline</button>';
-		html += '<button class="scrutinizer-tab" data-tab="sources">Sources</button>';
+		html += '<button class="scrutinizer-tab active" data-tab="timeline">' + __( 'Timeline', 'scrutinizer' ) + '</button>';
+		html += '<button class="scrutinizer-tab" data-tab="sources">' + __( 'Sources', 'scrutinizer' ) + '</button>';
 		if ( queries.length > 0 ) {
-			html += '<button class="scrutinizer-tab" data-tab="queries">Queries (' + queries.length + ')</button>';
+			html += '<button class="scrutinizer-tab" data-tab="queries">' + sprintf( __( 'Queries (%d)', 'scrutinizer' ), queries.length ) + '</button>';
 		}
 		if ( httpCalls.length > 0 ) {
-			html += '<button class="scrutinizer-tab" data-tab="http">HTTP Calls (' + httpCalls.length + ')</button>';
+			html += '<button class="scrutinizer-tab" data-tab="http">' + sprintf( __( 'HTTP Calls (%d)', 'scrutinizer' ), httpCalls.length ) + '</button>';
 		}
 		if ( ( assets.counts && ( assets.counts.scripts + assets.counts.styles ) > 0 ) ) {
-			html += '<button class="scrutinizer-tab" data-tab="assets">Assets (' + ( assets.counts.scripts + assets.counts.styles ) + ')</button>';
+			html += '<button class="scrutinizer-tab" data-tab="assets">' + sprintf( __( 'Assets (%d)', 'scrutinizer' ), ( assets.counts.scripts + assets.counts.styles ) ) + '</button>';
 		}
 		if ( autoloadOpts.count > 0 ) {
-			html += '<button class="scrutinizer-tab" data-tab="options">Options (' + autoloadOpts.count + ')</button>';
+			html += '<button class="scrutinizer-tab" data-tab="options">' + sprintf( __( 'Options (%d)', 'scrutinizer' ), autoloadOpts.count ) + '</button>';
 		}
 		if ( traceCount > 0 ) {
-			html += '<button class="scrutinizer-tab" data-tab="trace">Trace (' + traceCount.toLocaleString() + ')</button>';
+			html += '<button class="scrutinizer-tab" data-tab="trace">' + sprintf( __( 'Trace (%s)', 'scrutinizer' ), traceCount.toLocaleString() ) + '</button>';
 		}
-		html += '<button class="scrutinizer-tab" data-tab="metadata">Metadata</button>';
+		html += '<button class="scrutinizer-tab" data-tab="metadata">' + __( 'Metadata', 'scrutinizer' ) + '</button>';
 		html += '</div>';
 
 		// Tab: Timeline. Rendered by the shared ScrutinizerTimeline module after
@@ -2037,7 +2042,7 @@
 				// Trace not loaded yet — show placeholder.
 				html += '<div class="scrutinizer-trace-loading">';
 				html += '<span class="spinner is-active" style="float:none;margin:0 8px 0 0;"></span>';
-				html += 'Loading ' + traceCount.toLocaleString() + ' callbacks\u2026';
+				html += sprintf( __( 'Loading %s callbacks\u2026', 'scrutinizer' ), traceCount.toLocaleString() );
 				html += '</div>';
 			}
 			html += '</div>';
@@ -2083,7 +2088,7 @@
 
 	function renderSourceTable( sources, summary ) {
 		if ( ! sources || 0 === sources.length ) {
-			return '<p class="scrutinizer-empty">No source data.</p>';
+			return '<p class="scrutinizer-empty">' + __( 'No source data.', 'scrutinizer' ) + '</p>';
 		}
 
 		var totalExclNs = summary.total_exclusive_ns || 1;
@@ -2105,20 +2110,20 @@
 		if ( accountedNs > 0 ) {
 			var unPct = ( accountedNs / durationNs ) * 100;
 			if ( unPct >= 0.1 ) {
-				html += '<div class="segment" style="width:' + unPct.toFixed( 2 ) + '%;background:#dcdcde" title="Unattributed + Bootstrap: ' + ( accountedNs / 1e6 ).toFixed( 1 ) + ' ms (' + unPct.toFixed( 1 ) + '%)"></div>';
+				html += '<div class="segment" style="width:' + unPct.toFixed( 2 ) + '%;background:#dcdcde" title="' + esc( __( 'Unattributed + Bootstrap', 'scrutinizer' ) ) + ': ' + ( accountedNs / 1e6 ).toFixed( 1 ) + ' ms (' + unPct.toFixed( 1 ) + '%)"></div>';
 			}
 		}
 		html += '</div>';
 
-		html += '<p class="scrutinizer-tab-subtitle">Each plugin and theme\u2019s contribution to server request duration, sorted by the time spent in their own callbacks.</p>';
+		html += '<p class="scrutinizer-tab-subtitle">' + __( 'Each plugin and theme\u2019s contribution to server request duration, sorted by the time spent in their own callbacks.', 'scrutinizer' ) + '</p>';
 		html += '<table class="scrutinizer-source-table widefat">';
 		html += '<thead><tr>';
-		html += '<th>Source</th>';
-		html += '<th>Type</th>';
-		html += '<th class="numeric">' + scrutinizerAdmin.i18n.exclusiveTime + ' <button type="button" class="scrutinizer-info-toggle" aria-label="What is exclusive time?">ⓘ</button><span class="scrutinizer-info-bubble">Time spent directly in this source\u2019s own callbacks, excluding time in callbacks it triggers from other sources. This is the most useful number for identifying what\u2019s slow.</span></th>';
-		html += '<th class="numeric">Weight</th>';
-		html += '<th class="numeric">Memory <button type="button" class="scrutinizer-info-toggle" aria-label="What is memory?">ⓘ</button><span class="scrutinizer-info-bubble">Net heap change measured during this source\u2019s callbacks (memory_get_usage delta). Positive = allocated, negative = freed. Reflects what happened during execution, not total responsibility.</span></th>';
-		html += '<th class="numeric">' + scrutinizerAdmin.i18n.inclusiveTime + ' <button type="button" class="scrutinizer-info-toggle" aria-label="What is inclusive time?">ⓘ</button><span class="scrutinizer-info-bubble">Total time spent in this source\u2019s callbacks including any nested callbacks from other sources that it triggers.</span></th>';
+		html += '<th>' + __( 'Source', 'scrutinizer' ) + '</th>';
+		html += '<th>' + __( 'Type', 'scrutinizer' ) + '</th>';
+		html += '<th class="numeric">' + scrutinizerAdmin.i18n.exclusiveTime + ' <button type="button" class="scrutinizer-info-toggle" aria-label="' + esc( __( 'What is exclusive time?', 'scrutinizer' ) ) + '">ⓘ</button><span class="scrutinizer-info-bubble">' + __( 'Time spent directly in this source\u2019s own callbacks, excluding time in callbacks it triggers from other sources. This is the most useful number for identifying what\u2019s slow.', 'scrutinizer' ) + '</span></th>';
+		html += '<th class="numeric">' + __( 'Weight', 'scrutinizer' ) + '</th>';
+		html += '<th class="numeric">' + __( 'Memory', 'scrutinizer' ) + ' <button type="button" class="scrutinizer-info-toggle" aria-label="' + esc( __( 'What is memory?', 'scrutinizer' ) ) + '">ⓘ</button><span class="scrutinizer-info-bubble">' + __( 'Net heap change measured during this source\u2019s callbacks (memory_get_usage delta). Positive = allocated, negative = freed. Reflects what happened during execution, not total responsibility.', 'scrutinizer' ) + '</span></th>';
+		html += '<th class="numeric">' + scrutinizerAdmin.i18n.inclusiveTime + ' <button type="button" class="scrutinizer-info-toggle" aria-label="' + esc( __( 'What is inclusive time?', 'scrutinizer' ) ) + '">ⓘ</button><span class="scrutinizer-info-bubble">' + __( 'Total time spent in this source\u2019s callbacks including any nested callbacks from other sources that it triggers.', 'scrutinizer' ) + '</span></th>';
 		html += '<th class="numeric">' + scrutinizerAdmin.i18n.callCount + '</th>';
 		html += '</tr></thead><tbody>';
 
@@ -2135,12 +2140,12 @@
 				html += '<tr class="scrutinizer-unknown-row">';
 				html += '<td>';
 				html += '<details class="scrutinizer-unknown-expand">';
-				html += '<summary>' + esc( src.name || src.slug ) + ' <span class="scrutinizer-muted">(' + src.callbacks.length + ' callback' + ( src.callbacks.length !== 1 ? 's' : '' ) + ')</span></summary>';
+				html += '<summary>' + esc( src.name || src.slug ) + ' <span class="scrutinizer-muted">' + sprintf( __( '(%d callbacks)', 'scrutinizer' ), src.callbacks.length ) + '</span></summary>';
 				html += '<div class="scrutinizer-unknown-detail">';
 				for ( var u = 0; u < src.callbacks.length; u++ ) {
 					var cb = src.callbacks[ u ];
 					var cbMs = cb.exclusive_ns ? ( cb.exclusive_ns / 1e6 ).toFixed( 2 ) + ' ms' : '';
-					var cbCalls = cb.call_count ? cb.call_count + ' call' + ( cb.call_count !== 1 ? 's' : '' ) : '';
+					var cbCalls = cb.call_count ? sprintf( __( '%d calls', 'scrutinizer' ), cb.call_count ) : '';
 					html += '<div class="scrutinizer-unknown-callback">';
 					html += '<code>' + esc( cb.callback || cb.id || 'anonymous' ) + '</code>';
 					if ( cbMs || cbCalls ) {
@@ -2181,13 +2186,13 @@
 	function renderQueriesTable( queries ) {
 		if ( ! queries || 0 === queries.length ) {
 			var qp = scrutinizerAdmin.queryProfiling;
-			var msg = 'No query data captured for this profile.';
+			var msg = __( 'No query data captured for this profile.', 'scrutinizer' );
 			if ( qp.managed && ! qp.active ) {
-				msg = 'Query profiling is off. Enable the toggle above, then capture a new profile.';
+				msg = __( 'Query profiling is off. Enable the toggle above, then capture a new profile.', 'scrutinizer' );
 			} else if ( ! qp.managed && ! qp.active ) {
-				msg = 'SAVEQUERIES is disabled in wp-config.php. Enable it to capture query timing.';
+				msg = __( 'SAVEQUERIES is disabled in wp-config.php. Enable it to capture query timing.', 'scrutinizer' );
 			} else {
-				msg = 'No query data — this profile was captured before query profiling was enabled.';
+				msg = __( 'No query data — this profile was captured before query profiling was enabled.', 'scrutinizer' );
 			}
 			return '<p class="scrutinizer-empty">' + msg + '</p>';
 		}
@@ -2248,9 +2253,9 @@
 
 		// Total summary line.
 		html += '<div class="scrutinizer-queries-summary">';
-		html += '<strong>' + queries.length + ' queries</strong> totaling <strong>' + totalQueryMs.toFixed( 1 ) + ' ms</strong>';
+		html += sprintf( __( '%1$s totaling %2$s', 'scrutinizer' ), '<strong>' + sprintf( __( '%d queries', 'scrutinizer' ), queries.length ) + '</strong>', '<strong>' + totalQueryMs.toFixed( 1 ) + ' ms</strong>' );
 		if ( duplicateCount > 0 ) {
-			html += ' \u00b7 <span class="scrutinizer-duplicate-flag">' + duplicateCount + ' duplicate pattern' + ( duplicateCount !== 1 ? 's' : '' ) + '</span>';
+			html += ' \u00b7 <span class="scrutinizer-duplicate-flag">' + sprintf( __( '%d duplicate patterns', 'scrutinizer' ), duplicateCount ) + '</span>';
 		}
 		html += '</div>';
 
@@ -2267,16 +2272,16 @@
 
 		// View toggle: Grouped vs Individual.
 		html += '<div class="scrutinizer-queries-toggle">';
-		html += '<button type="button" class="scrutinizer-toggle-btn active" data-view="grouped">Grouped</button>';
-		html += '<button type="button" class="scrutinizer-toggle-btn" data-view="individual">Individual</button>';
+		html += '<button type="button" class="scrutinizer-toggle-btn active" data-view="grouped">' + __( 'Grouped', 'scrutinizer' ) + '</button>';
+		html += '<button type="button" class="scrutinizer-toggle-btn" data-view="individual">' + __( 'Individual', 'scrutinizer' ) + '</button>';
 		html += '</div>';
 
 		html += '</div>'; // queries-header
 
 		// Active filter indicator (hidden by default).
 		html += '<div class="scrutinizer-query-filter-bar" style="display:none">';
-		html += 'Showing queries from <strong class="scrutinizer-filter-source-name"></strong> ';
-		html += '<button type="button" class="scrutinizer-clear-filter">\u2715 Clear</button>';
+		html += __( 'Showing queries from', 'scrutinizer' ) + ' <strong class="scrutinizer-filter-source-name"></strong> ';
+		html += '<button type="button" class="scrutinizer-clear-filter">\u2715 ' + __( 'Clear', 'scrutinizer' ) + '</button>';
 		html += '</div>';
 
 		// Grouped view (default).
@@ -2304,11 +2309,11 @@
 
 		var html = '<table class="scrutinizer-source-table scrutinizer-queries-table scrutinizer-queries-grouped-table widefat">';
 		html += '<thead><tr>';
-		html += '<th>SQL Pattern</th>';
-		html += '<th class="numeric">Count</th>';
-		html += '<th class="numeric">Total Time</th>';
-		html += '<th class="numeric">Avg</th>';
-		html += '<th>Sources</th>';
+		html += '<th>' + __( 'SQL Pattern', 'scrutinizer' ) + '</th>';
+		html += '<th class="numeric">' + __( 'Count', 'scrutinizer' ) + '</th>';
+		html += '<th class="numeric">' + __( 'Total Time', 'scrutinizer' ) + '</th>';
+		html += '<th class="numeric">' + __( 'Avg', 'scrutinizer' ) + '</th>';
+		html += '<th>' + __( 'Sources', 'scrutinizer' ) + '</th>';
 		html += '</tr></thead><tbody>';
 
 		for ( var gi = 0; gi < sorted.length; gi++ ) {
@@ -2332,7 +2337,7 @@
 
 			// SQL with count badge.
 			html += '<td class="scrutinizer-sql-cell">';
-			html += '<code class="scrutinizer-sql-expandable" title="Click to expand">' + esc( truncate( grp.sql, 200 ) ) + '</code>';
+			html += '<code class="scrutinizer-sql-expandable" title="' + esc( __( 'Click to expand', 'scrutinizer' ) ) + '">' + esc( truncate( grp.sql, 200 ) ) + '</code>';
 			if ( grp.sql.length > 200 ) {
 				html += '<code class="scrutinizer-sql-full" style="display:none">' + esc( grp.sql ) + '</code>';
 			}
@@ -2365,7 +2370,7 @@
 			// Expandable detail rows (hidden by default) for duplicates.
 			if ( isDuplicate ) {
 				html += '<tr class="scrutinizer-group-detail" data-sql="' + esc( grp.sql ) + '" style="display:none"><td colspan="5">';
-				html += '<table class="scrutinizer-group-detail-table"><thead><tr><th class="numeric">#</th><th>Source</th><th class="numeric">Time</th><th>Caller</th></tr></thead><tbody>';
+				html += '<table class="scrutinizer-group-detail-table"><thead><tr><th class="numeric">#</th><th>' + __( 'Source', 'scrutinizer' ) + '</th><th class="numeric">' + __( 'Time', 'scrutinizer' ) + '</th><th>' + __( 'Caller', 'scrutinizer' ) + '</th></tr></thead><tbody>';
 				for ( var di = 0; di < grp.items.length; di++ ) {
 					var dq = grp.items[ di ];
 					var dSrcName = dq.source_name || '\u2014';
@@ -2390,10 +2395,10 @@
 		var html = '<table class="scrutinizer-source-table scrutinizer-queries-table widefat">';
 		html += '<thead><tr>';
 		html += '<th class="numeric">#</th>';
-		html += sortableHeader( 'queries', 'source_name', 'Source', 'string' );
-		html += sortableHeader( 'queries', 'sql', 'SQL', 'string' );
-		html += sortableHeader( 'queries', 'time_ms', 'Time', 'number' );
-		html += sortableHeader( 'queries', 'caller', 'Caller', 'string' );
+		html += sortableHeader( 'queries', 'source_name', __( 'Source', 'scrutinizer' ), 'string' );
+		html += sortableHeader( 'queries', 'sql', __( 'SQL', 'scrutinizer' ), 'string' );
+		html += sortableHeader( 'queries', 'time_ms', __( 'Time', 'scrutinizer' ), 'number' );
+		html += sortableHeader( 'queries', 'caller', __( 'Caller', 'scrutinizer' ), 'string' );
 		html += '</tr></thead><tbody>';
 
 		for ( var i = 0; i < queries.length; i++ ) {
@@ -2412,11 +2417,11 @@
 
 			html += '<tr class="scrutinizer-query-row' + rowClass + '" data-source="' + esc( srcName ) + '">';
 			html += '<td class="numeric">' + ( i + 1 ) + '</td>';
-			html += '<td>' + ( qSource || '<span class="scrutinizer-asset-source-pill" style="background:#50575e;color:#fff">Core</span>' ) + '</td>';
+			html += '<td>' + ( qSource || '<span class="scrutinizer-asset-source-pill" style="background:#50575e;color:#fff">' + __( 'Core', 'scrutinizer' ) + '</span>' ) + '</td>';
 
 			// Click-to-expand SQL.
 			html += '<td class="scrutinizer-sql-cell">';
-			html += '<code class="scrutinizer-sql-expandable" title="Click to expand">' + esc( truncate( qr.sql || '', 200 ) ) + '</code>';
+			html += '<code class="scrutinizer-sql-expandable" title="' + esc( __( 'Click to expand', 'scrutinizer' ) ) + '">' + esc( truncate( qr.sql || '', 200 ) ) + '</code>';
 			if ( ( qr.sql || '' ).length > 200 ) {
 				html += '<code class="scrutinizer-sql-full" style="display:none">' + esc( qr.sql ) + '</code>';
 			}
@@ -2449,7 +2454,7 @@
 
 	function renderHttpCallsTable( httpCalls ) {
 		if ( ! httpCalls || 0 === httpCalls.length ) {
-			return '<p class="scrutinizer-empty">No external HTTP calls detected.</p>';
+			return '<p class="scrutinizer-empty">' + __( 'No external HTTP calls detected.', 'scrutinizer' ) + '</p>';
 		}
 
 		// Compute total HTTP time.
@@ -2459,8 +2464,7 @@
 		}
 
 		var html = '<div class="scrutinizer-queries-summary">';
-		html += '<strong>' + httpCalls.length + ' external HTTP call' + ( httpCalls.length !== 1 ? 's' : '' ) + '</strong>';
-		html += ' totaling <strong>' + totalHttpMs.toFixed( 1 ) + ' ms</strong>';
+		html += sprintf( __( '%1$s totaling %2$s', 'scrutinizer' ), '<strong>' + sprintf( __( '%d external HTTP calls', 'scrutinizer' ), httpCalls.length ) + '</strong>', '<strong>' + totalHttpMs.toFixed( 1 ) + ' ms</strong>' );
 		html += '</div>';
 
 		html += renderHttpCallsTableBody( httpCalls );
@@ -2471,19 +2475,19 @@
 		var html = '<table class="scrutinizer-source-table scrutinizer-http-table widefat">';
 		html += '<thead><tr>';
 		html += '<th class="numeric">#</th>';
-		html += sortableHeader( 'httpcalls', 'method', 'Method', 'string' );
-		html += sortableHeader( 'httpcalls', 'url', 'URL', 'string' );
-		html += sortableHeader( 'httpcalls', 'status', 'Status', 'number' );
-		html += sortableHeader( 'httpcalls', 'duration_ms', 'Duration', 'number' );
-		html += sortableHeader( 'httpcalls', 'source_name', 'Source', 'string' );
-		html += sortableHeader( 'httpcalls', 'caller_str', 'Caller', 'string' );
+		html += sortableHeader( 'httpcalls', 'method', __( 'Method', 'scrutinizer' ), 'string' );
+		html += sortableHeader( 'httpcalls', 'url', __( 'URL', 'scrutinizer' ), 'string' );
+		html += sortableHeader( 'httpcalls', 'status', __( 'Status', 'scrutinizer' ), 'number' );
+		html += sortableHeader( 'httpcalls', 'duration_ms', __( 'Duration', 'scrutinizer' ), 'number' );
+		html += sortableHeader( 'httpcalls', 'source_name', __( 'Source', 'scrutinizer' ), 'string' );
+		html += sortableHeader( 'httpcalls', 'caller_str', __( 'Caller', 'scrutinizer' ), 'string' );
 		html += '</tr></thead><tbody>';
 
 		for ( var i = 0; i < httpCalls.length; i++ ) {
 			var hc   = httpCalls[ i ];
 			var hMs  = ( hc.duration_ms || 0 ).toFixed( 1 );
 			var slow = hc.duration_ms > 500 ? ' class="scrutinizer-slow-query"' : '';
-			var statusLabel = hc.is_error ? 'Error' : String( hc.status || '—' );
+			var statusLabel = hc.is_error ? __( 'Error', 'scrutinizer' ) : String( hc.status || '—' );
 			var sourceName  = '';
 			if ( hc.caller && hc.caller.attribution ) {
 				sourceName = hc.caller.attribution.name || hc.caller.attribution.slug || hc.caller.attribution.type || '';
@@ -2529,19 +2533,19 @@
 		var counts    = assets.counts || {};
 
 		var html = '<div class="scrutinizer-queries-summary">';
-		html += '<strong>' + ( counts.scripts || 0 ) + ' scripts</strong>';
-		html += ' + <strong>' + ( counts.styles || 0 ) + ' stylesheets</strong>';
+		html += '<strong>' + sprintf( __( '%d scripts', 'scrutinizer' ), ( counts.scripts || 0 ) ) + '</strong>';
+		html += ' + <strong>' + sprintf( __( '%d stylesheets', 'scrutinizer' ), ( counts.styles || 0 ) ) + '</strong>';
 		if ( totalSize > 0 ) {
-			html += ' totaling <strong>' + formatBytes( totalSize ) + '</strong> on disk';
+			html += ' ' + sprintf( __( 'totaling %s on disk', 'scrutinizer' ), '<strong>' + formatBytes( totalSize ) + '</strong>' );
 		}
 		html += '</div>';
 
 		if ( scripts.length > 0 ) {
-			html += '<h4 class="scrutinizer-asset-section-label">Scripts</h4>';
+			html += '<h4 class="scrutinizer-asset-section-label">' + __( 'Scripts', 'scrutinizer' ) + '</h4>';
 			html += renderAssetTableBody( scripts, 'scripts' );
 		}
 		if ( styles.length > 0 ) {
-			html += '<h4 class="scrutinizer-asset-section-label">Stylesheets</h4>';
+			html += '<h4 class="scrutinizer-asset-section-label">' + __( 'Stylesheets', 'scrutinizer' ) + '</h4>';
 			html += renderAssetTableBody( styles, 'styles' );
 		}
 
@@ -2552,12 +2556,12 @@
 		var tableId = 'assets-' + assetType;
 		var html = '<table class="scrutinizer-source-table scrutinizer-asset-table scrutinizer-asset-table-' + assetType + ' widefat">';
 		html += '<thead><tr>';
-		html += sortableHeader( tableId, 'handle', 'Handle', 'string' );
-		html += sortableHeader( tableId, 'src', 'Source', 'string' );
-		html += sortableHeader( tableId, 'size', 'Size', 'number' );
-		html += sortableHeader( tableId, 'location', 'Location', 'string' );
-		html += '<th>Dependencies</th>';
-		html += sortableHeader( tableId, 'version', 'Version', 'string' );
+		html += sortableHeader( tableId, 'handle', __( 'Handle', 'scrutinizer' ), 'string' );
+		html += sortableHeader( tableId, 'src', __( 'Source', 'scrutinizer' ), 'string' );
+		html += sortableHeader( tableId, 'size', __( 'Size', 'scrutinizer' ), 'number' );
+		html += sortableHeader( tableId, 'location', __( 'Location', 'scrutinizer' ), 'string' );
+		html += '<th>' + __( 'Dependencies', 'scrutinizer' ) + '</th>';
+		html += sortableHeader( tableId, 'version', __( 'Version', 'scrutinizer' ), 'string' );
 		html += '</tr></thead><tbody>';
 
 		for ( var i = 0; i < assetList.length; i++ ) {
@@ -2576,7 +2580,7 @@
 					+ esc( attr.name || attr.slug ) + '</span> ';
 			}
 
-			var sizeCell = a.size > 0 ? formatBytes( a.size ) : '<span class="scrutinizer-muted">external</span>';
+			var sizeCell = a.size > 0 ? formatBytes( a.size ) : '<span class="scrutinizer-muted">' + __( 'external', 'scrutinizer' ) + '</span>';
 			var sizeClass = a.size > 102400 ? ' scrutinizer-asset-large' : ''; // >100KB
 
 			html += '<tr>';
@@ -2603,25 +2607,24 @@
 		var count     = autoloadOpts.count || 0;
 
 		if ( 0 === count ) {
-			return '<p class="scrutinizer-empty">No autoloaded options data.</p>';
+			return '<p class="scrutinizer-empty">' + __( 'No autoloaded options data.', 'scrutinizer' ) + '</p>';
 		}
 
 		var html = '<div class="scrutinizer-queries-summary">';
-		html += '<strong>' + count + ' autoloaded option' + ( count !== 1 ? 's' : '' ) + '</strong>';
-		html += ' totaling <strong>' + formatBytes( totalSize ) + '</strong>';
+		html += sprintf( __( '%1$s totaling %2$s', 'scrutinizer' ), '<strong>' + sprintf( __( '%d autoloaded options', 'scrutinizer' ), count ) + '</strong>', '<strong>' + formatBytes( totalSize ) + '</strong>' );
 		if ( totalSize > 1048576 ) { // > 1 MB.
-			html += ' <span class="scrutinizer-options-warning">⚠ Over 1 MB — this adds latency to every request</span>';
+			html += ' <span class="scrutinizer-options-warning">' + __( '⚠ Over 1 MB — this adds latency to every request', 'scrutinizer' ) + '</span>';
 		} else if ( totalSize > 524288 ) { // > 512 KB.
-			html += ' <span class="scrutinizer-options-caution">⚡ Over 512 KB — worth reviewing</span>';
+			html += ' <span class="scrutinizer-options-caution">' + __( '⚡ Over 512 KB — worth reviewing', 'scrutinizer' ) + '</span>';
 		}
 		html += '</div>';
 
 		html += '<table class="scrutinizer-source-table scrutinizer-options-table widefat">';
 		html += '<thead><tr>';
 		html += '<th class="numeric">#</th>';
-		html += '<th>Option Name</th>';
-		html += '<th class="numeric">Size</th>';
-		html += '<th class="numeric">% of Total</th>';
+		html += '<th>' + __( 'Option Name', 'scrutinizer' ) + '</th>';
+		html += '<th class="numeric">' + __( 'Size', 'scrutinizer' ) + '</th>';
+		html += '<th class="numeric">' + __( '% of Total', 'scrutinizer' ) + '</th>';
 		html += '</tr></thead><tbody>';
 
 		for ( var i = 0; i < options.length; i++ ) {
@@ -2656,25 +2659,25 @@
 		var memAlloc = summary.memory_allocated || 0;
 		var html = '<table class="scrutinizer-source-table widefat">';
 		html += '<tbody>';
-		html += '<tr><td>Route</td><td>' + esc( request.route_class || '—' ) + '</td></tr>';
+		html += '<tr><td>' + __( 'Route', 'scrutinizer' ) + '</td><td>' + esc( request.route_class || '—' ) + '</td></tr>';
 		if ( request.ajax_action ) {
-			html += '<tr><td>AJAX Action</td><td><code>' + esc( request.ajax_action ) + '</code></td></tr>';
+			html += '<tr><td>' + __( 'AJAX Action', 'scrutinizer' ) + '</td><td><code>' + esc( request.ajax_action ) + '</code></td></tr>';
 		}
 		if ( request.referer ) {
-			html += '<tr><td>Referer</td><td><code>' + esc( request.referer ) + '</code></td></tr>';
+			html += '<tr><td>' + __( 'Referer', 'scrutinizer' ) + '</td><td><code>' + esc( request.referer ) + '</code></td></tr>';
 		}
-		html += '<tr><td>User Role</td><td>' + rolePill( request.user_role ) + '</td></tr>';
-		html += '<tr><td>PHP</td><td>' + esc( request.php_version || '—' ) + '</td></tr>';
-		html += '<tr><td>WordPress</td><td>' + esc( request.wp_version || '—' ) + '</td></tr>';
-		html += '<tr><td>Scrutinizer</td><td>' + esc( scrutinizerAdmin.version || '—' ) + '</td></tr>';
-		html += '<tr><td>Peak Memory</td><td>' + formatBytes( memPeak ) + '</td></tr>';
-		html += '<tr><td>Memory Used</td><td>' + formatBytes( memAlloc ) + '</td></tr>';
-		html += '<tr><td>DB Queries</td><td>' + ( summary.query_count || 0 ) + '</td></tr>';
-		html += '<tr><td>HTTP Calls</td><td>' + ( summary.http_call_count || 0 ) + ( summary.http_total_ms > 0 ? ' (' + summary.http_total_ms + ' ms total)' : '' ) + '</td></tr>';
-		html += '<tr><td>Callbacks Observed</td><td>' + ( summary.callback_count || 0 ) + '</td></tr>';
-		html += '<tr><td>Sources Identified</td><td>' + ( summary.source_count || 0 ) + '</td></tr>';
+		html += '<tr><td>' + __( 'User Role', 'scrutinizer' ) + '</td><td>' + rolePill( request.user_role ) + '</td></tr>';
+		html += '<tr><td>' + __( 'PHP', 'scrutinizer' ) + '</td><td>' + esc( request.php_version || '—' ) + '</td></tr>';
+		html += '<tr><td>' + __( 'WordPress', 'scrutinizer' ) + '</td><td>' + esc( request.wp_version || '—' ) + '</td></tr>';
+		html += '<tr><td>' + __( 'Scrutinizer', 'scrutinizer' ) + '</td><td>' + esc( scrutinizerAdmin.version || '—' ) + '</td></tr>';
+		html += '<tr><td>' + __( 'Peak Memory', 'scrutinizer' ) + '</td><td>' + formatBytes( memPeak ) + '</td></tr>';
+		html += '<tr><td>' + __( 'Memory Used', 'scrutinizer' ) + '</td><td>' + formatBytes( memAlloc ) + '</td></tr>';
+		html += '<tr><td>' + __( 'DB Queries', 'scrutinizer' ) + '</td><td>' + ( summary.query_count || 0 ) + '</td></tr>';
+		html += '<tr><td>' + __( 'HTTP Calls', 'scrutinizer' ) + '</td><td>' + ( summary.http_call_count || 0 ) + ( summary.http_total_ms > 0 ? ' (' + summary.http_total_ms + ' ms total)' : '' ) + '</td></tr>';
+		html += '<tr><td>' + __( 'Callbacks Observed', 'scrutinizer' ) + '</td><td>' + ( summary.callback_count || 0 ) + '</td></tr>';
+		html += '<tr><td>' + __( 'Sources Identified', 'scrutinizer' ) + '</td><td>' + ( summary.source_count || 0 ) + '</td></tr>';
 		if ( summary.asset_count ) {
-			html += '<tr><td>Enqueued Assets</td><td>' + summary.asset_count + ( summary.asset_total_size ? ' (' + formatBytes( summary.asset_total_size ) + ')' : '' ) + '</td></tr>';
+			html += '<tr><td>' + __( 'Enqueued Assets', 'scrutinizer' ) + '</td><td>' + summary.asset_count + ( summary.asset_total_size ? ' (' + formatBytes( summary.asset_total_size ) + ')' : '' ) + '</td></tr>';
 		}
 		html += '</tbody></table>';
 		return html;
@@ -2753,12 +2756,12 @@
 				renderSavedSearchPills();
 			} else {
 				$( '#scrutinizer-tab-trace' ).html(
-					'<p class="scrutinizer-empty">Failed to load trace data.</p>'
+					'<p class="scrutinizer-empty">' + __( 'Failed to load trace data.', 'scrutinizer' ) + '</p>'
 				);
 			}
 		} ).fail( function() {
 			$( '#scrutinizer-tab-trace' ).html(
-				'<p class="scrutinizer-empty">Failed to load trace data.</p>'
+				'<p class="scrutinizer-empty">' + __( 'Failed to load trace data.', 'scrutinizer' ) + '</p>'
 			);
 		} );
 	}
@@ -2788,12 +2791,12 @@
 				renderTimelineModule( profileData );
 			} else {
 				$( '#scrutinizer-tab-timeline' ).html(
-					'<p class="scrutinizer-empty">Failed to load timeline data.</p>'
+					'<p class="scrutinizer-empty">' + __( 'Failed to load timeline data.', 'scrutinizer' ) + '</p>'
 				);
 			}
 		} ).fail( function() {
 			$( '#scrutinizer-tab-timeline' ).html(
-				'<p class="scrutinizer-empty">Failed to load timeline data.</p>'
+				'<p class="scrutinizer-empty">' + __( 'Failed to load timeline data.', 'scrutinizer' ) + '</p>'
 			);
 		} );
 	}
@@ -2921,14 +2924,14 @@
 		// Search bar.
 		html += '<div class="scrutinizer-trace-explorer">';
 		html += '<div class="scrutinizer-trace-search-bar">';
-		html += '<input type="search" id="scrutinizer-trace-search" placeholder="Search callbacks, hooks, sources\u2026" class="scrutinizer-trace-search-input" />';
+		html += '<input type="search" id="scrutinizer-trace-search" placeholder="' + esc( __( 'Search callbacks, hooks, sources\u2026', 'scrutinizer' ) ) + '" class="scrutinizer-trace-search-input" />';
 		html += '</div>';
 
 		// Built-in pills.
 		html += '<div class="scrutinizer-trace-pills">';
-		html += '<button type="button" class="scrutinizer-trace-pill" data-pill="top-10">Top 10 Slowest</button>';
-		html += '<button type="button" class="scrutinizer-trace-pill" data-pill="db-heavy">DB Heavy (&gt;10)</button>';
-		html += '<button type="button" class="scrutinizer-trace-pill" data-pill="http-calls">HTTP Calls</button>';
+		html += '<button type="button" class="scrutinizer-trace-pill" data-pill="top-10">' + __( 'Top 10 Slowest', 'scrutinizer' ) + '</button>';
+		html += '<button type="button" class="scrutinizer-trace-pill" data-pill="db-heavy">' + __( 'DB Heavy (&gt;10)', 'scrutinizer' ) + '</button>';
+		html += '<button type="button" class="scrutinizer-trace-pill" data-pill="http-calls">' + __( 'HTTP Calls', 'scrutinizer' ) + '</button>';
 
 		// Show context-aware pills only if matching data exists.
 		var hasAjax = false;
@@ -2943,36 +2946,36 @@
 			if ( ! hasMemHeavy && Math.abs( traceEntries[ i ].mem_delta || 0 ) > 102400 ) { hasMemHeavy = true; }
 		}
 		if ( hasAjax ) {
-			html += '<button type="button" class="scrutinizer-trace-pill" data-pill="ajax">AJAX</button>';
+			html += '<button type="button" class="scrutinizer-trace-pill" data-pill="ajax">' + __( 'AJAX', 'scrutinizer' ) + '</button>';
 		}
 		if ( hasCheckout ) {
-			html += '<button type="button" class="scrutinizer-trace-pill" data-pill="checkout">Checkout</button>';
+			html += '<button type="button" class="scrutinizer-trace-pill" data-pill="checkout">' + __( 'Checkout', 'scrutinizer' ) + '</button>';
 		}
 		if ( hasAuth ) {
-			html += '<button type="button" class="scrutinizer-trace-pill" data-pill="login">Login/Auth</button>';
+			html += '<button type="button" class="scrutinizer-trace-pill" data-pill="login">' + __( 'Login/Auth', 'scrutinizer' ) + '</button>';
 		}
 		if ( hasMemHeavy ) {
-			html += '<button type="button" class="scrutinizer-trace-pill" data-pill="mem-heavy">Memory Heavy</button>';
+			html += '<button type="button" class="scrutinizer-trace-pill" data-pill="mem-heavy">' + __( 'Memory Heavy', 'scrutinizer' ) + '</button>';
 		}
 
 		// Saved searches placeholder.
 		html += '<span id="scrutinizer-trace-saved-pills"></span>';
-		html += '<button type="button" class="scrutinizer-trace-pill scrutinizer-trace-save" id="scrutinizer-trace-save-search" title="Save current filters as a pill">+ Save</button>';
+		html += '<button type="button" class="scrutinizer-trace-pill scrutinizer-trace-save" id="scrutinizer-trace-save-search" title="' + esc( __( 'Save current filters as a pill', 'scrutinizer' ) ) + '">' + __( '+ Save', 'scrutinizer' ) + '</button>';
 		html += '</div>';
 
 		// Filter controls.
 		html += '<div class="scrutinizer-trace-filters">';
-		html += '<label>Source <select id="scrutinizer-trace-source">';
-		html += '<option value="">All</option>';
-		html += '<option value="plugin">Plugin</option>';
-		html += '<option value="theme">Theme</option>';
-		html += '<option value="core">Core</option>';
-		html += '<option value="mu-plugin">MU-Plugin</option>';
-		html += '<option value="unknown">Unknown</option>';
+		html += '<label>' + __( 'Source', 'scrutinizer' ) + ' <select id="scrutinizer-trace-source">';
+		html += '<option value="">' + __( 'All', 'scrutinizer' ) + '</option>';
+		html += '<option value="plugin">' + __( 'Plugin', 'scrutinizer' ) + '</option>';
+		html += '<option value="theme">' + __( 'Theme', 'scrutinizer' ) + '</option>';
+		html += '<option value="core">' + __( 'Core', 'scrutinizer' ) + '</option>';
+		html += '<option value="mu-plugin">' + __( 'MU-Plugin', 'scrutinizer' ) + '</option>';
+		html += '<option value="unknown">' + __( 'Unknown', 'scrutinizer' ) + '</option>';
 		html += '</select></label>';
-		html += '<label>Duration &gt; <input type="number" id="scrutinizer-trace-min-duration" min="0" step="0.1" style="width:70px" /> ms</label>';
-		html += '<label>Queries &gt; <input type="number" id="scrutinizer-trace-min-queries" min="0" step="1" style="width:60px" /></label>';
-		html += '<button type="button" class="button-link" id="scrutinizer-trace-clear">Clear filters</button>';
+		html += '<label>' + __( 'Duration', 'scrutinizer' ) + ' &gt; <input type="number" id="scrutinizer-trace-min-duration" min="0" step="0.1" style="width:70px" /> ms</label>';
+		html += '<label>' + __( 'Queries', 'scrutinizer' ) + ' &gt; <input type="number" id="scrutinizer-trace-min-queries" min="0" step="1" style="width:60px" /></label>';
+		html += '<button type="button" class="button-link" id="scrutinizer-trace-clear">' + __( 'Clear filters', 'scrutinizer' ) + '</button>';
 		html += '</div>';
 
 		// Status bar.
@@ -2981,19 +2984,19 @@
 		// Table.
 		html += '<table class="scrutinizer-trace-table widefat striped">';
 		html += '<thead><tr>';
-		html += '<th class="scrutinizer-trace-sortable' + ( 'exclusive_ns' === traceSortKey ? ( ' sort-' + traceSortDir ) : '' ) + '" data-sort-key="exclusive_ns" style="width:90px">Duration</th>';
-		html += '<th class="scrutinizer-trace-sortable' + ( '_callback' === traceSortKey ? ( ' sort-' + traceSortDir ) : '' ) + '" data-sort-key="_callback">Callback</th>';
-		html += '<th class="scrutinizer-trace-sortable' + ( '_hook' === traceSortKey ? ( ' sort-' + traceSortDir ) : '' ) + '" data-sort-key="_hook">Hook</th>';
-		html += '<th class="scrutinizer-trace-sortable' + ( 'source_name' === traceSortKey ? ( ' sort-' + traceSortDir ) : '' ) + '" data-sort-key="source_name" style="width:120px">Source</th>';
-		html += '<th class="scrutinizer-trace-sortable' + ( 'query_count' === traceSortKey ? ( ' sort-' + traceSortDir ) : '' ) + '" data-sort-key="query_count" style="width:60px">Qry</th>';
-		html += '<th class="scrutinizer-trace-sortable' + ( 'http_count' === traceSortKey ? ( ' sort-' + traceSortDir ) : '' ) + '" data-sort-key="http_count" style="width:60px">HTTP</th>';
+		html += '<th class="scrutinizer-trace-sortable' + ( 'exclusive_ns' === traceSortKey ? ( ' sort-' + traceSortDir ) : '' ) + '" data-sort-key="exclusive_ns" style="width:90px">' + __( 'Duration', 'scrutinizer' ) + '</th>';
+		html += '<th class="scrutinizer-trace-sortable' + ( '_callback' === traceSortKey ? ( ' sort-' + traceSortDir ) : '' ) + '" data-sort-key="_callback">' + __( 'Callback', 'scrutinizer' ) + '</th>';
+		html += '<th class="scrutinizer-trace-sortable' + ( '_hook' === traceSortKey ? ( ' sort-' + traceSortDir ) : '' ) + '" data-sort-key="_hook">' + __( 'Hook', 'scrutinizer' ) + '</th>';
+		html += '<th class="scrutinizer-trace-sortable' + ( 'source_name' === traceSortKey ? ( ' sort-' + traceSortDir ) : '' ) + '" data-sort-key="source_name" style="width:120px">' + __( 'Source', 'scrutinizer' ) + '</th>';
+		html += '<th class="scrutinizer-trace-sortable' + ( 'query_count' === traceSortKey ? ( ' sort-' + traceSortDir ) : '' ) + '" data-sort-key="query_count" style="width:60px">' + __( 'Qry', 'scrutinizer' ) + '</th>';
+		html += '<th class="scrutinizer-trace-sortable' + ( 'http_count' === traceSortKey ? ( ' sort-' + traceSortDir ) : '' ) + '" data-sort-key="http_count" style="width:60px">' + __( 'HTTP', 'scrutinizer' ) + '</th>';
 		html += '</tr></thead>';
 		html += '<tbody id="scrutinizer-trace-tbody"></tbody>';
 		html += '</table>';
 
 		// Show more button.
 		html += '<div class="scrutinizer-trace-more" id="scrutinizer-trace-more-wrap" style="display:none">';
-		html += '<button type="button" class="button" id="scrutinizer-trace-show-more">Show 200 more</button>';
+		html += '<button type="button" class="button" id="scrutinizer-trace-show-more">' + sprintf( __( 'Show %d more', 'scrutinizer' ), tracePageSize ) + '</button>';
 		html += '</div>';
 
 		html += '</div>';
@@ -3148,12 +3151,12 @@
 		$( '.scrutinizer-trace-pill.active' ).each( function() { filterCount++; } );
 
 		var showing = Math.min( traceShown, traceFiltered.length );
-		var statusText = 'Showing ' + showing.toLocaleString() + ' of ' + traceFiltered.length.toLocaleString() + ' callbacks';
+		var statusText = sprintf( __( 'Showing %1$s of %2$s callbacks', 'scrutinizer' ), showing.toLocaleString(), traceFiltered.length.toLocaleString() );
 		if ( traceFiltered.length !== traceEntries.length ) {
-			statusText += ' (filtered from ' + traceEntries.length.toLocaleString() + ')';
+			statusText += ' ' + sprintf( __( '(filtered from %s)', 'scrutinizer' ), traceEntries.length.toLocaleString() );
 		}
 		if ( filterCount > 0 ) {
-			statusText += ' \u00b7 ' + filterCount + ' filter' + ( filterCount !== 1 ? 's' : '' ) + ' active';
+			statusText += ' \u00b7 ' + sprintf( __( '%d filters active', 'scrutinizer' ), filterCount );
 		}
 
 		$( '#scrutinizer-trace-status' ).text( statusText );
@@ -3176,7 +3179,7 @@
 		for ( var i = 0; i < saved.length; i++ ) {
 			html += '<button type="button" class="scrutinizer-trace-pill saved-search scrutinizer-saved-pill" data-saved-idx="' + i + '">';
 			html += esc( saved[ i ].name );
-			html += ' <span class="scrutinizer-pill-remove" title="Remove">\u00d7</span>';
+			html += ' <span class="scrutinizer-pill-remove" title="' + esc( __( 'Remove', 'scrutinizer' ) ) + '">\u00d7</span>';
 			html += '</button>';
 		}
 		$( '#scrutinizer-trace-saved-pills' ).html( html );
@@ -3240,9 +3243,9 @@
 		if ( 'history' === activeTopTab ) {
 			$back.attr( 'id', 'scrutinizer-back-to-history' ).text( scrutinizerAdmin.i18n.backToHistory || '← Back to history' );
 		} else if ( currentRoute ) {
-			$back.attr( 'id', 'scrutinizer-back-to-route' ).text( '← Back to ' + truncate( currentRoute, 40 ) );
+			$back.attr( 'id', 'scrutinizer-back-to-route' ).text( sprintf( __( '← Back to %s', 'scrutinizer' ), truncate( currentRoute, 40 ) ) );
 		} else {
-			$back.attr( 'id', 'scrutinizer-back-to-list' ).text( '← Back to routes' );
+			$back.attr( 'id', 'scrutinizer-back-to-list' ).text( __( '← Back to routes', 'scrutinizer' ) );
 		}
 
 		// Decorate the detail tabs (ARIA roles + roving tabindex) on open.
@@ -3449,11 +3452,11 @@
 		// Request type dropdown (route_class).
 		html += '<select id="scrutinizer-history-type">';
 		html += '<option value="">' + esc( scrutinizerAdmin.i18n.allTypes || 'All types' ) + '</option>';
-		html += '<option value="frontend">Frontend</option>';
-		html += '<option value="wp-admin">Admin</option>';
-		html += '<option value="admin-ajax">AJAX</option>';
-		html += '<option value="rest-api">REST API</option>';
-		html += '<option value="cron">Cron</option>';
+		html += '<option value="frontend">' + __( 'Frontend', 'scrutinizer' ) + '</option>';
+		html += '<option value="wp-admin">' + __( 'Admin', 'scrutinizer' ) + '</option>';
+		html += '<option value="admin-ajax">' + __( 'AJAX', 'scrutinizer' ) + '</option>';
+		html += '<option value="rest-api">' + __( 'REST API', 'scrutinizer' ) + '</option>';
+		html += '<option value="cron">' + __( 'Cron', 'scrutinizer' ) + '</option>';
 		html += '</select>';
 
 		// Tag filter.
@@ -3466,16 +3469,16 @@
 		html += '</label>';
 
 		// Date range.
-		html += '<input type="date" id="scrutinizer-history-from" title="From date" />';
+		html += '<input type="date" id="scrutinizer-history-from" title="' + esc( __( 'From date', 'scrutinizer' ) ) + '" />';
 		html += '<span class="scrutinizer-history-dash">–</span>';
-		html += '<input type="date" id="scrutinizer-history-to" title="To date" />';
+		html += '<input type="date" id="scrutinizer-history-to" title="' + esc( __( 'To date', 'scrutinizer' ) ) + '" />';
 
 		// Bulk action bar (hidden until selections made).
 		html += '<div class="scrutinizer-bulk-bar" id="scrutinizer-bulk-bar" style="display:none">';
 		html += '<span id="scrutinizer-bulk-count">0 selected</span>';
-		html += '<button type="button" class="button" id="scrutinizer-bulk-pin" title="Pin selected profiles"><span class="dashicons dashicons-sticky"></span> Pin</button>';
-		html += '<button type="button" class="button" id="scrutinizer-bulk-unpin" title="Unpin selected profiles">Unpin</button>';
-		html += '<button type="button" class="button" id="scrutinizer-bulk-delete" title="Delete selected profiles">🗑 Delete</button>';
+		html += '<button type="button" class="button" id="scrutinizer-bulk-pin" title="' + esc( __( 'Pin selected profiles', 'scrutinizer' ) ) + '"><span class="dashicons dashicons-sticky"></span> ' + __( 'Pin', 'scrutinizer' ) + '</button>';
+		html += '<button type="button" class="button" id="scrutinizer-bulk-unpin" title="' + esc( __( 'Unpin selected profiles', 'scrutinizer' ) ) + '">' + __( 'Unpin', 'scrutinizer' ) + '</button>';
+		html += '<button type="button" class="button" id="scrutinizer-bulk-delete" title="' + esc( __( 'Delete selected profiles', 'scrutinizer' ) ) + '">🗑 ' + __( 'Delete', 'scrutinizer' ) + '</button>';
 		html += '<button type="button" class="button" id="scrutinizer-compare-btn" style="display:none">' + esc( scrutinizerAdmin.i18n.compareSelected || 'Compare Selected' ) + '</button>';
 		html += '</div>';
 
@@ -3539,14 +3542,14 @@
 		var sorted = sortRows( profiles.slice() );
 		var html = '<table class="scrutinizer-profile-table scrutinizer-history-table widefat">';
 		html += '<thead><tr>';
-		html += '<th class="scrutinizer-check-col"><input type="checkbox" id="scrutinizer-select-all" title="Select all" /></th>';
-		html += sortHeader( 'Captured', 'captured_at' );
-		html += sortHeader( 'Route', 'route_key' );
-		html += sortHeader( 'Duration', 'duration_ns', 'numeric' );
-		html += '<th><span class="dashicons dashicons-sticky" title="Pinned"></span></th>';
-		html += '<th>Note</th>';
-		html += '<th>Tags</th>';
-		html += '<th>Actions</th>';
+		html += '<th class="scrutinizer-check-col"><input type="checkbox" id="scrutinizer-select-all" title="' + esc( __( 'Select all', 'scrutinizer' ) ) + '" /></th>';
+		html += sortHeader( __( 'Captured', 'scrutinizer' ), 'captured_at' );
+		html += sortHeader( __( 'Route', 'scrutinizer' ), 'route_key' );
+		html += sortHeader( __( 'Duration', 'scrutinizer' ), 'duration_ns', 'numeric' );
+		html += '<th><span class="dashicons dashicons-sticky" title="' + esc( __( 'Pinned', 'scrutinizer' ) ) + '"></span></th>';
+		html += '<th>' + __( 'Note', 'scrutinizer' ) + '</th>';
+		html += '<th>' + __( 'Tags', 'scrutinizer' ) + '</th>';
+		html += '<th>' + __( 'Actions', 'scrutinizer' ) + '</th>';
 		html += '</tr></thead><tbody>';
 
 		for ( var i = 0; i < sorted.length; i++ ) {
@@ -3565,7 +3568,7 @@
 				var expiresMs  = capturedMs + ( retDays * 86400000 );
 				var remainMs   = expiresMs - Date.now();
 				if ( remainMs <= 0 ) {
-					ttlBadge = ' <span class="scrutinizer-ttl-badge scrutinizer-ttl-expired">expired</span>';
+					ttlBadge = ' <span class="scrutinizer-ttl-badge scrutinizer-ttl-expired">' + __( 'expired', 'scrutinizer' ) + '</span>';
 				} else {
 					var remDays = Math.ceil( remainMs / 86400000 );
 					if ( remDays <= 1 ) {
@@ -3588,7 +3591,7 @@
 			html += '<td title="' + esc( p.note || '' ) + '">' + esc( notePrev ) + '</td>';
 			html += '<td>' + tagPills + '</td>';
 			html += '<td class="scrutinizer-actions">';
-			html += '<a href="#" class="scrutinizer-view-profile" data-profile-id="' + parseInt( p.id, 10 ) + '">View</a>';
+			html += '<a href="#" class="scrutinizer-view-profile" data-profile-id="' + parseInt( p.id, 10 ) + '">' + __( 'View', 'scrutinizer' ) + '</a>';
 			html += '</td>';
 			html += '</tr>';
 		}
@@ -3616,7 +3619,7 @@
 		var count = Object.keys( compareChecked ).length;
 		if ( count > 0 ) {
 			$( '#scrutinizer-bulk-bar' ).show();
-			$( '#scrutinizer-bulk-count' ).text( count + ' selected' );
+			$( '#scrutinizer-bulk-count' ).text( sprintf( __( '%d selected', 'scrutinizer' ), count ) );
 			if ( 2 === count ) {
 				$( '#scrutinizer-compare-btn' ).show();
 			} else {
@@ -3657,7 +3660,7 @@
 		if ( cronData ) {
 			renderCronView( cronData );
 		} else {
-			$history.html( '<p class="scrutinizer-empty">Loading cron inventory…</p>' );
+			$history.html( '<p class="scrutinizer-empty">' + __( 'Loading cron inventory…', 'scrutinizer' ) + '</p>' );
 			fetchCronInventory();
 		}
 	}
@@ -3674,7 +3677,7 @@
 				}
 			} else {
 				$( '#scrutinizer-history-view' ).html(
-					'<p class="scrutinizer-empty">' + esc( response.data.message || 'Failed to load cron data.' ) + '</p>'
+					'<p class="scrutinizer-empty">' + esc( response.data.message || __( 'Failed to load cron data.', 'scrutinizer' ) ) + '</p>'
 				);
 			}
 		} );
@@ -3690,10 +3693,10 @@
 
 		// Summary cards.
 		html += '<div class="scrutinizer-metric-cards">';
-		html += renderMetricCard( String( summary.total || 0 ), 'Events', 'default' );
-		html += renderMetricCard( String( summary.recurring || 0 ), 'Recurring', 'default' );
-		html += renderMetricCard( String( summary.one_shot || 0 ), 'One-Shot', 'default' );
-		html += renderMetricCard( String( summary.overdue || 0 ), 'Overdue', summary.overdue > 0 ? 'warning' : 'default' );
+		html += renderMetricCard( String( summary.total || 0 ), __( 'Events', 'scrutinizer' ), 'default' );
+		html += renderMetricCard( String( summary.recurring || 0 ), __( 'Recurring', 'scrutinizer' ), 'default' );
+		html += renderMetricCard( String( summary.one_shot || 0 ), __( 'One-Shot', 'scrutinizer' ), 'default' );
+		html += renderMetricCard( String( summary.overdue || 0 ), __( 'Overdue', 'scrutinizer' ), summary.overdue > 0 ? 'warning' : 'default' );
 		html += '</div>';
 
 		// Warnings.
@@ -3712,7 +3715,7 @@
 		// By-source breakdown.
 		if ( summary.by_source && summary.by_source.length > 0 ) {
 			html += '<div class="scrutinizer-cron-sources">';
-			html += '<h4>By Source</h4>';
+			html += '<h4>' + __( 'By Source', 'scrutinizer' ) + '</h4>';
 			html += '<div class="scrutinizer-cron-source-pills">';
 			for ( var s = 0; s < summary.by_source.length; s++ ) {
 				var src  = summary.by_source[s];
@@ -3729,11 +3732,11 @@
 		// Events table.
 		html += '<table class="scrutinizer-profile-table scrutinizer-cron-table widefat">';
 		html += '<thead><tr>';
-		html += sortHeader( 'Hook', 'hook' );
-		html += sortHeader( 'Next Run', 'timestamp' );
-		html += '<th>Schedule</th>';
-		html += '<th>Source</th>';
-		html += '<th>Status</th>';
+		html += sortHeader( __( 'Hook', 'scrutinizer' ), 'hook' );
+		html += sortHeader( __( 'Next Run', 'scrutinizer' ), 'timestamp' );
+		html += '<th>' + __( 'Schedule', 'scrutinizer' ) + '</th>';
+		html += '<th>' + __( 'Source', 'scrutinizer' ) + '</th>';
+		html += '<th>' + __( 'Status', 'scrutinizer' ) + '</th>';
 		html += '</tr></thead>';
 		html += '<tbody>';
 
@@ -3748,7 +3751,7 @@
 			// Hook name.
 			html += '<td class="scrutinizer-cron-hook"><code>' + esc( ev.hook ) + '</code>';
 			if ( ev.args && ev.args.length > 0 ) {
-				html += ' <span class="scrutinizer-muted">(' + ev.args.length + ' arg' + ( ev.args.length > 1 ? 's' : '' ) + ')</span>';
+				html += ' <span class="scrutinizer-muted">' + sprintf( __( '(%d args)', 'scrutinizer' ), ev.args.length ) + '</span>';
 			}
 			html += '</td>';
 
@@ -3758,7 +3761,7 @@
 			// Schedule.
 			html += '<td>';
 			if ( 'once' === ev.schedule ) {
-				html += '<span class="scrutinizer-muted">one-shot</span>';
+				html += '<span class="scrutinizer-muted">' + __( 'one-shot', 'scrutinizer' ) + '</span>';
 			} else {
 				html += esc( ev.schedule );
 				if ( ev.interval ) {
@@ -3775,9 +3778,9 @@
 			// Status.
 			html += '<td>';
 			if ( ev.overdue ) {
-				html += '<span class="scrutinizer-cron-status-overdue">overdue</span>';
+				html += '<span class="scrutinizer-cron-status-overdue">' + __( 'overdue', 'scrutinizer' ) + '</span>';
 			} else {
-				html += '<span class="scrutinizer-cron-status-ok">scheduled</span>';
+				html += '<span class="scrutinizer-cron-status-ok">' + __( 'scheduled', 'scrutinizer' ) + '</span>';
 			}
 			html += '</td>';
 
@@ -3789,8 +3792,8 @@
 		// Available schedules.
 		if ( schedules.length > 0 ) {
 			html += '<details class="scrutinizer-cron-schedules">';
-			html += '<summary>Registered Schedules (' + schedules.length + ')</summary>';
-			html += '<table class="scrutinizer-profile-table scrutinizer-cron-schedule-table widefat"><thead><tr><th>Name</th><th>Interval</th><th>Display</th></tr></thead><tbody>';
+			html += '<summary>' + sprintf( __( 'Registered Schedules (%d)', 'scrutinizer' ), schedules.length ) + '</summary>';
+			html += '<table class="scrutinizer-profile-table scrutinizer-cron-schedule-table widefat"><thead><tr><th>' + __( 'Name', 'scrutinizer' ) + '</th><th>' + __( 'Interval', 'scrutinizer' ) + '</th><th>' + __( 'Display', 'scrutinizer' ) + '</th></tr></thead><tbody>';
 			for ( var j = 0; j < schedules.length; j++ ) {
 				html += '<tr>';
 				html += '<td><code>' + esc( schedules[j].name ) + '</code></td>';
@@ -3803,7 +3806,7 @@
 
 		// Refresh button.
 		html += '<div class="scrutinizer-cron-actions">';
-		html += '<button class="button" id="scrutinizer-cron-refresh">↻ Refresh</button>';
+		html += '<button class="button" id="scrutinizer-cron-refresh">↻ ' + __( 'Refresh', 'scrutinizer' ) + '</button>';
 		html += '</div>';
 
 		html += '</div>';
@@ -3825,9 +3828,9 @@
 
 		// Relative time.
 		if ( overdue ) {
-			html += '<span class="scrutinizer-cron-status-overdue">' + humanInterval( overdueBy ) + ' ago</span>';
+			html += '<span class="scrutinizer-cron-status-overdue">' + sprintf( __( '%s ago', 'scrutinizer' ), humanInterval( overdueBy ) ) + '</span>';
 		} else {
-			html += 'in ' + humanInterval( Math.abs( diff ) );
+			html += sprintf( __( 'in %s', 'scrutinizer' ), humanInterval( Math.abs( diff ) ) );
 		}
 
 		// Absolute time underneath.
@@ -3861,10 +3864,10 @@
 
 		var html = '<div id="scrutinizer-compare-picker" style="display:none">';
 		html += '<div class="scrutinizer-picker-header">';
-		html += '<h4>Compare with&hellip;</h4>';
-		html += '<button type="button" class="button button-link scrutinizer-picker-close" title="Close">&times;</button>';
+		html += '<h4>' + __( 'Compare with&hellip;', 'scrutinizer' ) + '</h4>';
+		html += '<button type="button" class="button button-link scrutinizer-picker-close" title="' + esc( __( 'Close', 'scrutinizer' ) ) + '">&times;</button>';
 		html += '</div>';
-		html += '<div class="scrutinizer-picker-body"><p class="description">Loading pinned profiles&hellip;</p></div>';
+		html += '<div class="scrutinizer-picker-body"><p class="description">' + __( 'Loading pinned profiles&hellip;', 'scrutinizer' ) + '</p></div>';
 		html += '</div>';
 
 		$( '.scrutinizer-pin-toolbar' ).after( html );
@@ -3883,7 +3886,7 @@
 			route_key:  routeKey
 		}, function( response ) {
 			if ( ! response.success ) {
-				$( '.scrutinizer-picker-body' ).html( '<p class="description">No targets found.</p>' );
+				$( '.scrutinizer-picker-body' ).html( '<p class="description">' + __( 'No targets found.', 'scrutinizer' ) + '</p>' );
 				return;
 			}
 
@@ -3892,17 +3895,17 @@
 			var body = '';
 
 			if ( 0 === routeMatches.length && 0 === otherPinned.length ) {
-				body = '<p class="description">No pinned profiles to compare with. Pin some profiles first.</p>';
+				body = '<p class="description">' + __( 'No pinned profiles to compare with. Pin some profiles first.', 'scrutinizer' ) + '</p>';
 			} else {
 				if ( routeMatches.length > 0 ) {
 					body += '<div class="scrutinizer-picker-section">';
-					body += '<h5>Same route</h5>';
+					body += '<h5>' + __( 'Same route', 'scrutinizer' ) + '</h5>';
 					body += renderPickerList( routeMatches );
 					body += '</div>';
 				}
 				if ( otherPinned.length > 0 ) {
 					body += '<div class="scrutinizer-picker-section">';
-					body += '<h5>Other pinned profiles</h5>';
+					body += '<h5>' + __( 'Other pinned profiles', 'scrutinizer' ) + '</h5>';
 					body += renderPickerList( otherPinned );
 					body += '</div>';
 				}
@@ -3943,7 +3946,7 @@
 		// Show loading state.
 		$( '#scrutinizer-inline-compare' ).remove();
 		var loadHtml = '<div id="scrutinizer-inline-compare">';
-		loadHtml += '<p class="description"><span class="dashicons dashicons-update spin"></span> Loading comparison&hellip;</p>';
+		loadHtml += '<p class="description"><span class="dashicons dashicons-update spin"></span> ' + __( 'Loading comparison&hellip;', 'scrutinizer' ) + '</p>';
 		loadHtml += '</div>';
 		$( '.scrutinizer-metric-cards' ).after( loadHtml );
 
@@ -3957,7 +3960,7 @@
 				renderInlineComparison( response.data.comparison );
 			} else {
 				$( '#scrutinizer-inline-compare' ).html(
-					'<p class="scrutinizer-share-error">' + esc( response.data.message || 'Compare failed.' ) + '</p>'
+					'<p class="scrutinizer-share-error">' + esc( response.data.message || __( 'Compare failed.', 'scrutinizer' ) ) + '</p>'
 				);
 			}
 		} );
@@ -3982,37 +3985,37 @@
 		html += '<div class="scrutinizer-inline-compare-header">';
 		html += '<span class="scrutinizer-verdict-badge ' + verdict.cls + '">' + verdict.label + '</span>';
 		html += '<span class="scrutinizer-compare-summary">';
-		html += 'Compared to <strong>' + esc( ( reqB.method || '' ) + ' ' + truncate( reqB.url || b.request_url || '', 40 ) ) + '</strong>';
+		html += sprintf( __( 'Compared to %s', 'scrutinizer' ), '<strong>' + esc( ( reqB.method || '' ) + ' ' + truncate( reqB.url || b.request_url || '', 40 ) ) + '</strong>' );
 		html += ' <small>(' + esc( b.captured_at || '' ) + ')</small>';
 		html += '</span>';
-		html += '<button type="button" class="button button-link" id="scrutinizer-inline-compare-close" title="Dismiss">✕</button>';
+		html += '<button type="button" class="button button-link" id="scrutinizer-inline-compare-close" title="' + esc( __( 'Dismiss', 'scrutinizer' ) ) + '">✕</button>';
 		html += '</div>';
 
 		// Summary table.
 		html += '<table class="scrutinizer-source-table scrutinizer-compare-table widefat">';
-		html += '<thead><tr><th>Metric</th><th class="numeric">This Profile</th><th class="numeric">Reference</th><th class="numeric">Change</th></tr></thead>';
+		html += '<thead><tr><th>' + __( 'Metric', 'scrutinizer' ) + '</th><th class="numeric">' + __( 'This Profile', 'scrutinizer' ) + '</th><th class="numeric">' + __( 'Reference', 'scrutinizer' ) + '</th><th class="numeric">' + __( 'Change', 'scrutinizer' ) + '</th></tr></thead>';
 		html += '<tbody>';
 
-		html += compareRow( 'Server Request Duration',
+		html += compareRow( __( 'Server Request Duration', 'scrutinizer' ),
 			( delta.duration_a_ns / 1e6 ).toFixed( 1 ) + ' ms',
 			( delta.duration_b_ns / 1e6 ).toFixed( 1 ) + ' ms',
 			delta.duration_ns, delta.duration_a_ns, 'time'
 		);
 
-		html += compareRow( 'Unattributed Time',
+		html += compareRow( __( 'Unattributed Time', 'scrutinizer' ),
 			( delta.unattributed_a_ns / 1e6 ).toFixed( 1 ) + ' ms',
 			( delta.unattributed_b_ns / 1e6 ).toFixed( 1 ) + ' ms',
 			delta.unattributed_delta_ns, delta.unattributed_a_ns, 'time'
 		);
 
-		html += compareRow( 'DB Queries',
+		html += compareRow( __( 'DB Queries', 'scrutinizer' ),
 			String( delta.query_count_a ),
 			String( delta.query_count_b ),
 			delta.query_count_delta, delta.query_count_a || 1, 'count'
 		);
 
 		if ( delta.query_time_a_ms !== undefined ) {
-			html += compareRow( 'Query Time',
+			html += compareRow( __( 'Query Time', 'scrutinizer' ),
 				delta.query_time_a_ms.toFixed( 1 ) + ' ms',
 				delta.query_time_b_ms.toFixed( 1 ) + ' ms',
 				( delta.query_time_delta_ms || 0 ) * 1e6, ( delta.query_time_a_ms || 1 ) * 1e6, 'time'
@@ -4020,7 +4023,7 @@
 		}
 
 		if ( delta.memory_peak_a || delta.memory_peak_b ) {
-			html += compareRow( 'Peak Memory',
+			html += compareRow( __( 'Peak Memory', 'scrutinizer' ),
 				formatBytes( delta.memory_peak_a ),
 				formatBytes( delta.memory_peak_b ),
 				delta.memory_peak_delta, delta.memory_peak_a || 1, 'memory'
@@ -4028,7 +4031,7 @@
 		}
 
 		if ( delta.memory_alloc_a || delta.memory_alloc_b ) {
-			html += compareRow( 'Memory Used by Hooks',
+			html += compareRow( __( 'Memory Used by Hooks', 'scrutinizer' ),
 				formatBytes( delta.memory_alloc_a ),
 				formatBytes( delta.memory_alloc_b ),
 				delta.memory_alloc_delta, delta.memory_alloc_a || 1, 'memory'
@@ -4036,7 +4039,7 @@
 		}
 
 		if ( delta.callback_count_a !== undefined ) {
-			html += compareRow( 'Callbacks',
+			html += compareRow( __( 'Callbacks', 'scrutinizer' ),
 				String( delta.callback_count_a ),
 				String( delta.callback_count_b ),
 				delta.callback_count_delta, delta.callback_count_a || 1, 'count'
@@ -4044,7 +4047,7 @@
 		}
 
 		if ( delta.http_count_a !== undefined ) {
-			html += compareRow( 'HTTP Calls',
+			html += compareRow( __( 'HTTP Calls', 'scrutinizer' ),
 				String( delta.http_count_a ),
 				String( delta.http_count_b ),
 				delta.http_count_delta, delta.http_count_a || 1, 'count'
@@ -4057,9 +4060,9 @@
 		var sources = delta.sources || {};
 		var sourceKeys = Object.keys( sources );
 		if ( sourceKeys.length > 0 ) {
-			html += '<h4>Per-Source Changes</h4>';
+			html += '<h4>' + __( 'Per-Source Changes', 'scrutinizer' ) + '</h4>';
 			html += '<table class="scrutinizer-source-table scrutinizer-compare-table widefat">';
-			html += '<thead><tr><th>Source</th><th class="numeric">This Profile</th><th class="numeric">Reference</th><th class="numeric">Change</th></tr></thead>';
+			html += '<thead><tr><th>' + __( 'Source', 'scrutinizer' ) + '</th><th class="numeric">' + __( 'This Profile', 'scrutinizer' ) + '</th><th class="numeric">' + __( 'Reference', 'scrutinizer' ) + '</th><th class="numeric">' + __( 'Change', 'scrutinizer' ) + '</th></tr></thead>';
 			html += '<tbody>';
 
 			sourceKeys.sort( function( x, y ) {
@@ -4103,21 +4106,21 @@
 	 */
 	function classifyDelta( deltaMs, pctChange ) {
 		if ( Math.abs( deltaMs ) < 10 && Math.abs( pctChange ) < 5 ) {
-			return { cls: 'verdict-noise', label: '≈ Within noise' };
+			return { cls: 'verdict-noise', label: __( '≈ Within noise', 'scrutinizer' ) };
 		}
 		if ( deltaMs > 100 && pctChange > 20 ) {
-			return { cls: 'verdict-slower', label: '↑ Difference observed (slower)' };
+			return { cls: 'verdict-slower', label: __( '↑ Difference observed (slower)', 'scrutinizer' ) };
 		}
 		if ( deltaMs < -100 && pctChange < -20 ) {
-			return { cls: 'verdict-faster', label: '↓ Difference observed (faster)' };
+			return { cls: 'verdict-faster', label: __( '↓ Difference observed (faster)', 'scrutinizer' ) };
 		}
 		if ( deltaMs > 0 ) {
-			return { cls: 'verdict-slower', label: '↑ Slower' };
+			return { cls: 'verdict-slower', label: __( '↑ Slower', 'scrutinizer' ) };
 		}
 		if ( deltaMs < 0 ) {
-			return { cls: 'verdict-faster', label: '↓ Faster' };
+			return { cls: 'verdict-faster', label: __( '↓ Faster', 'scrutinizer' ) };
 		}
-		return { cls: 'verdict-noise', label: '≈ No change' };
+		return { cls: 'verdict-noise', label: __( '≈ No change', 'scrutinizer' ) };
 	}
 
 	/**
@@ -4163,35 +4166,35 @@
 		// Header: Profile A vs Profile B.
 		html += '<div class="scrutinizer-compare-header">';
 		html += '<div class="compare-profile-label"><strong>A:</strong> ' + esc( reqA.method || '' ) + ' ' + esc( truncate( reqA.url || a.request_url || '', 60 ) ) + '<br><small>' + esc( a.captured_at ) + '</small></div>';
-		html += '<div class="compare-vs">vs</div>';
+		html += '<div class="compare-vs">' + __( 'vs', 'scrutinizer' ) + '</div>';
 		html += '<div class="compare-profile-label"><strong>B:</strong> ' + esc( reqB.method || '' ) + ' ' + esc( truncate( reqB.url || b.request_url || '', 60 ) ) + '<br><small>' + esc( b.captured_at ) + '</small></div>';
 		html += '</div>';
 
 		// Summary comparison.
 		html += '<table class="scrutinizer-source-table scrutinizer-compare-table widefat">';
-		html += '<thead><tr><th>Metric</th><th class="numeric">Profile A</th><th class="numeric">Profile B</th><th class="numeric">Change</th></tr></thead>';
+		html += '<thead><tr><th>' + __( 'Metric', 'scrutinizer' ) + '</th><th class="numeric">' + __( 'Profile A', 'scrutinizer' ) + '</th><th class="numeric">' + __( 'Profile B', 'scrutinizer' ) + '</th><th class="numeric">' + __( 'Change', 'scrutinizer' ) + '</th></tr></thead>';
 		html += '<tbody>';
 
-		html += compareRow( 'Server Request Duration',
+		html += compareRow( __( 'Server Request Duration', 'scrutinizer' ),
 			( delta.duration_a_ns / 1e6 ).toFixed( 1 ) + ' ms',
 			( delta.duration_b_ns / 1e6 ).toFixed( 1 ) + ' ms',
 			delta.duration_ns, delta.duration_a_ns, 'time'
 		);
 
-		html += compareRow( 'Unattributed Time',
+		html += compareRow( __( 'Unattributed Time', 'scrutinizer' ),
 			( delta.unattributed_a_ns / 1e6 ).toFixed( 1 ) + ' ms',
 			( delta.unattributed_b_ns / 1e6 ).toFixed( 1 ) + ' ms',
 			delta.unattributed_delta_ns, delta.unattributed_a_ns, 'time'
 		);
 
-		html += compareRow( 'DB Queries',
+		html += compareRow( __( 'DB Queries', 'scrutinizer' ),
 			String( delta.query_count_a ),
 			String( delta.query_count_b ),
 			delta.query_count_delta, delta.query_count_a || 1, 'count'
 		);
 
 		if ( delta.query_time_a_ms !== undefined ) {
-			html += compareRow( 'Query Time',
+			html += compareRow( __( 'Query Time', 'scrutinizer' ),
 				delta.query_time_a_ms.toFixed( 1 ) + ' ms',
 				delta.query_time_b_ms.toFixed( 1 ) + ' ms',
 				( delta.query_time_delta_ms || 0 ) * 1e6, ( delta.query_time_a_ms || 1 ) * 1e6, 'time'
@@ -4199,7 +4202,7 @@
 		}
 
 		if ( delta.memory_peak_a || delta.memory_peak_b ) {
-			html += compareRow( 'Peak Memory',
+			html += compareRow( __( 'Peak Memory', 'scrutinizer' ),
 				formatBytes( delta.memory_peak_a ),
 				formatBytes( delta.memory_peak_b ),
 				delta.memory_peak_delta, delta.memory_peak_a || 1, 'memory'
@@ -4207,7 +4210,7 @@
 		}
 
 		if ( delta.memory_alloc_a || delta.memory_alloc_b ) {
-			html += compareRow( 'Memory Used by Hooks',
+			html += compareRow( __( 'Memory Used by Hooks', 'scrutinizer' ),
 				formatBytes( delta.memory_alloc_a ),
 				formatBytes( delta.memory_alloc_b ),
 				delta.memory_alloc_delta, delta.memory_alloc_a || 1, 'memory'
@@ -4215,7 +4218,7 @@
 		}
 
 		if ( delta.callback_count_a !== undefined ) {
-			html += compareRow( 'Callbacks',
+			html += compareRow( __( 'Callbacks', 'scrutinizer' ),
 				String( delta.callback_count_a ),
 				String( delta.callback_count_b ),
 				delta.callback_count_delta, delta.callback_count_a || 1, 'count'
@@ -4228,9 +4231,9 @@
 		var sources = delta.sources || {};
 		var sourceKeys = Object.keys( sources );
 		if ( sourceKeys.length > 0 ) {
-			html += '<h3>Per-Source Changes</h3>';
+			html += '<h3>' + __( 'Per-Source Changes', 'scrutinizer' ) + '</h3>';
 			html += '<table class="scrutinizer-source-table scrutinizer-compare-table widefat">';
-			html += '<thead><tr><th>Source</th><th class="numeric">Profile A</th><th class="numeric">Profile B</th><th class="numeric">Change</th></tr></thead>';
+			html += '<thead><tr><th>' + __( 'Source', 'scrutinizer' ) + '</th><th class="numeric">' + __( 'Profile A', 'scrutinizer' ) + '</th><th class="numeric">' + __( 'Profile B', 'scrutinizer' ) + '</th><th class="numeric">' + __( 'Change', 'scrutinizer' ) + '</th></tr></thead>';
 			html += '<tbody>';
 
 			sourceKeys.sort( function( x, y ) {
@@ -4278,7 +4281,7 @@
 			var rawDelta = deltaNs;
 			var rawPct   = pctChange;
 			if ( 0 === rawDelta ) {
-				deltaStr = 'no change';
+				deltaStr = __( 'no change', 'scrutinizer' );
 				cls = 'scrutinizer-delta-neutral';
 			} else {
 				cls = rawDelta < 0 ? 'scrutinizer-delta-negative' : 'scrutinizer-delta-positive';
@@ -4290,7 +4293,7 @@
 		} else if ( 'memory' === kind ) {
 			// For memory, show formatted bytes delta.
 			if ( 0 === deltaNs ) {
-				deltaStr = 'no change';
+				deltaStr = __( 'no change', 'scrutinizer' );
 				cls = 'scrutinizer-delta-neutral';
 			} else {
 				cls = deltaNs < 0 ? 'scrutinizer-delta-negative' : 'scrutinizer-delta-positive';
@@ -4303,13 +4306,13 @@
 			// Time-based delta.
 			var deltaMs = deltaNs / 1e6;
 			if ( 0 === deltaNs ) {
-				deltaStr = 'no change';
+				deltaStr = __( 'no change', 'scrutinizer' );
 				cls = 'scrutinizer-delta-neutral';
 			} else if ( Math.abs( deltaMs ) < 10 && Math.abs( pctChange ) < 5 ) {
 				// Within noise threshold.
 				deltaStr = ( deltaMs > 0 ? '+' : '' ) + deltaMs.toFixed( 1 ) + ' ms';
 				deltaStr += ' (' + ( pctChange > 0 ? '+' : '' ) + pctChange.toFixed( 1 ) + '%)';
-				deltaStr += ' · within noise';
+				deltaStr += ' · ' + __( 'within noise', 'scrutinizer' );
 				cls = 'scrutinizer-delta-neutral';
 			} else {
 				cls = deltaNs < 0 ? 'scrutinizer-delta-negative' : 'scrutinizer-delta-positive';
@@ -4319,9 +4322,9 @@
 					// A single comparison never supports a "regression" verdict
 					// (see classifyDelta / INVARIANTS). The signed delta already
 					// shows direction; label it only as a difference observed.
-					deltaStr += ' · difference observed';
+					deltaStr += ' · ' + __( 'difference observed', 'scrutinizer' );
 				} else {
-					deltaStr += deltaNs > 0 ? ' slower' : ' faster';
+					deltaStr += deltaNs > 0 ? ' ' + __( 'slower', 'scrutinizer' ) : ' ' + __( 'faster', 'scrutinizer' );
 				}
 			}
 		}
@@ -4439,24 +4442,24 @@
 
 		// --- Send to Agent section ---
 		html += '<div class="scrutinizer-api-section scrutinizer-api-section--agent">';
-		html += '<h3 class="scrutinizer-api-heading"><span class="dashicons dashicons-share-alt2"></span> Send to Agent</h3>';
-		html += '<p class="scrutinizer-api-desc">Generate a one-time prompt that gives an AI agent read-only access to your profiling data. ';
-		html += 'The credential auto-expires and is scoped to Scrutineer endpoints only.</p>';
+		html += '<h3 class="scrutinizer-api-heading"><span class="dashicons dashicons-share-alt2"></span> ' + __( 'Send to Agent', 'scrutinizer' ) + '</h3>';
+		html += '<p class="scrutinizer-api-desc">' + __( 'Generate a one-time prompt that gives an AI agent read-only access to your profiling data.', 'scrutinizer' ) + ' ';
+		html += __( 'The credential auto-expires and is scoped to Scrutineer endpoints only.', 'scrutinizer' ) + '</p>';
 		html += '<div class="scrutinizer-send-agent-controls">';
 		html += '<button type="button" class="button button-primary" id="scrutinizer-create-api-key">';
-		html += '<span class="dashicons dashicons-clipboard"></span> Copy Prompt to Clipboard</button>';
+		html += '<span class="dashicons dashicons-clipboard"></span> ' + __( 'Copy Prompt to Clipboard', 'scrutinizer' ) + '</button>';
 		html += '<button type="button" class="button scrutinizer-btn-danger" id="scrutinizer-revoke-api-key" style="display:none;">';
-		html += '<span class="dashicons dashicons-dismiss"></span> Revoke Access</button>';
+		html += '<span class="dashicons dashicons-dismiss"></span> ' + __( 'Revoke Access', 'scrutinizer' ) + '</button>';
 		html += '</div>';
-		html += '<p class="scrutinizer-privacy-advisory">This prompt includes your site URL and a short-lived credential. Paste it into a private AI conversation \u2014 not a public or shared chat.</p>';
+		html += '<p class="scrutinizer-privacy-advisory">' + __( 'This prompt includes your site URL and a short-lived credential. Paste it into a private AI conversation \u2014 not a public or shared chat.', 'scrutinizer' ) + '</p>';
 		html += '<div id="scrutinizer-api-key-result" class="scrutinizer-api-result" style="display:none;"></div>';
 		html += '</div>';
 
 		// --- Diagnostics sharing fields ---
 		html += '<div class="scrutinizer-api-section">';
-		html += '<h3 class="scrutinizer-api-heading"><span class="dashicons dashicons-admin-tools"></span> Diagnostics Sharing</h3>';
-		html += '<p class="scrutinizer-api-desc">Choose which server environment details to include when an agent reads <code>/v1/diagnostics</code>. ';
-		html += 'These fields are opt-in — nothing is shared unless you check it.</p>';
+		html += '<h3 class="scrutinizer-api-heading"><span class="dashicons dashicons-admin-tools"></span> ' + __( 'Diagnostics Sharing', 'scrutinizer' ) + '</h3>';
+		html += '<p class="scrutinizer-api-desc">' + sprintf( __( 'Choose which server environment details to include when an agent reads %s.', 'scrutinizer' ), '<code>/v1/diagnostics</code>' ) + ' ';
+		html += __( 'These fields are opt-in — nothing is shared unless you check it.', 'scrutinizer' ) + '</p>';
 		html += '<div class="scrutinizer-diagnostics-checkboxes">';
 
 		var fieldKeys = Object.keys( optInFields );
@@ -4472,46 +4475,46 @@
 
 		html += '</div>';
 		html += '<div class="scrutinizer-diag-actions">';
-		html += '<button type="button" class="button" id="scrutinizer-save-diag-fields">Save Preferences</button>';
-		html += '<span id="scrutinizer-diag-saved" class="scrutinizer-saved-notice" style="display:none;">✓ Saved</span>';
+		html += '<button type="button" class="button" id="scrutinizer-save-diag-fields">' + __( 'Save Preferences', 'scrutinizer' ) + '</button>';
+		html += '<span id="scrutinizer-diag-saved" class="scrutinizer-saved-notice" style="display:none;">✓ ' + __( 'Saved', 'scrutinizer' ) + '</span>';
 		html += '</div>';
 		html += '</div>';
 
 		// --- Endpoints reference ---
 		html += '<div class="scrutinizer-api-section">';
-		html += '<h3 class="scrutinizer-api-heading"><span class="dashicons dashicons-rest-api"></span> Endpoints</h3>';
+		html += '<h3 class="scrutinizer-api-heading"><span class="dashicons dashicons-rest-api"></span> ' + __( 'Endpoints', 'scrutinizer' ) + '</h3>';
 		html += '<table class="scrutinizer-profile-table scrutinizer-api-endpoints widefat">';
-		html += '<thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead>';
+		html += '<thead><tr><th>' + __( 'Method', 'scrutinizer' ) + '</th><th>' + __( 'Endpoint', 'scrutinizer' ) + '</th><th>' + __( 'Description', 'scrutinizer' ) + '</th></tr></thead>';
 		html += '<tbody>';
-		html += '<tr><td><code>GET</code></td><td><code>/v1/prompt</code></td><td>System prompt (text/plain) \u2014 the API contract</td></tr>';
-		html += '<tr><td><code>GET</code></td><td><code>/v1/diagnostics</code></td><td>Server environment details (opt-in fields only)</td></tr>';
-		html += '<tr><td><code>GET</code></td><td><code>/v1/routes</code></td><td>All profiled routes with summary statistics</td></tr>';
-		html += '<tr><td><code>GET</code></td><td><code>/v1/profile/{id}</code></td><td>Full profile detail for one request</td></tr>';
-		html += '<tr><td><code>GET</code></td><td><code>/v1/compare/{a}/{b}</code></td><td>Side-by-side comparison of two profiles</td></tr>';
-		html += '<tr><td><code>GET</code></td><td><code>/v1/manifest</code></td><td>Machine-readable API manifest for AI agent discovery (public)</td></tr>';
+		html += '<tr><td><code>GET</code></td><td><code>/v1/prompt</code></td><td>' + __( 'System prompt (text/plain) \u2014 the API contract', 'scrutinizer' ) + '</td></tr>';
+		html += '<tr><td><code>GET</code></td><td><code>/v1/diagnostics</code></td><td>' + __( 'Server environment details (opt-in fields only)', 'scrutinizer' ) + '</td></tr>';
+		html += '<tr><td><code>GET</code></td><td><code>/v1/routes</code></td><td>' + __( 'All profiled routes with summary statistics', 'scrutinizer' ) + '</td></tr>';
+		html += '<tr><td><code>GET</code></td><td><code>/v1/profile/{id}</code></td><td>' + __( 'Full profile detail for one request', 'scrutinizer' ) + '</td></tr>';
+		html += '<tr><td><code>GET</code></td><td><code>/v1/compare/{a}/{b}</code></td><td>' + __( 'Side-by-side comparison of two profiles', 'scrutinizer' ) + '</td></tr>';
+		html += '<tr><td><code>GET</code></td><td><code>/v1/manifest</code></td><td>' + __( 'Machine-readable API manifest for AI agent discovery (public)', 'scrutinizer' ) + '</td></tr>';
 		html += '</tbody></table>';
 		if ( apiBase ) {
-			html += '<p class="scrutinizer-api-base">Base URL: <code>' + esc( apiBase ) + '</code></p>';
+			html += '<p class="scrutinizer-api-base">' + sprintf( __( 'Base URL: %s', 'scrutinizer' ), '<code>' + esc( apiBase ) + '</code>' ) + '</p>';
 		}
 		html += '</div>';
 
 		// --- Shared Reports section ---
 		html += '<div class="scrutinizer-api-section">';
-		html += '<h3 class="scrutinizer-api-heading"><span class="dashicons dashicons-lock"></span> Shared Reports</h3>';
-		html += '<p class="scrutinizer-api-desc">Encrypted, self-destructing links you\u2019ve shared. Data is encrypted in your browser before upload &mdash; the relay server never sees your report contents.</p>';
-		html += '<p class="scrutinizer-api-desc">To share: open a profile from the <strong>History</strong> tab, then click <strong>Share</strong> in the toolbar.</p>';
-		html += '<div id="scrutinizer-shared-reports-content"><p class="scrutinizer-empty">Loading\u2026</p></div>';
-		html += '<p class="scrutinizer-api-desc" style="color:#50575e;font-size:12px;">Powered by <code>scrutinizer.dev</code> &mdash; zero-knowledge encrypted relay.</p>';
+		html += '<h3 class="scrutinizer-api-heading"><span class="dashicons dashicons-lock"></span> ' + __( 'Shared Reports', 'scrutinizer' ) + '</h3>';
+		html += '<p class="scrutinizer-api-desc">' + __( 'Encrypted, self-destructing links you\u2019ve shared. Data is encrypted in your browser before upload &mdash; the relay server never sees your report contents.', 'scrutinizer' ) + '</p>';
+		html += '<p class="scrutinizer-api-desc">' + sprintf( __( 'To share: open a profile from the %1$s tab, then click %2$s in the toolbar.', 'scrutinizer' ), '<strong>' + __( 'History', 'scrutinizer' ) + '</strong>', '<strong>' + __( 'Share', 'scrutinizer' ) + '</strong>' ) + '</p>';
+		html += '<div id="scrutinizer-shared-reports-content"><p class="scrutinizer-empty">' + __( 'Loading\u2026', 'scrutinizer' ) + '</p></div>';
+		html += '<p class="scrutinizer-api-desc" style="color:#50575e;font-size:12px;">' + sprintf( __( 'Powered by %s &mdash; zero-knowledge encrypted relay.', 'scrutinizer' ), '<code>scrutinizer.dev</code>' ) + '</p>';
 		html += '</div>';
 
 		// --- Audit Log section ---
 		html += '<div class="scrutinizer-api-section">';
-		html += '<h3 class="scrutinizer-api-heading"><span class="dashicons dashicons-list-view"></span> Access Log</h3>';
-		html += '<p class="scrutinizer-api-desc">Recent API credential usage. Shows when endpoints were accessed, from which IP, and by which user agent.</p>';
-		html += '<div id="scrutinizer-api-log-content"><p class="scrutinizer-empty">Loading...</p></div>';
+		html += '<h3 class="scrutinizer-api-heading"><span class="dashicons dashicons-list-view"></span> ' + __( 'Access Log', 'scrutinizer' ) + '</h3>';
+		html += '<p class="scrutinizer-api-desc">' + __( 'Recent API credential usage. Shows when endpoints were accessed, from which IP, and by which user agent.', 'scrutinizer' ) + '</p>';
+		html += '<div id="scrutinizer-api-log-content"><p class="scrutinizer-empty">' + __( 'Loading...', 'scrutinizer' ) + '</p></div>';
 		html += '<div class="scrutinizer-diag-actions">';
-		html += '<button type="button" class="button" id="scrutinizer-refresh-api-log"><span class="dashicons dashicons-update"></span> Refresh</button>';
-		html += '<button type="button" class="button scrutinizer-btn-danger" id="scrutinizer-clear-api-log">Clear Log</button>';
+		html += '<button type="button" class="button" id="scrutinizer-refresh-api-log"><span class="dashicons dashicons-update"></span> ' + __( 'Refresh', 'scrutinizer' ) + '</button>';
+		html += '<button type="button" class="button scrutinizer-btn-danger" id="scrutinizer-clear-api-log">' + __( 'Clear Log', 'scrutinizer' ) + '</button>';
 		html += '</div>';
 		html += '</div>';
 
@@ -4533,27 +4536,27 @@
 				fields.push( $( this ).val() );
 			} );
 
-			$btn.prop( 'disabled', true ).text( 'Saving…' );
+			$btn.prop( 'disabled', true ).text( __( 'Saving…', 'scrutinizer' ) );
 
 			$.post( scrutinizerAdmin.ajaxUrl, {
 				action: 'scrutinizer_save_diagnostics_fields',
 				nonce:  scrutinizerAdmin.nonce,
 				fields: fields
 			}, function( response ) {
-				$btn.prop( 'disabled', false ).text( 'Save Preferences' );
+				$btn.prop( 'disabled', false ).text( __( 'Save Preferences', 'scrutinizer' ) );
 				if ( response.success ) {
 					scrutinizerAdmin.diagnosticsFields = response.data.fields;
 					$( '#scrutinizer-diag-saved' ).fadeIn( 200 ).delay( 2000 ).fadeOut( 400 );
 				}
 			} ).fail( function() {
-				$btn.prop( 'disabled', false ).text( 'Save Preferences' );
+				$btn.prop( 'disabled', false ).text( __( 'Save Preferences', 'scrutinizer' ) );
 			} );
 		} );
 
 		// Create API password and copy prompt.
 		$container.find( '#scrutinizer-create-api-key' ).off( 'click' ).on( 'click', function() {
 			var $btn = $( this );
-			$btn.prop( 'disabled', true ).html( '<span class="dashicons dashicons-update spin"></span> Generating…' );
+			$btn.prop( 'disabled', true ).html( '<span class="dashicons dashicons-update spin"></span> ' + __( 'Generating…', 'scrutinizer' ) );
 
 			$.post( scrutinizerAdmin.ajaxUrl, {
 				action: 'scrutinizer_create_api_password',
@@ -4566,35 +4569,35 @@
 					copyToClipboard( d.prompt );
 
 					// Show success.
-					var ttlLabel = d.ttl_hours <= 1 ? '1 hour' : d.ttl_hours + ' hours';
+					var ttlLabel = d.ttl_hours <= 1 ? __( '1 hour', 'scrutinizer' ) : sprintf( __( '%d hours', 'scrutinizer' ), d.ttl_hours );
 					$( '#scrutinizer-api-key-result' )
 						.html(
 							'<div class="scrutinizer-api-success">' +
 							'<span class="dashicons dashicons-yes-alt"></span> ' +
-							'<strong>Prompt copied to clipboard.</strong> ' +
-							'Paste it into your AI agent. Access expires in ' + esc( ttlLabel ) + '.' +
+							'<strong>' + __( 'Prompt copied to clipboard.', 'scrutinizer' ) + '</strong> ' +
+							sprintf( __( 'Paste it into your AI agent. Access expires in %s.', 'scrutinizer' ), esc( ttlLabel ) ) +
 							'</div>'
 						)
 						.slideDown( 200 );
 
 					$btn.prop( 'disabled', false )
-						.html( '<span class="dashicons dashicons-clipboard"></span> Regenerate &amp; Copy' );
+						.html( '<span class="dashicons dashicons-clipboard"></span> ' + __( 'Regenerate &amp; Copy', 'scrutinizer' ) );
 					$( '#scrutinizer-revoke-api-key' ).show();
 				} else {
 					$( '#scrutinizer-api-key-result' )
 						.html(
 							'<div class="scrutinizer-api-error">' +
 							'<span class="dashicons dashicons-warning"></span> ' +
-							esc( response.data.message || 'Failed to create access key.' ) +
+							esc( response.data.message || __( 'Failed to create access key.', 'scrutinizer' ) ) +
 							'</div>'
 						)
 						.slideDown( 200 );
 					$btn.prop( 'disabled', false )
-						.html( '<span class="dashicons dashicons-clipboard"></span> Copy Prompt to Clipboard' );
+						.html( '<span class="dashicons dashicons-clipboard"></span> ' + __( 'Copy Prompt to Clipboard', 'scrutinizer' ) );
 				}
 			} ).fail( function() {
 				$btn.prop( 'disabled', false )
-					.html( '<span class="dashicons dashicons-clipboard"></span> Copy Prompt to Clipboard' );
+					.html( '<span class="dashicons dashicons-clipboard"></span> ' + __( 'Copy Prompt to Clipboard', 'scrutinizer' ) );
 			} );
 		} );
 
@@ -4613,7 +4616,7 @@
 						.html(
 							'<div class="scrutinizer-api-revoked">' +
 							'<span class="dashicons dashicons-yes-alt"></span> ' +
-							'Access revoked.' +
+							__( 'Access revoked.', 'scrutinizer' ) +
 							'</div>'
 						)
 						.slideDown( 200 )
@@ -4621,7 +4624,7 @@
 						.slideUp( 400 );
 
 					$( '#scrutinizer-create-api-key' )
-						.html( '<span class="dashicons dashicons-clipboard"></span> Copy Prompt to Clipboard' );
+						.html( '<span class="dashicons dashicons-clipboard"></span> ' + __( 'Copy Prompt to Clipboard', 'scrutinizer' ) );
 					$btn.hide();
 				}
 			} ).fail( function() {
@@ -4646,7 +4649,7 @@
 				renderSharedReports( response.data.shares || [] );
 			} else {
 				$( '#scrutinizer-shared-reports-content' ).html(
-					'<p class="scrutinizer-empty">Failed to load shared reports.</p>'
+					'<p class="scrutinizer-empty">' + __( 'Failed to load shared reports.', 'scrutinizer' ) + '</p>'
 				);
 			}
 		} );
@@ -4656,13 +4659,13 @@
 		var $container = $( '#scrutinizer-shared-reports-content' );
 
 		if ( ! shares.length ) {
-			$container.html( '<p class="scrutinizer-empty">No shared reports yet. Share a profile to see it here.</p>' );
+			$container.html( '<p class="scrutinizer-empty">' + __( 'No shared reports yet. Share a profile to see it here.', 'scrutinizer' ) + '</p>' );
 			return;
 		}
 
 		var now = Date.now();
 		var html = '<table class="scrutinizer-profile-table scrutinizer-shared-table widefat">';
-		html += '<thead><tr><th>Route</th><th>Shared</th><th>Expires</th><th>Actions</th></tr></thead>';
+		html += '<thead><tr><th>' + __( 'Route', 'scrutinizer' ) + '</th><th>' + __( 'Shared', 'scrutinizer' ) + '</th><th>' + __( 'Expires', 'scrutinizer' ) + '</th><th>' + __( 'Actions', 'scrutinizer' ) + '</th></tr></thead>';
 		html += '<tbody>';
 
 		for ( var i = 0; i < shares.length; i++ ) {
@@ -4675,14 +4678,14 @@
 			if ( expiresAt ) {
 				var diff = expiresAt.getTime() - now;
 				if ( diff <= 0 ) {
-					expiryLabel = '<span style="color:#d63638;">Expired</span>';
+					expiryLabel = '<span style="color:#d63638;">' + __( 'Expired', 'scrutinizer' ) + '</span>';
 				} else {
 					var days = Math.ceil( diff / 86400000 );
 					if ( days <= 1 ) {
 						var hours = Math.ceil( diff / 3600000 );
-						expiryLabel = '<span style="color:#dba617;">' + hours + 'h remaining</span>';
+						expiryLabel = '<span style="color:#dba617;">' + sprintf( __( '%dh remaining', 'scrutinizer' ), hours ) + '</span>';
 					} else {
-						expiryLabel = days + 'd remaining';
+						expiryLabel = sprintf( __( '%dd remaining', 'scrutinizer' ), days );
 					}
 				}
 			} else {
@@ -4697,10 +4700,10 @@
 			html += '<td>' + expiryLabel + '</td>';
 			html += '<td class="scrutinizer-actions">';
 			if ( ! isExpired ) {
-				html += '<button type="button" class="button button-small scrutinizer-copy-share-link" data-url="' + esc( s.url || '' ) + '">Copy Link</button> ';
-				html += '<button type="button" class="button button-small scrutinizer-btn-danger scrutinizer-revoke-share" data-id="' + esc( s.id ) + '" data-token="' + esc( s.revoke_token || '' ) + '">Revoke</button>';
+				html += '<button type="button" class="button button-small scrutinizer-copy-share-link" data-url="' + esc( s.url || '' ) + '">' + __( 'Copy Link', 'scrutinizer' ) + '</button> ';
+				html += '<button type="button" class="button button-small scrutinizer-btn-danger scrutinizer-revoke-share" data-id="' + esc( s.id ) + '" data-token="' + esc( s.revoke_token || '' ) + '">' + __( 'Revoke', 'scrutinizer' ) + '</button>';
 			} else {
-				html += '<button type="button" class="button button-small scrutinizer-remove-share" data-id="' + esc( s.id ) + '">Remove</button>';
+				html += '<button type="button" class="button button-small scrutinizer-remove-share" data-id="' + esc( s.id ) + '">' + __( 'Remove', 'scrutinizer' ) + '</button>';
 			}
 			html += '</td>';
 			html += '</tr>';
@@ -4714,9 +4717,9 @@
 			var url = $( this ).data( 'url' );
 			var $btn = $( this );
 			copyToClipboard( url );
-			$btn.html( '\u2713 Copied' );
+			$btn.html( '\u2713 ' + __( 'Copied', 'scrutinizer' ) );
 			setTimeout( function() {
-				$btn.html( 'Copy Link' );
+				$btn.html( __( 'Copy Link', 'scrutinizer' ) );
 			}, 2000 );
 		} );
 
@@ -4725,7 +4728,7 @@
 			var id = $( this ).data( 'id' );
 			var token = $( this ).data( 'token' );
 			var $btn = $( this );
-			$btn.prop( 'disabled', true ).text( 'Revoking\u2026' );
+			$btn.prop( 'disabled', true ).text( __( 'Revoking\u2026', 'scrutinizer' ) );
 
 			fetch( RELAY_URL + '/r/' + id, {
 				method: 'DELETE',
@@ -4776,12 +4779,12 @@
 				renderApiAuditLog( response.data.log || [] );
 			} else {
 				$( '#scrutinizer-api-log-content' ).html(
-					'<p class="scrutinizer-empty">Failed to load access log.</p>'
+					'<p class="scrutinizer-empty">' + __( 'Failed to load access log.', 'scrutinizer' ) + '</p>'
 				);
 			}
 		} ).fail( function() {
 			$( '#scrutinizer-api-log-content' ).html(
-				'<p class="scrutinizer-empty">Failed to load access log.</p>'
+				'<p class="scrutinizer-empty">' + __( 'Failed to load access log.', 'scrutinizer' ) + '</p>'
 			);
 		} );
 	}
@@ -4790,16 +4793,16 @@
 		var $container = $( '#scrutinizer-api-log-content' );
 
 		if ( ! entries || 0 === entries.length ) {
-			$container.html( '<p class="scrutinizer-empty">No API access recorded yet.</p>' );
+			$container.html( '<p class="scrutinizer-empty">' + __( 'No API access recorded yet.', 'scrutinizer' ) + '</p>' );
 			return;
 		}
 
 		var html = '<table class="scrutinizer-api-log-table widefat">';
 		html += '<thead><tr>';
-		html += '<th>Endpoint</th>';
-		html += '<th>IP</th>';
-		html += '<th>User Agent</th>';
-		html += '<th>When</th>';
+		html += '<th>' + __( 'Endpoint', 'scrutinizer' ) + '</th>';
+		html += '<th>' + __( 'IP', 'scrutinizer' ) + '</th>';
+		html += '<th>' + __( 'User Agent', 'scrutinizer' ) + '</th>';
+		html += '<th>' + __( 'When', 'scrutinizer' ) + '</th>';
 		html += '</tr></thead><tbody>';
 
 		var limit = Math.min( entries.length, 50 );
@@ -4819,19 +4822,19 @@
 
 		html += '</tbody></table>';
 		if ( entries.length > 50 ) {
-			html += '<p class="scrutinizer-api-desc" style="margin-top:8px">Showing 50 of ' + entries.length + ' entries.</p>';
+			html += '<p class="scrutinizer-api-desc" style="margin-top:8px">' + sprintf( __( 'Showing 50 of %d entries.', 'scrutinizer' ), entries.length ) + '</p>';
 		}
 		$container.html( html );
 	}
 
 	// Bind audit log buttons (outside bindApiEvents to avoid duplicate binding).
 	$( document ).on( 'click', '#scrutinizer-refresh-api-log', function() {
-		$( '#scrutinizer-api-log-content' ).html( '<p class="scrutinizer-empty">Loading...</p>' );
+		$( '#scrutinizer-api-log-content' ).html( '<p class="scrutinizer-empty">' + __( 'Loading...', 'scrutinizer' ) + '</p>' );
 		loadApiAuditLog();
 	} );
 
 	$( document ).on( 'click', '#scrutinizer-clear-api-log', function() {
-		if ( ! confirm( 'Clear the entire API access log?' ) ) {
+		if ( ! confirm( __( 'Clear the entire API access log?', 'scrutinizer' ) ) ) {
 			return;
 		}
 		$.post( scrutinizerAdmin.ajaxUrl, {
@@ -4840,7 +4843,7 @@
 		}, function( response ) {
 			if ( response.success ) {
 				$( '#scrutinizer-api-log-content' ).html(
-					'<p class="scrutinizer-empty">No API access recorded yet.</p>'
+					'<p class="scrutinizer-empty">' + __( 'No API access recorded yet.', 'scrutinizer' ) + '</p>'
 				);
 			}
 		} );
@@ -4906,53 +4909,53 @@
 		}
 
 		var html = '<div id="scrutinizer-share-panel" class="scrutinizer-share-panel">';
-		html += '<h4><span class="dashicons dashicons-share-alt2"></span> Share Report</h4>';
-		html += '<p class="description">Create an encrypted, self-destructing link. The relay server never sees your data.</p>';
+		html += '<h4><span class="dashicons dashicons-share-alt2"></span> ' + __( 'Share Report', 'scrutinizer' ) + '</h4>';
+		html += '<p class="description">' + __( 'Create an encrypted, self-destructing link. The relay server never sees your data.', 'scrutinizer' ) + '</p>';
 
 		// Options
 		html += '<div class="scrutinizer-share-options">';
 		html += '<label class="scrutinizer-share-option">';
-		html += '<span>Expires after</span>';
+		html += '<span>' + __( 'Expires after', 'scrutinizer' ) + '</span>';
 		html += '<select id="scrutinizer-share-ttl">';
-		html += '<option value="1">1 day</option>';
-		html += '<option value="7" selected>7 days</option>';
-		html += '<option value="14">14 days</option>';
-		html += '<option value="30">30 days</option>';
+		html += '<option value="1">' + __( '1 day', 'scrutinizer' ) + '</option>';
+		html += '<option value="7" selected>' + __( '7 days', 'scrutinizer' ) + '</option>';
+		html += '<option value="14">' + __( '14 days', 'scrutinizer' ) + '</option>';
+		html += '<option value="30">' + __( '30 days', 'scrutinizer' ) + '</option>';
 		html += '</select></label>';
 
 		html += '<label class="scrutinizer-share-option">';
 		html += '<input type="checkbox" id="scrutinizer-share-burn">';
-		html += ' <span>Expire after first view</span></label>';
+		html += ' <span>' + __( 'Expire after first view', 'scrutinizer' ) + '</span></label>';
 
 		html += '<label class="scrutinizer-share-option">';
 		html += '<input type="checkbox" id="scrutinizer-share-passphrase-toggle">';
-		html += ' <span>Add passphrase</span></label>';
+		html += ' <span>' + __( 'Add passphrase', 'scrutinizer' ) + '</span></label>';
 
 		html += '<div id="scrutinizer-share-passphrase-field" style="display:none;">';
-		html += '<input type="text" id="scrutinizer-share-passphrase" placeholder="Passphrase (share separately)" />';
+		html += '<input type="text" id="scrutinizer-share-passphrase" placeholder="' + esc( __( 'Passphrase (share separately)', 'scrutinizer' ) ) + '" />';
 		html += '</div>';
 
 		html += '</div>';
 
 		// Include sections
 		html += '<details class="scrutinizer-share-sections">';
-		html += '<summary>Sections to include</summary>';
+		html += '<summary>' + __( 'Sections to include', 'scrutinizer' ) + '</summary>';
 		html += '<div class="scrutinizer-share-section-list">';
-		html += '<label><input type="checkbox" name="share_section" value="summary" checked disabled> Summary</label>';
-		html += '<label><input type="checkbox" name="share_section" value="sources" checked> Sources</label>';
-		html += '<label><input type="checkbox" name="share_section" value="queries" checked> Queries</label>';
-		html += '<label><input type="checkbox" name="share_section" value="timeline" checked> Timeline</label>';
-		html += '<label><input type="checkbox" name="share_section" value="trace" checked> Trace</label>';
-		html += '<label><input type="checkbox" name="share_section" value="http_calls" checked> HTTP Calls</label>';
-		html += '<label><input type="checkbox" name="share_section" value="autoloaded_options" checked> Options</label>';
-		html += '<label><input type="checkbox" name="share_section" value="enqueued_assets" checked> Assets</label>';
-		html += '<label><input type="checkbox" name="share_section" value="diagnostics"> Diagnostics</label>';
+		html += '<label><input type="checkbox" name="share_section" value="summary" checked disabled> ' + __( 'Summary', 'scrutinizer' ) + '</label>';
+		html += '<label><input type="checkbox" name="share_section" value="sources" checked> ' + __( 'Sources', 'scrutinizer' ) + '</label>';
+		html += '<label><input type="checkbox" name="share_section" value="queries" checked> ' + __( 'Queries', 'scrutinizer' ) + '</label>';
+		html += '<label><input type="checkbox" name="share_section" value="timeline" checked> ' + __( 'Timeline', 'scrutinizer' ) + '</label>';
+		html += '<label><input type="checkbox" name="share_section" value="trace" checked> ' + __( 'Trace', 'scrutinizer' ) + '</label>';
+		html += '<label><input type="checkbox" name="share_section" value="http_calls" checked> ' + __( 'HTTP Calls', 'scrutinizer' ) + '</label>';
+		html += '<label><input type="checkbox" name="share_section" value="autoloaded_options" checked> ' + __( 'Options', 'scrutinizer' ) + '</label>';
+		html += '<label><input type="checkbox" name="share_section" value="enqueued_assets" checked> ' + __( 'Assets', 'scrutinizer' ) + '</label>';
+		html += '<label><input type="checkbox" name="share_section" value="diagnostics"> ' + __( 'Diagnostics', 'scrutinizer' ) + '</label>';
 		html += '</div></details>';
 
 		html += '<div class="scrutinizer-share-actions">';
 		html += '<button type="button" class="button button-primary" id="scrutinizer-share-go">';
-		html += '<span class="dashicons dashicons-lock"></span> Encrypt &amp; Share</button>';
-		html += '<button type="button" class="button button-link" id="scrutinizer-share-cancel">Cancel</button>';
+		html += '<span class="dashicons dashicons-lock"></span> ' + __( 'Encrypt &amp; Share', 'scrutinizer' ) + '</button>';
+		html += '<button type="button" class="button button-link" id="scrutinizer-share-cancel">' + __( 'Cancel', 'scrutinizer' ) + '</button>';
 		html += '</div>';
 
 		html += '<div id="scrutinizer-share-result" style="display:none;"></div>';
@@ -4983,7 +4986,7 @@
 	function executeShare( profileId ) {
 		var $btn = $( '#scrutinizer-share-go' );
 		var $result = $( '#scrutinizer-share-result' );
-		$btn.prop( 'disabled', true ).html( '<span class="dashicons dashicons-update spin"></span> Encrypting…' );
+		$btn.prop( 'disabled', true ).html( '<span class="dashicons dashicons-update spin"></span> ' + __( 'Encrypting…', 'scrutinizer' ) );
 
 		// Gather options
 		var ttlDays = parseInt( $( '#scrutinizer-share-ttl' ).val(), 10 );
@@ -5004,8 +5007,8 @@
 			profile_id: profileId
 		}, function( response ) {
 			if ( ! response.success || ! response.data || ! response.data.profile ) {
-				$btn.prop( 'disabled', false ).html( '<span class="dashicons dashicons-lock"></span> Encrypt &amp; Share' );
-				$result.html( '<p class="scrutinizer-share-error">Failed to load profile data.</p>' ).show();
+				$btn.prop( 'disabled', false ).html( '<span class="dashicons dashicons-lock"></span> ' + __( 'Encrypt &amp; Share', 'scrutinizer' ) );
+				$result.html( '<p class="scrutinizer-share-error">' + __( 'Failed to load profile data.', 'scrutinizer' ) + '</p>' ).show();
 				return;
 			}
 
@@ -5174,8 +5177,8 @@
 			}
 
 		} ).fail( function() {
-			$btn.prop( 'disabled', false ).html( '<span class="dashicons dashicons-lock"></span> Encrypt &amp; Share' );
-			$result.html( '<p class="scrutinizer-share-error">Request failed. Please try again.</p>' ).show();
+			$btn.prop( 'disabled', false ).html( '<span class="dashicons dashicons-lock"></span> ' + __( 'Encrypt &amp; Share', 'scrutinizer' ) );
+			$result.html( '<p class="scrutinizer-share-error">' + __( 'Request failed. Please try again.', 'scrutinizer' ) + '</p>' ).show();
 		} );
 	}
 
@@ -5186,13 +5189,13 @@
 		var $btn = $( '#scrutinizer-share-go' );
 		var $result = $( '#scrutinizer-share-result' );
 
-		$btn.html( '<span class="dashicons dashicons-update spin"></span> Compressing…' );
+		$btn.html( '<span class="dashicons dashicons-update spin"></span> ' + __( 'Compressing…', 'scrutinizer' ) );
 
 		// Gzip the JSON before encryption for smaller payloads
 		var jsonBytes = new TextEncoder().encode( JSON.stringify( data ) );
 
 		compressGzip( jsonBytes ).then( function( compressed ) {
-			$btn.html( '<span class="dashicons dashicons-update spin"></span> Encrypting…' );
+			$btn.html( '<span class="dashicons dashicons-update spin"></span> ' + __( 'Encrypting…', 'scrutinizer' ) );
 
 			var plaintext = compressed;
 
@@ -5234,14 +5237,14 @@
 					var shareUrl = resp.url + '#' + urlFragment;
 
 					var html = '<div class="scrutinizer-share-success">';
-					html += '<p><span class="dashicons dashicons-yes-alt" style="color:#4ab866;"></span> Report encrypted and shared.</p>';
+					html += '<p><span class="dashicons dashicons-yes-alt" style="color:#4ab866;"></span> ' + __( 'Report encrypted and shared.', 'scrutinizer' ) + '</p>';
 					html += '<div class="scrutinizer-share-url-row">';
 					html += '<input type="text" readonly value="' + esc( shareUrl ) + '" id="scrutinizer-share-url" />';
-					html += '<button type="button" class="button" id="scrutinizer-share-copy">Copy</button>';
+					html += '<button type="button" class="button" id="scrutinizer-share-copy">' + __( 'Copy', 'scrutinizer' ) + '</button>';
 					html += '</div>';
-					html += '<p class="description">Expires: ' + esc( new Date( resp.expires_at ).toLocaleString() ) + '</p>';
+					html += '<p class="description">' + sprintf( __( 'Expires: %s', 'scrutinizer' ), esc( new Date( resp.expires_at ).toLocaleString() ) ) + '</p>';
 					html += '<button type="button" class="button scrutinizer-btn-danger" id="scrutinizer-share-revoke" data-id="' + esc( resp.id ) + '" data-token="' + esc( resp.revoke_token ) + '">';
-					html += '<span class="dashicons dashicons-dismiss"></span> Revoke</button>';
+					html += '<span class="dashicons dashicons-dismiss"></span> ' + __( 'Revoke', 'scrutinizer' ) + '</button>';
 					html += '</div>';
 
 					$result.html( html ).show();
@@ -5250,9 +5253,9 @@
 					$( '#scrutinizer-share-copy' ).on( 'click', function() {
 						$( '#scrutinizer-share-url' ).select();
 						copyToClipboard( shareUrl );
-						$( this ).html( '✓ Copied' );
+						$( this ).html( '✓ ' + __( 'Copied', 'scrutinizer' ) );
 						setTimeout( function() {
-							$( '#scrutinizer-share-copy' ).html( 'Copy' );
+							$( '#scrutinizer-share-copy' ).html( __( 'Copy', 'scrutinizer' ) );
 						}, 2000 );
 					} );
 
@@ -5278,8 +5281,8 @@
 		} )
 		.catch( function( err ) {
 			console.error( 'Share error:', err );
-			$btn.prop( 'disabled', false ).html( '<span class="dashicons dashicons-lock"></span> Encrypt &amp; Share' );
-			$result.html( '<p class="scrutinizer-share-error">Encryption failed: ' + esc( err.message || 'Unknown error' ) + '</p>' ).show();
+			$btn.prop( 'disabled', false ).html( '<span class="dashicons dashicons-lock"></span> ' + __( 'Encrypt &amp; Share', 'scrutinizer' ) );
+			$result.html( '<p class="scrutinizer-share-error">' + sprintf( __( 'Encryption failed: %s', 'scrutinizer' ), esc( err.message || __( 'Unknown error', 'scrutinizer' ) ) ) + '</p>' ).show();
 		} );
 	}
 
@@ -5309,7 +5312,7 @@
 
 			// Guard against relay's 10 MB limit.
 			if ( bodyStr.length > 10000000 ) {
-				reject( new Error( 'Report too large (' + ( bodyStr.length / 1048576 ).toFixed( 1 ) + ' MB). Try unchecking Trace and Timeline.' ) );
+				reject( new Error( sprintf( __( 'Report too large (%s MB). Try unchecking Trace and Timeline.', 'scrutinizer' ), ( bodyStr.length / 1048576 ).toFixed( 1 ) ) ) );
 				return;
 			}
 
@@ -5321,7 +5324,7 @@
 			.then( function( resp ) {
 				if ( ! resp.ok ) {
 					return resp.json().then( function( data ) {
-						throw new Error( data.error || 'Upload failed' );
+						throw new Error( data.error || __( 'Upload failed', 'scrutinizer' ) );
 					} );
 				}
 				return resp.json();
@@ -5396,12 +5399,12 @@
 					}
 				} );
 				$( '#scrutinizer-share-result' ).html(
-					'<div class="scrutinizer-share-revoked"><span class="dashicons dashicons-yes-alt"></span> Report revoked. The link will no longer work.</div>'
+					'<div class="scrutinizer-share-revoked"><span class="dashicons dashicons-yes-alt"></span> ' + __( 'Report revoked. The link will no longer work.', 'scrutinizer' ) + '</div>'
 				);
 			} else {
 				$btn.prop( 'disabled', false );
 				$( '#scrutinizer-share-result' ).append(
-					'<p class="scrutinizer-share-error">Revocation failed: ' + esc( data.error || 'Unknown error' ) + '</p>'
+					'<p class="scrutinizer-share-error">' + sprintf( __( 'Revocation failed: %s', 'scrutinizer' ), esc( data.error || __( 'Unknown error', 'scrutinizer' ) ) ) + '</p>'
 				);
 			}
 		} )
