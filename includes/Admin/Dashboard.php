@@ -69,10 +69,14 @@ class Dashboard {
 		wp_enqueue_script(
 			'scrutinizer-dashboard',
 			SCRUTINIZER_URL . 'assets/js/dashboard.js',
-			array( 'jquery' ),
+			array( 'jquery', 'wp-i18n' ),
 			SCRUTINIZER_VERSION . '.' . filemtime( SCRUTINIZER_DIR . 'assets/js/dashboard.js' ),
 			true
 		);
+
+		// Load JS translations for strings wrapped with wp.i18n. Requires the
+		// 'wp-i18n' dependency above and compiled .json files in languages/.
+		wp_set_script_translations( 'scrutinizer-dashboard', 'scrutinizer', SCRUTINIZER_DIR . 'languages' );
 
 		// Look up recent profiles so the dashboard always has something to show.
 		$recent          = Storage::get_recent_profiles( 50 );
