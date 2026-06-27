@@ -437,7 +437,10 @@ class Profiler {
 			'http_calls'         => $this->build_http_calls(),
 			'autoloaded_options' => self::get_autoloaded_options(),
 			'enqueued_assets'    => self::get_enqueued_assets(),
-			'referer'            => isset( $_SERVER['HTTP_REFERER'] ) ? sanitize_url( wp_unslash( $_SERVER['HTTP_REFERER'] ) ) : '',
+			// Background sampling profiles anonymous visitor traffic, so the
+			// visitor's inbound referer is never-collect data. Only capture it
+			// for admin-driven session profiling (the admin's own navigation).
+			'referer'            => ( ! $this->is_background && isset( $_SERVER['HTTP_REFERER'] ) ) ? sanitize_url( wp_unslash( $_SERVER['HTTP_REFERER'] ) ) : '',
 			'ajax_action'        => ( defined( 'DOING_AJAX' ) && DOING_AJAX && isset( $_REQUEST['action'] ) )
 				? sanitize_text_field( wp_unslash( $_REQUEST['action'] ) )
 				: '',

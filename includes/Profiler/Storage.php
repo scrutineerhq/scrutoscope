@@ -119,6 +119,23 @@ class Storage {
 			}
 		}
 
+		// Enqueued asset URLs carry query strings — cache-busting ?ver= values
+		// and, for some commercial plugins/themes, license or API keys appended
+		// as query args. Keep scheme+host+path so the asset stays identifiable,
+		// drop the query.
+		if ( ! empty( $profile_data['enqueued_assets'] ) && is_array( $profile_data['enqueued_assets'] ) ) {
+			foreach ( array( 'scripts', 'styles' ) as $group ) {
+				if ( empty( $profile_data['enqueued_assets'][ $group ] ) || ! is_array( $profile_data['enqueued_assets'][ $group ] ) ) {
+					continue;
+				}
+				foreach ( $profile_data['enqueued_assets'][ $group ] as $i => $asset ) {
+					if ( isset( $asset['src'] ) ) {
+						$profile_data['enqueued_assets'][ $group ][ $i ]['src'] = self::strip_url_query( $asset['src'] );
+					}
+				}
+			}
+		}
+
 		return $profile_data;
 	}
 
