@@ -221,6 +221,11 @@ function scrutinizer_run_cleanup() {
 	$max_per_route  = (int) get_option( 'scrutinizer_max_per_route', 100 );
 
 	\Scrutinizer\Profiler\Storage::cleanup_profiles( $retention_days, $max_per_route );
+
+	// Prune the long-term stats aggregate. Kept far longer than raw profiles
+	// (it's tiny and exists to outlive them), but still bounded.
+	$stats_retention = (int) get_option( 'scrutinizer_stats_retention_days', 365 );
+	\Scrutinizer\Profiler\Storage::prune_route_stats( $stats_retention );
 }
 add_action( 'scrutinizer_cleanup_profiles', 'scrutinizer_run_cleanup' );
 

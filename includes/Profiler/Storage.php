@@ -590,6 +590,28 @@ class Storage {
 	}
 
 	/**
+	 * Delete route-stats daily buckets older than the retention window.
+	 *
+	 * The aggregate is tiny (a few dozen ints per fingerprint per day), so the
+	 * default keeps a year of history — far longer than the raw-profile TTL,
+	 * which is the whole point of the aggregate. Still pruned so the table
+	 * can't grow without bound.
+	 *
+	 * @param int $keep_days Days of daily buckets to retain.
+	 * @return int Rows deleted.
+	 */
+	public static function prune_route_stats( $keep_days = 365 ) {
+		global $wpdb;
+
+		$keep_days = max( 1, (int) $keep_days );
+		$cutoff    = gmdate( 'Y-m-d', time() - $keep_days * DAY_IN_SECONDS );
+		$table     = self::route_stats_table();
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching
+		return (int) $wpdb->query( $wpdb->prepare( "DELETE FROM {$table} WHERE stat_day < %s", $cutoff ) );
+	}
+
+	/**
 	 * Normalize a URL into a route grouping key.
 	 *
 	 * Strips host and query string so that e.g. /wp-admin/edit.php?post_type=page
