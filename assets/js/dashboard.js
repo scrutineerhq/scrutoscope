@@ -5743,20 +5743,21 @@
 				.then( function( ciphertext ) {
 					var ciphertextB64 = base64urlEncode( new Uint8Array( ciphertext ) );
 					var ivB64 = base64urlEncode( iv );
-					var keyB64 = base64urlEncode( keyBytes );
 					var hasPassphrase = false;
 
 					// If passphrase, wrap the key and use wrapped material in URL fragment
 					if ( passphrase ) {
 						hasPassphrase = true;
-						return wrapKeyWithPassphrase( keyBytes, iv, passphrase ).then( function( wrapped ) {
-							keyB64 = base64urlEncode( new Uint8Array( wrapped ) );
-							urlFragment = keyB64;
-							return uploadToRelay( ciphertextB64, ivB64, keyB64, ttlDays, burnAfterReading, hasPassphrase );
+						return wrapKeyWithPassphrase( keyBytes, passphrase ).then( function( w ) {
+							urlFragment = base64urlEncode( w.wrapped );
+							return uploadToRelay( ciphertextB64, ivB64, ttlDays, burnAfterReading, hasPassphrase, {
+								salt: base64urlEncode( w.salt ),
+								iterations: w.iterations
+							} );
 						} );
 					}
 
-					return uploadToRelay( ciphertextB64, ivB64, keyB64, ttlDays, burnAfterReading, hasPassphrase );
+					return uploadToRelay( ciphertextB64, ivB64, ttlDays, burnAfterReading, hasPassphrase, null );
 				} )
 				.then( function( resp ) {
 					$btn.hide();
@@ -5817,7 +5818,7 @@
 	/**
 	 * Upload encrypted payload to the relay.
 	 */
-	function uploadToRelay( ciphertext, iv, keyB64, ttlDays, burnAfterReading, hasPassphrase ) {
+	function uploadToRelay( ciphertext, iv, ttlDays, burnAfterReading, hasPassphrase, kdf ) {
 		return new Promise( function( resolve, reject ) {
 			var payload = {
 				ciphertext: ciphertext,
@@ -5827,6 +5828,13 @@
 				has_passphrase: hasPassphrase,
 				compressed: true
 			};
+			// Non-secret PBKDF2 parameters for passphrase shares (the viewer
+			// needs them to reproduce the key derivation). Absent for legacy /
+			// non-passphrase shares.
+			if ( kdf ) {
+				payload.kdf_salt = kdf.salt;
+				payload.kdf_iterations = kdf.iterations;
+			}
 
 			// Use fetch to avoid jQuery AJAX CORS defaults
 			var bodyStr = JSON.stringify( payload );
@@ -5858,12 +5866,18 @@
 	/**
 	 * Wrap a key with a passphrase using PBKDF2 + AES-GCM.
 	 */
-	function wrapKeyWithPassphrase( keyBytes, salt, passphrase ) {
+	function wrapKeyWithPassphrase( keyBytes, passphrase ) {
 		var enc = new TextEncoder();
+		// Dedicated random PBKDF2 salt (not the content IV) and 600k iterations
+		// per OWASP 2023. The salt + iteration count travel as non-secret KDF
+		// metadata so the viewer can reproduce the derivation; the passphrase
+		// and wrapped key never reach the server.
+		var salt = crypto.getRandomValues( new Uint8Array( 16 ) );
+		var iterations = 600000;
 		return crypto.subtle.importKey( 'raw', enc.encode( passphrase ), 'PBKDF2', false, [ 'deriveBits', 'deriveKey' ] )
 			.then( function( passphraseKey ) {
 				return crypto.subtle.deriveKey(
-					{ name: 'PBKDF2', salt: salt, iterations: 100000, hash: 'SHA-256' },
+					{ name: 'PBKDF2', salt: salt, iterations: iterations, hash: 'SHA-256' },
 					passphraseKey,
 					{ name: 'AES-GCM', length: 256 },
 					false,
@@ -5881,7 +5895,7 @@
 					var result = new Uint8Array( wrapIv.length + new Uint8Array( wrapped ).length );
 					result.set( wrapIv );
 					result.set( new Uint8Array( wrapped ), wrapIv.length );
-					return result;
+					return { wrapped: result, salt: salt, iterations: iterations };
 				} );
 			} );
 	}
