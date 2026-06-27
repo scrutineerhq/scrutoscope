@@ -69,6 +69,9 @@ class Storage {
 			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			$wpdb->query( "ALTER TABLE {$table} DROP COLUMN baseline_name" );
 		}
+
+		// Long-term route-stats aggregate (survives the profile TTL).
+		self::create_route_stats_table();
 	}
 
 	/**
@@ -223,7 +226,8 @@ class Storage {
 
 		// Normalize URL to a grouping key: method + path (no query string, no host).
 		// AJAX requests get action-specific keys: POST:ajax:heartbeat.
-		$route_key = self::normalize_route_key( $method, $url, $ajax_action );
+		$route_key   = self::normalize_route_key( $method, $url, $ajax_action );
+		$captured_at = current_time( 'mysql' );
 
 		$insert_data   = array(
 			'session_id'     => $session_id,
@@ -235,7 +239,7 @@ class Storage {
 			'duration_ns'    => $dur_ns,
 			'user_role'      => $role,
 			'profile_data'   => gzcompress( wp_json_encode( $profile_data ) ),
-			'captured_at'    => current_time( 'mysql' ),
+			'captured_at'    => $captured_at,
 		);
 		$insert_format = array( '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s', '%s' );
 
@@ -256,10 +260,239 @@ class Storage {
 
 		$insert_id = (int) $wpdb->insert_id;
 
+		// Record into the long-term route-stats aggregate so the statistical
+		// history survives after the raw profile rolls off (TTL). Best-effort:
+		// a stats failure must never lose the profile.
+		try {
+			$request     = isset( $profile_data['request'] ) && is_array( $profile_data['request'] ) ? $profile_data['request'] : array();
+			$fingerprint = Report::route_fingerprint( $request );
+			self::record_route_stat( $fingerprint, $captured_at, (int) $dur_ns );
+		} catch ( \Throwable $e ) {
+			// Secondary signal; swallow so profile saving is unaffected.
+			unset( $e );
+		}
+
 		// Auto-prune old unpinned profiles for this route.
 		self::auto_prune( $route_key );
 
 		return $insert_id;
+	}
+
+	/**
+	 * Table holding the long-term per-route duration aggregate.
+	 *
+	 * @return string
+	 */
+	public static function route_stats_table() {
+		global $wpdb;
+		return $wpdb->prefix . 'scrutinizer_route_stats';
+	}
+
+	/**
+	 * Create the route-stats aggregate table (idempotent via dbDelta).
+	 */
+	public static function create_route_stats_table() {
+		global $wpdb;
+
+		$table   = self::route_stats_table();
+		$charset = $wpdb->get_charset_collate();
+
+		$sql = "CREATE TABLE {$table} (
+			fingerprint varchar(191) NOT NULL,
+			stat_day date NOT NULL,
+			histogram text NOT NULL,
+			sample_count int unsigned NOT NULL DEFAULT 0,
+			updated_at datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+			PRIMARY KEY  (fingerprint, stat_day)
+		) {$charset};";
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+		dbDelta( $sql );
+	}
+
+	/**
+	 * Record one duration sample into the (fingerprint, day) histogram.
+	 *
+	 * Read-modify-write: concurrent saves to the same bucket can rarely lose an
+	 * increment, which is acceptable for an aggregate trend signal.
+	 *
+	 * @param string $fingerprint Route fingerprint (Report::route_fingerprint()).
+	 * @param string $captured_at MySQL datetime the profile was captured.
+	 * @param int    $duration_ns Server request duration in nanoseconds.
+	 * @return void
+	 */
+	public static function record_route_stat( $fingerprint, $captured_at, $duration_ns ) {
+		global $wpdb;
+
+		$fingerprint = (string) $fingerprint;
+		if ( '' === $fingerprint ) {
+			return;
+		}
+
+		$day = substr( (string) $captured_at, 0, 10 );
+		if ( '' === $day || '0000-00-00' === $day ) {
+			$day = gmdate( 'Y-m-d' );
+		}
+
+		$table = self::route_stats_table();
+
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$row = $wpdb->get_row(
+			$wpdb->prepare( "SELECT histogram, sample_count FROM {$table} WHERE fingerprint = %s AND stat_day = %s", $fingerprint, $day ),
+			ARRAY_A
+		);
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		$histogram = $row ? json_decode( $row['histogram'], true ) : RouteStats::empty_histogram();
+		$histogram = RouteStats::add( $histogram, $duration_ns );
+		$count     = ( $row ? (int) $row['sample_count'] : 0 ) + 1;
+		$now       = current_time( 'mysql' );
+
+		if ( $row ) {
+			$wpdb->update(
+				$table,
+				array(
+					'histogram'    => wp_json_encode( $histogram ),
+					'sample_count' => $count,
+					'updated_at'   => $now,
+				),
+				array(
+					'fingerprint' => $fingerprint,
+					'stat_day'    => $day,
+				),
+				array( '%s', '%d', '%s' ),
+				array( '%s', '%s' )
+			);
+		} else {
+			$wpdb->insert(
+				$table,
+				array(
+					'fingerprint'  => $fingerprint,
+					'stat_day'     => $day,
+					'histogram'    => wp_json_encode( $histogram ),
+					'sample_count' => $count,
+					'updated_at'   => $now,
+				),
+				array( '%s', '%s', '%s', '%d', '%s' )
+			);
+		}
+	}
+
+	/**
+	 * Merge a route's daily histograms over a recent window.
+	 *
+	 * @param string $fingerprint Route fingerprint.
+	 * @param int    $days        Look-back window in days.
+	 * @return array { @type int[] $histogram, @type int $sample_count, @type int $days }.
+	 */
+	public static function get_route_stat_window( $fingerprint, $days = 30 ) {
+		global $wpdb;
+
+		$fingerprint = (string) $fingerprint;
+		$days        = max( 1, (int) $days );
+		$from        = gmdate( 'Y-m-d', time() - $days * DAY_IN_SECONDS );
+		$table       = self::route_stats_table();
+
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results(
+			$wpdb->prepare( "SELECT histogram, sample_count FROM {$table} WHERE fingerprint = %s AND stat_day >= %s", $fingerprint, $from ),
+			ARRAY_A
+		);
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		$histograms = array();
+		$count      = 0;
+		foreach ( (array) $rows as $r ) {
+			$histograms[] = json_decode( $r['histogram'], true );
+			$count       += (int) $r['sample_count'];
+		}
+
+		return array(
+			'histogram'    => RouteStats::merge( $histograms ),
+			'sample_count' => $count,
+			'days'         => count( (array) $rows ),
+		);
+	}
+
+	/**
+	 * Rebuild the route-stats aggregate from all stored profiles.
+	 *
+	 * Accumulates in memory keyed by (fingerprint, day) and writes one row per
+	 * bucket, so a full backfill is a handful of writes rather than two queries
+	 * per profile.
+	 *
+	 * @return int Number of profiles folded in.
+	 */
+	public static function rebuild_route_stats() {
+		global $wpdb;
+
+		$stats_table    = self::route_stats_table();
+		$profiles_table = self::table_name();
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$wpdb->query( "TRUNCATE TABLE {$stats_table}" );
+
+		$acc    = array();
+		$total  = 0;
+		$offset = 0;
+		$batch  = 1000;
+
+		while ( true ) {
+			// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$rows = $wpdb->get_results(
+				$wpdb->prepare( "SELECT route_class, user_role, duration_ns, captured_at FROM {$profiles_table} ORDER BY id ASC LIMIT %d OFFSET %d", $batch, $offset ),
+				ARRAY_A
+			);
+			// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+			if ( empty( $rows ) ) {
+				break;
+			}
+
+			foreach ( $rows as $r ) {
+				$fingerprint = Report::route_fingerprint(
+					array(
+						'route_class' => isset( $r['route_class'] ) ? $r['route_class'] : '',
+						'user_role'   => isset( $r['user_role'] ) ? $r['user_role'] : 'anonymous',
+					)
+				);
+				$day         = substr( (string) $r['captured_at'], 0, 10 );
+				if ( '' === $day || '0000-00-00' === $day ) {
+					continue;
+				}
+				$key = $fingerprint . '|' . $day;
+				if ( ! isset( $acc[ $key ] ) ) {
+					$acc[ $key ] = array(
+						'fingerprint' => $fingerprint,
+						'day'         => $day,
+						'histogram'   => RouteStats::empty_histogram(),
+						'count'       => 0,
+					);
+				}
+				$acc[ $key ]['histogram'] = RouteStats::add( $acc[ $key ]['histogram'], (int) $r['duration_ns'] );
+				++$acc[ $key ]['count'];
+				++$total;
+			}
+
+			$offset += $batch;
+		}
+
+		$now = current_time( 'mysql' );
+		foreach ( $acc as $bucket ) {
+			$wpdb->insert(
+				$stats_table,
+				array(
+					'fingerprint'  => $bucket['fingerprint'],
+					'stat_day'     => $bucket['day'],
+					'histogram'    => wp_json_encode( $bucket['histogram'] ),
+					'sample_count' => $bucket['count'],
+					'updated_at'   => $now,
+				),
+				array( '%s', '%s', '%s', '%d', '%s' )
+			);
+		}
+
+		return $total;
 	}
 
 	/**
@@ -1260,5 +1493,9 @@ class Storage {
 			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			$wpdb->query( "ALTER TABLE {$table} ADD COLUMN response_status smallint(5) unsigned DEFAULT NULL AFTER captured_at, ADD KEY response_status (response_status)" );
 		}
+
+		// Ensure the route-stats aggregate exists on upgraded installs (dbDelta
+		// is idempotent — no-op when the table is already present).
+		self::create_route_stats_table();
 	}
 }

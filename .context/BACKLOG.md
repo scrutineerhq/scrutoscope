@@ -7,7 +7,16 @@
 - **M1 — Core Instrumentation Engine** ✅ Instrumentor, CallStack, Attribution, Profiler, Storage, Session, dashboard, AJAX, admin bar, route fingerprinting, background profiling, by-reference callback detection.
 - **M2 — Deep Mode, Diagnostics, and Timeline** ✅ Timeline visualization, lifecycle phase markers, query profiling, memory observations, enqueued assets, cron inventory, trace explorer, HTTP call lollipops, compare view, pin/annotate/prune.
 - **M2.5 — AI Agent API & Secure Sharing** ✅ REST API (6 endpoints), diagnostics collector, hard sanitization, `/v1/prompt`, Application Passwords, "Send to Agent", zero-knowledge relay (AES-256-GCM, R2, capability URLs), "Send to Support", expiry options, passphrase protection, gzip compression, viewer SPA with file upload drop zone.
-- **M3 — Compare Workflow** 🚧 _Partial._ Comparison target picker, inline comparison, and per-delta "Difference observed" language are shipped. **Not yet built:** the statistical "Likely Regression" gate (`Report::classify_change()` — ≥5 matched requests, ≥20%+100ms median, ≥3/5 direction) and route-fingerprint baseline matching (`Profiler::route_fingerprint()` / `Report::match_baseline()`); comparison currently keys on the flat `route_key` string. The UI is held to "Difference observed" until the gate exists.
+- **M3 — Compare Workflow + Regression Gate** ✅ _Shipped this cycle._ Comparison picker + inline compare; the statistical gate (`Report::classify_change()` — 3 thresholds), route-fingerprint matching (`route_fingerprint()` / `match_samples()` / `compare_route()`), `GET /v1/regression` + the dashboard AJAX, and the route-detail **verdict banner**. The two-profile compare view stays at "Difference observed" (a single comparison); only the multi-sample classifier asserts the stronger verdict.
+
+## M3.5 — Long-term stats aggregate
+
+The regression gate reads stored profiles, which roll off at the 7-day TTL — so today it can only compare **inside** that window. The aggregate decouples the signal from the samples (tiny mergeable histograms survive after the raw profiles expire).
+
+- [x] **Capture** — `RouteStats` mergeable duration histogram + a `scrutinizer_route_stats` (fingerprint, day) table; recorded on save (best-effort); `wp scrutinizer rebuild-stats` backfill. Pure aggregate (output-boundary clean), persists past the profile TTL.
+- [ ] **Classifier reads windows** — point the gate at merged aggregate windows (recent vs an older / deploy baseline) instead of raw samples, so the verdict works **across deploys**, not just within 7 days. Quantiles come from the merged histogram; `classify_change` thresholds/direction unchanged.
+- [ ] **Aggregate retention** — keep daily buckets for months (a few MB/year); prune very old.
+- [ ] **Trends** — long-term sparklines from the aggregate after profiles expire (folds in the M5.6 trend items).
 - **M4 — Report Sharing** ✅ Absorbed into M2.5. Share data enrichment, viewer tabs (HTTP Calls, Autoloaded Options, Enqueued Assets), timeline segment tooltips, viewer branding.
 - **M5 — WP-CLI** ✅ 7 subcommands: list, show, delete, export, clear, status, mu-plugin.
 - **M5.5 — Data Lifecycle & Share Management** ✅ Shared reports ledger (save/get/delete/revoke), profile TTL (7d default, configurable), pinned + shared exempt from cleanup, TTL badges in History tab.

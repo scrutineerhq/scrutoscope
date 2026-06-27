@@ -38,6 +38,11 @@ function scrutinizer_uninstall_site() {
 	// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 	$wpdb->query( "DROP TABLE IF EXISTS {$api_log_table}" );
 
+	// 2b. Drop the route-stats aggregate table.
+	$route_stats_table = $wpdb->prefix . 'scrutinizer_route_stats';
+	// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+	$wpdb->query( "DROP TABLE IF EXISTS {$route_stats_table}" );
+
 	// 3. Delete all scrutinizer_* options.
 	// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 	$wpdb->query(
