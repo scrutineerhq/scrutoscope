@@ -11,54 +11,98 @@ use Scrutinizer\Profiler\Session;
 use Scrutinizer\Profiler\Storage;
 use Scrutinizer\Api\Sanitizer;
 
+// Every action in this file is registered through self::add_ajax(), which runs
+// self::guard() — check_ajax_referer( 'scrutinizer_nonce', 'nonce' ) plus a
+// manage_options check — before the handler. The nonce is therefore verified
+// centrally for every entry point (proven by AjaxGuardTest), but WPCS's
+// per-function NonceVerification sniff can't see across the wrapper, so it is
+// disabled for this file. Input is still individually sanitized.
+// phpcs:disable WordPress.Security.NonceVerification.Recommended
+// phpcs:disable WordPress.Security.NonceVerification.Missing
+
 /**
  * Registers and handles AJAX actions for the dashboard.
  */
 class Ajax {
 
 	/**
-	 * Register AJAX handlers.
+	 * AJAX action suffixes; each maps to a same-named handler method and is
+	 * registered through add_ajax() so the nonce + capability guard always
+	 * runs first.
+	 *
+	 * @var string[]
+	 */
+	private static $actions = array(
+		'start_profiling',
+		'stop_profiling',
+		'get_profiles',
+		'get_profiles_grouped',
+		'get_route_profiles',
+		'get_profile_detail',
+		'delete_profile',
+		'delete_profiles_bulk',
+		'toggle_background',
+		'toggle_only_successful',
+		'pin_profile',
+		'pin_profiles_bulk',
+		'unpin_profile',
+		'unpin_profiles_bulk',
+		'update_annotation',
+		'compare_profiles',
+		'compare_targets',
+		'get_history',
+		'get_cron_inventory',
+		'save_diagnostics_fields',
+		'create_api_password',
+		'revoke_api_password',
+		'toggle_query_profiling',
+		'get_api_log',
+		'clear_api_log',
+		'get_profile_trace',
+		'get_profile_timeline',
+		'save_share',
+		'get_shares',
+		'delete_share',
+		'save_retention',
+		'save_proxy_trust',
+		'save_background_filters',
+	);
+
+	/**
+	 * Register AJAX handlers, each wrapped with the security guard.
 	 */
 	public static function register() {
-		add_action( 'wp_ajax_scrutinizer_start_profiling', array( __CLASS__, 'start_profiling' ) );
-		add_action( 'wp_ajax_scrutinizer_stop_profiling', array( __CLASS__, 'stop_profiling' ) );
-		add_action( 'wp_ajax_scrutinizer_get_profiles', array( __CLASS__, 'get_profiles' ) );
-		add_action( 'wp_ajax_scrutinizer_get_profiles_grouped', array( __CLASS__, 'get_profiles_grouped' ) );
-		add_action( 'wp_ajax_scrutinizer_get_route_profiles', array( __CLASS__, 'get_route_profiles' ) );
-		add_action( 'wp_ajax_scrutinizer_get_profile_detail', array( __CLASS__, 'get_profile_detail' ) );
-		add_action( 'wp_ajax_scrutinizer_delete_profile', array( __CLASS__, 'delete_profile' ) );
-		add_action( 'wp_ajax_scrutinizer_delete_profiles_bulk', array( __CLASS__, 'delete_profiles_bulk' ) );
-		add_action( 'wp_ajax_scrutinizer_toggle_background', array( __CLASS__, 'toggle_background' ) );
-		add_action( 'wp_ajax_scrutinizer_toggle_only_successful', array( __CLASS__, 'toggle_only_successful' ) );
-		add_action( 'wp_ajax_scrutinizer_pin_profile', array( __CLASS__, 'pin_profile' ) );
-		add_action( 'wp_ajax_scrutinizer_pin_profiles_bulk', array( __CLASS__, 'pin_profiles_bulk' ) );
-		add_action( 'wp_ajax_scrutinizer_unpin_profile', array( __CLASS__, 'unpin_profile' ) );
-		add_action( 'wp_ajax_scrutinizer_unpin_profiles_bulk', array( __CLASS__, 'unpin_profiles_bulk' ) );
-		add_action( 'wp_ajax_scrutinizer_update_annotation', array( __CLASS__, 'update_annotation' ) );
-		add_action( 'wp_ajax_scrutinizer_compare_profiles', array( __CLASS__, 'compare_profiles' ) );
-		add_action( 'wp_ajax_scrutinizer_compare_targets', array( __CLASS__, 'compare_targets' ) );
-		add_action( 'wp_ajax_scrutinizer_get_history', array( __CLASS__, 'get_history' ) );
-		add_action( 'wp_ajax_scrutinizer_get_cron_inventory', array( __CLASS__, 'get_cron_inventory' ) );
-		add_action( 'wp_ajax_scrutinizer_save_diagnostics_fields', array( __CLASS__, 'save_diagnostics_fields' ) );
-		add_action( 'wp_ajax_scrutinizer_create_api_password', array( __CLASS__, 'create_api_password' ) );
-		add_action( 'wp_ajax_scrutinizer_revoke_api_password', array( __CLASS__, 'revoke_api_password' ) );
-		add_action( 'wp_ajax_scrutinizer_toggle_query_profiling', array( __CLASS__, 'toggle_query_profiling' ) );
-		add_action( 'wp_ajax_scrutinizer_get_api_log', array( __CLASS__, 'get_api_log' ) );
-		add_action( 'wp_ajax_scrutinizer_clear_api_log', array( __CLASS__, 'clear_api_log' ) );
-		add_action( 'wp_ajax_scrutinizer_get_profile_trace', array( __CLASS__, 'get_profile_trace' ) );
-		add_action( 'wp_ajax_scrutinizer_get_profile_timeline', array( __CLASS__, 'get_profile_timeline' ) );
-		add_action( 'wp_ajax_scrutinizer_save_share', array( __CLASS__, 'save_share' ) );
-		add_action( 'wp_ajax_scrutinizer_get_shares', array( __CLASS__, 'get_shares' ) );
-		add_action( 'wp_ajax_scrutinizer_delete_share', array( __CLASS__, 'delete_share' ) );
-		add_action( 'wp_ajax_scrutinizer_save_retention', array( __CLASS__, 'save_retention' ) );
-		add_action( 'wp_ajax_scrutinizer_save_proxy_trust', array( __CLASS__, 'save_proxy_trust' ) );
-		add_action( 'wp_ajax_scrutinizer_save_background_filters', array( __CLASS__, 'save_background_filters' ) );
+		foreach ( self::$actions as $action ) {
+			self::add_ajax( $action );
+		}
 	}
 
 	/**
-	 * Start a profiling session.
+	 * Register one authenticated AJAX action.
+	 *
+	 * The handler is wrapped so guard() — the nonce + capability check — always
+	 * runs before it. Centralizing the gate here means it can never be omitted
+	 * from an individual handler.
+	 *
+	 * @param string $action Action suffix; also the handler method name.
 	 */
-	public static function start_profiling() {
+	private static function add_ajax( $action ) {
+		add_action(
+			'wp_ajax_scrutinizer_' . $action,
+			function () use ( $action ) {
+				self::guard();
+				call_user_func( array( __CLASS__, $action ) );
+			}
+		);
+	}
+
+	/**
+	 * Verify the AJAX nonce and the manage_options capability.
+	 *
+	 * Dies (via check_ajax_referer / wp_send_json_error) if either fails, so a
+	 * wrapped handler never runs for an unauthenticated or unauthorized request.
+	 */
+	private static function guard() {
 		check_ajax_referer( 'scrutinizer_nonce', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
@@ -67,7 +111,12 @@ class Ajax {
 				403
 			);
 		}
+	}
 
+	/**
+	 * Start a profiling session.
+	 */
+	public static function start_profiling() {
 		$target = '';
 		if ( isset( $_POST['target'] ) ) {
 			$target = sanitize_text_field( wp_unslash( $_POST['target'] ) );
@@ -87,15 +136,6 @@ class Ajax {
 	 * Stop the active profiling session.
 	 */
 	public static function stop_profiling() {
-		check_ajax_referer( 'scrutinizer_nonce', 'nonce' );
-
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error(
-				array( 'message' => __( 'Permission denied.', 'scrutinizer' ) ),
-				403
-			);
-		}
-
 		$session_id = Session::get_session_id();
 		Session::stop_session();
 
@@ -118,15 +158,6 @@ class Ajax {
 	 * Get profiles for a session.
 	 */
 	public static function get_profiles() {
-		check_ajax_referer( 'scrutinizer_nonce', 'nonce' );
-
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error(
-				array( 'message' => __( 'Permission denied.', 'scrutinizer' ) ),
-				403
-			);
-		}
-
 		$session_id = '';
 		if ( isset( $_GET['session_id'] ) ) {
 			$session_id = sanitize_text_field( wp_unslash( $_GET['session_id'] ) );
@@ -151,15 +182,6 @@ class Ajax {
 	 * Get profiles grouped by route.
 	 */
 	public static function get_profiles_grouped() {
-		check_ajax_referer( 'scrutinizer_nonce', 'nonce' );
-
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error(
-				array( 'message' => __( 'Permission denied.', 'scrutinizer' ) ),
-				403
-			);
-		}
-
 		$profile_type = '';
 		if ( isset( $_GET['profile_type'] ) ) {
 			$profile_type = sanitize_text_field( wp_unslash( $_GET['profile_type'] ) );
@@ -184,15 +206,6 @@ class Ajax {
 	 * Get individual profiles for a specific route key.
 	 */
 	public static function get_route_profiles() {
-		check_ajax_referer( 'scrutinizer_nonce', 'nonce' );
-
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error(
-				array( 'message' => __( 'Permission denied.', 'scrutinizer' ) ),
-				403
-			);
-		}
-
 		$route_key = '';
 		if ( isset( $_GET['route_key'] ) ) {
 			$route_key = sanitize_text_field( wp_unslash( $_GET['route_key'] ) );
@@ -214,15 +227,6 @@ class Ajax {
 	 * Toggle background profiling.
 	 */
 	public static function toggle_background() {
-		check_ajax_referer( 'scrutinizer_nonce', 'nonce' );
-
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error(
-				array( 'message' => __( 'Permission denied.', 'scrutinizer' ) ),
-				403
-			);
-		}
-
 		$enabled = ! empty( $_POST['enabled'] );
 		$rate    = 10.0;
 		if ( isset( $_POST['rate'] ) ) {
@@ -250,15 +254,6 @@ class Ajax {
 	 * Toggle "only successful requests" filter.
 	 */
 	public static function toggle_only_successful() {
-		check_ajax_referer( 'scrutinizer_nonce', 'nonce' );
-
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error(
-				array( 'message' => __( 'Permission denied.', 'scrutinizer' ) ),
-				403
-			);
-		}
-
 		$enabled = ! empty( $_POST['enabled'] );
 		update_option( 'scrutinizer_only_successful', $enabled, true );
 
@@ -279,15 +274,6 @@ class Ajax {
 	 * takes effect on the next request.
 	 */
 	public static function toggle_query_profiling() {
-		check_ajax_referer( 'scrutinizer_nonce', 'nonce' );
-
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error(
-				array( 'message' => __( 'Permission denied.', 'scrutinizer' ) ),
-				403
-			);
-		}
-
 		if ( ! SCRUTINIZER_SAVEQUERIES_MANAGED ) {
 			wp_send_json_error(
 				array( 'message' => __( 'Query profiling is managed by wp-config.php and cannot be toggled here.', 'scrutinizer' ) )
@@ -311,15 +297,6 @@ class Ajax {
 	 * Get full detail for a single profile.
 	 */
 	public static function get_profile_detail() {
-		check_ajax_referer( 'scrutinizer_nonce', 'nonce' );
-
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error(
-				array( 'message' => __( 'Permission denied.', 'scrutinizer' ) ),
-				403
-			);
-		}
-
 		$profile_id = 0;
 		if ( isset( $_GET['profile_id'] ) ) {
 			$profile_id = absint( $_GET['profile_id'] );
@@ -367,15 +344,6 @@ class Ajax {
 	 * Get trace data for a profile (lazy-loaded by the Trace tab).
 	 */
 	public static function get_profile_trace() {
-		check_ajax_referer( 'scrutinizer_nonce', 'nonce' );
-
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error(
-				array( 'message' => __( 'Permission denied.', 'scrutinizer' ) ),
-				403
-			);
-		}
-
 		$profile_id = 0;
 		if ( isset( $_GET['profile_id'] ) ) {
 			$profile_id = absint( $_GET['profile_id'] );
@@ -407,15 +375,6 @@ class Ajax {
 	 * Get timeline data for a profile (lazy-loaded by the Timeline tab).
 	 */
 	public static function get_profile_timeline() {
-		check_ajax_referer( 'scrutinizer_nonce', 'nonce' );
-
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error(
-				array( 'message' => __( 'Permission denied.', 'scrutinizer' ) ),
-				403
-			);
-		}
-
 		$profile_id = 0;
 		if ( isset( $_GET['profile_id'] ) ) {
 			$profile_id = absint( $_GET['profile_id'] );
@@ -455,15 +414,6 @@ class Ajax {
 	 * Delete a profile.
 	 */
 	public static function delete_profile() {
-		check_ajax_referer( 'scrutinizer_nonce', 'nonce' );
-
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error(
-				array( 'message' => __( 'Permission denied.', 'scrutinizer' ) ),
-				403
-			);
-		}
-
 		$profile_id = 0;
 		if ( isset( $_POST['profile_id'] ) ) {
 			$profile_id = absint( $_POST['profile_id'] );
@@ -494,15 +444,6 @@ class Ajax {
 	 * Delete multiple profiles in one request.
 	 */
 	public static function delete_profiles_bulk() {
-		check_ajax_referer( 'scrutinizer_nonce', 'nonce' );
-
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error(
-				array( 'message' => __( 'Permission denied.', 'scrutinizer' ) ),
-				403
-			);
-		}
-
 		$ids = isset( $_POST['profile_ids'] ) ? array_map( 'absint', (array) wp_unslash( $_POST['profile_ids'] ) ) : array();
 		$ids = array_filter( $ids );
 
@@ -538,15 +479,6 @@ class Ajax {
 	 * Pin a profile.
 	 */
 	public static function pin_profile() {
-		check_ajax_referer( 'scrutinizer_nonce', 'nonce' );
-
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error(
-				array( 'message' => __( 'Permission denied.', 'scrutinizer' ) ),
-				403
-			);
-		}
-
 		$profile_id = 0;
 		if ( isset( $_POST['profile_id'] ) ) {
 			$profile_id = absint( $_POST['profile_id'] );
@@ -587,15 +519,6 @@ class Ajax {
 	 * Pin multiple profiles in one request.
 	 */
 	public static function pin_profiles_bulk() {
-		check_ajax_referer( 'scrutinizer_nonce', 'nonce' );
-
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error(
-				array( 'message' => __( 'Permission denied.', 'scrutinizer' ) ),
-				403
-			);
-		}
-
 		$ids = isset( $_POST['profile_ids'] ) ? array_map( 'absint', (array) wp_unslash( $_POST['profile_ids'] ) ) : array();
 		$ids = array_filter( $ids );
 
@@ -630,15 +553,6 @@ class Ajax {
 	 * Unpin a profile.
 	 */
 	public static function unpin_profile() {
-		check_ajax_referer( 'scrutinizer_nonce', 'nonce' );
-
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error(
-				array( 'message' => __( 'Permission denied.', 'scrutinizer' ) ),
-				403
-			);
-		}
-
 		$profile_id = 0;
 		if ( isset( $_POST['profile_id'] ) ) {
 			$profile_id = absint( $_POST['profile_id'] );
@@ -669,15 +583,6 @@ class Ajax {
 	 * Unpin multiple profiles in one request.
 	 */
 	public static function unpin_profiles_bulk() {
-		check_ajax_referer( 'scrutinizer_nonce', 'nonce' );
-
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error(
-				array( 'message' => __( 'Permission denied.', 'scrutinizer' ) ),
-				403
-			);
-		}
-
 		$ids = isset( $_POST['profile_ids'] ) ? array_map( 'absint', (array) wp_unslash( $_POST['profile_ids'] ) ) : array();
 		$ids = array_filter( $ids );
 
@@ -712,15 +617,6 @@ class Ajax {
 	 * Update profile annotation (note + tags).
 	 */
 	public static function update_annotation() {
-		check_ajax_referer( 'scrutinizer_nonce', 'nonce' );
-
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error(
-				array( 'message' => __( 'Permission denied.', 'scrutinizer' ) ),
-				403
-			);
-		}
-
 		$profile_id = 0;
 		if ( isset( $_POST['profile_id'] ) ) {
 			$profile_id = absint( $_POST['profile_id'] );
@@ -761,15 +657,6 @@ class Ajax {
 	 * Compare two profiles.
 	 */
 	public static function compare_profiles() {
-		check_ajax_referer( 'scrutinizer_nonce', 'nonce' );
-
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error(
-				array( 'message' => __( 'Permission denied.', 'scrutinizer' ) ),
-				403
-			);
-		}
-
 		$id_a = 0;
 		$id_b = 0;
 		if ( isset( $_GET['profile_a'] ) ) {
@@ -804,15 +691,6 @@ class Ajax {
 	 * Returns pinned profiles on the same route (first) and all other pinned profiles.
 	 */
 	public static function compare_targets() {
-		check_ajax_referer( 'scrutinizer_nonce', 'nonce' );
-
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error(
-				array( 'message' => __( 'Permission denied.', 'scrutinizer' ) ),
-				403
-			);
-		}
-
 		$profile_id = 0;
 		if ( isset( $_GET['profile_id'] ) ) {
 			$profile_id = absint( $_GET['profile_id'] );
@@ -867,15 +745,6 @@ class Ajax {
 	 * Get profile history with filtering.
 	 */
 	public static function get_history() {
-		check_ajax_referer( 'scrutinizer_nonce', 'nonce' );
-
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error(
-				array( 'message' => __( 'Permission denied.', 'scrutinizer' ) ),
-				403
-			);
-		}
-
 		$args = array();
 
 		if ( ! empty( $_GET['route_key'] ) ) {
@@ -916,15 +785,6 @@ class Ajax {
 	 * overdue detection, and duplicate warnings.
 	 */
 	public static function get_cron_inventory() {
-		check_ajax_referer( 'scrutinizer_nonce', 'nonce' );
-
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error(
-				array( 'message' => __( 'Permission denied.', 'scrutinizer' ) ),
-				403
-			);
-		}
-
 		$inventory = \Scrutinizer\Diagnostics\Cron::collect();
 
 		wp_send_json_success( $inventory );
@@ -934,15 +794,6 @@ class Ajax {
 	 * AJAX: Save diagnostics sharing field preferences.
 	 */
 	public static function save_diagnostics_fields() {
-		check_ajax_referer( 'scrutinizer_nonce', 'nonce' );
-
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error(
-				array( 'message' => __( 'Permission denied.', 'scrutinizer' ) ),
-				403
-			);
-		}
-
 		$fields = isset( $_POST['fields'] ) ? array_map( 'sanitize_text_field', (array) wp_unslash( $_POST['fields'] ) ) : array();
 
 		\Scrutinizer\Api\Diagnostics::set_enabled_fields( $fields );
@@ -956,15 +807,6 @@ class Ajax {
 	 * Revokes any existing one first (auto-rotate per D25a).
 	 */
 	public static function create_api_password() {
-		check_ajax_referer( 'scrutinizer_nonce', 'nonce' );
-
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error(
-				array( 'message' => __( 'Permission denied.', 'scrutinizer' ) ),
-				403
-			);
-		}
-
 		$result = \Scrutinizer\Api\ApplicationPassword::create_for_user( get_current_user_id() );
 
 		if ( is_wp_error( $result ) ) {
@@ -1003,15 +845,6 @@ class Ajax {
 	 * AJAX: Revoke all Scrutineer Application Passwords for the current user.
 	 */
 	public static function revoke_api_password() {
-		check_ajax_referer( 'scrutinizer_nonce', 'nonce' );
-
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error(
-				array( 'message' => __( 'Permission denied.', 'scrutinizer' ) ),
-				403
-			);
-		}
-
 		$revoked = \Scrutinizer\Api\ApplicationPassword::revoke_all_for_user( get_current_user_id() );
 
 		wp_send_json_success( array( 'revoked' => $revoked ) );
@@ -1021,15 +854,6 @@ class Ajax {
 	 * AJAX: Get the API access audit log.
 	 */
 	public static function get_api_log() {
-		check_ajax_referer( 'scrutinizer_nonce', 'nonce' );
-
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error(
-				array( 'message' => __( 'Permission denied.', 'scrutinizer' ) ),
-				403
-			);
-		}
-
 		$log = \Scrutinizer\Api\RestApi::get_access_log();
 
 		wp_send_json_success( array( 'log' => array_reverse( $log ) ) );
@@ -1039,15 +863,6 @@ class Ajax {
 	 * AJAX: Clear the API access audit log.
 	 */
 	public static function clear_api_log() {
-		check_ajax_referer( 'scrutinizer_nonce', 'nonce' );
-
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error(
-				array( 'message' => __( 'Permission denied.', 'scrutinizer' ) ),
-				403
-			);
-		}
-
 		\Scrutinizer\Api\RestApi::clear_access_log();
 
 		wp_send_json_success();
@@ -1060,15 +875,6 @@ class Ajax {
 	 * so the user can manage shared reports from the API tab.
 	 */
 	public static function save_share() {
-		check_ajax_referer( 'scrutinizer_nonce', 'nonce' );
-
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error(
-				array( 'message' => __( 'Permission denied.', 'scrutinizer' ) ),
-				403
-			);
-		}
-
 		$share_id = '';
 		if ( isset( $_POST['share_id'] ) ) {
 			$share_id = sanitize_text_field( wp_unslash( $_POST['share_id'] ) );
@@ -1109,15 +915,6 @@ class Ajax {
 	 * Auto-prunes expired shares before returning.
 	 */
 	public static function get_shares() {
-		check_ajax_referer( 'scrutinizer_nonce', 'nonce' );
-
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error(
-				array( 'message' => __( 'Permission denied.', 'scrutinizer' ) ),
-				403
-			);
-		}
-
 		$shares = get_option( 'scrutinizer_shared_reports', array() );
 
 		// Auto-prune expired shares.
@@ -1149,15 +946,6 @@ class Ajax {
 	 * This handler only cleans up the local ledger entry.
 	 */
 	public static function delete_share() {
-		check_ajax_referer( 'scrutinizer_nonce', 'nonce' );
-
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error(
-				array( 'message' => __( 'Permission denied.', 'scrutinizer' ) ),
-				403
-			);
-		}
-
 		$share_id = '';
 		if ( isset( $_POST['share_id'] ) ) {
 			$share_id = sanitize_text_field( wp_unslash( $_POST['share_id'] ) );
@@ -1191,15 +979,6 @@ class Ajax {
 	 * AJAX: Save the profile retention days setting.
 	 */
 	public static function save_retention() {
-		check_ajax_referer( 'scrutinizer_nonce', 'nonce' );
-
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error(
-				array( 'message' => __( 'Permission denied.', 'scrutinizer' ) ),
-				403
-			);
-		}
-
 		$days = isset( $_POST['retention_days'] ) ? absint( $_POST['retention_days'] ) : 7;
 
 		// Validate: must be one of the allowed values.
@@ -1228,15 +1007,6 @@ class Ajax {
 	 * Save the proxy-trust setting.
 	 */
 	public static function save_proxy_trust() {
-		check_ajax_referer( 'scrutinizer_nonce', 'nonce' );
-
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error(
-				array( 'message' => __( 'Permission denied.', 'scrutinizer' ) ),
-				403
-			);
-		}
-
 		$enabled = ! empty( $_POST['enabled'] );
 		update_option( 'scrutinizer_trust_proxy_headers', $enabled, true );
 
@@ -1254,15 +1024,6 @@ class Ajax {
 	 * Save background profiling filter settings.
 	 */
 	public static function save_background_filters() {
-		check_ajax_referer( 'scrutinizer_nonce', 'nonce' );
-
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error(
-				array( 'message' => __( 'Permission denied.', 'scrutinizer' ) ),
-				403
-			);
-		}
-
 		$user_scope = isset( $_POST['user_scope'] ) ? sanitize_text_field( wp_unslash( $_POST['user_scope'] ) ) : 'all';
 		if ( ! in_array( $user_scope, array( 'all', 'anonymous', 'logged_in' ), true ) ) {
 			$user_scope = 'all';
