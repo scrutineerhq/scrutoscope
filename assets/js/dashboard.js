@@ -386,6 +386,7 @@
 			$( this ).addClass( 'active' );
 			$( '.scrutinizer-tab-content' ).hide();
 			$( '#scrutinizer-tab-' + tab ).show();
+			applyTabRoles();
 
 			// Lazy-load trace data on first click.
 			if ( 'trace' === tab && ! traceLoaded && currentProfileId ) {
@@ -622,6 +623,15 @@
 			} else if ( 'api' === tab ) {
 				showApiView();
 			}
+			applyTabRoles();
+		} );
+
+		// Arrow-key roving for both tab groups (WAI-ARIA tab pattern).
+		$( document ).on( 'keydown', '.scrutinizer-tab', function( e ) {
+			tabKeydown( e, '.scrutinizer-tab' );
+		} );
+		$( document ).on( 'keydown', '.scrutinizer-top-tab', function( e ) {
+			tabKeydown( e, '.scrutinizer-top-tab' );
 		} );
 
 		// Pin toggle on detail view.
@@ -1006,7 +1016,7 @@
 
 		// Toggle switch.
 		html += '<label class="scrutinizer-switch' + ( canToggle ? '' : ' disabled' ) + '">';
-		html += '<input type="checkbox" id="scrutinizer-qp-toggle"';
+		html += '<input type="checkbox" id="scrutinizer-qp-toggle" aria-label="Enable query profiling"';
 		html += ( isOn ? ' checked' : '' );
 		html += ( canToggle ? '' : ' disabled' );
 		html += '>';
@@ -1086,7 +1096,7 @@
 		html += '<h3>Profile Retention</h3>';
 		html += '<p class="description">Unpinned profiles older than this are automatically deleted. Pinned and shared profiles are kept regardless.</p>';
 		html += '<div class="scrutinizer-retention-row">';
-		html += '<label>Auto-expire after </label>';
+		html += '<label for="scrutinizer-retention-select">Auto-expire after </label>';
 		html += '<select id="scrutinizer-retention-select">';
 		for ( var i = 0; i < options.length; i++ ) {
 			var opt = options[ i ];
@@ -1383,6 +1393,65 @@
 		// when individual content containers are hidden/shown.
 		$( '#scrutinizer-results h2' ).remove();
 		$( '#scrutinizer-results' ).before( html );
+		applyTabRoles();
+	}
+
+	/**
+	 * Decorate both tab groups with the WAI-ARIA tab pattern + roving tabindex.
+	 * Idempotent — safe to call after any tab render or switch.
+	 */
+	function applyTabRoles() {
+		$( '.scrutinizer-tabs' ).attr( 'role', 'tablist' );
+		$( '.scrutinizer-tab' ).each( function() {
+			var tab    = $( this ).data( 'tab' );
+			var active = $( this ).hasClass( 'active' );
+			this.setAttribute( 'role', 'tab' );
+			this.setAttribute( 'id', 'scrutinizer-tabbtn-' + tab );
+			this.setAttribute( 'aria-controls', 'scrutinizer-tab-' + tab );
+			this.setAttribute( 'aria-selected', active ? 'true' : 'false' );
+			this.setAttribute( 'tabindex', active ? '0' : '-1' );
+		} );
+		$( '.scrutinizer-tab-content' ).each( function() {
+			var id = this.id.replace( 'scrutinizer-tab-', '' );
+			this.setAttribute( 'role', 'tabpanel' );
+			this.setAttribute( 'aria-labelledby', 'scrutinizer-tabbtn-' + id );
+		} );
+		$( '.scrutinizer-top-tabs' ).attr( 'role', 'tablist' );
+		$( '.scrutinizer-top-tab' ).each( function() {
+			var active = $( this ).hasClass( 'active' );
+			this.setAttribute( 'role', 'tab' );
+			this.setAttribute( 'aria-selected', active ? 'true' : 'false' );
+			this.setAttribute( 'tabindex', active ? '0' : '-1' );
+		} );
+	}
+
+	/**
+	 * Arrow-key roving within a tab group (Left/Right/Home/End), per WAI-ARIA.
+	 *
+	 * @param {Event}  e        Keydown event (currentTarget is the focused tab).
+	 * @param {string} selector Tab-group selector.
+	 */
+	function tabKeydown( e, selector ) {
+		if ( [ 'ArrowRight', 'ArrowLeft', 'Home', 'End' ].indexOf( e.key ) === -1 ) {
+			return;
+		}
+		e.preventDefault();
+		var tabs = $( selector ).filter( ':visible' );
+		var idx  = tabs.index( e.currentTarget );
+		if ( idx < 0 ) {
+			return;
+		}
+		var next;
+		if ( 'Home' === e.key ) {
+			next = 0;
+		} else if ( 'End' === e.key ) {
+			next = tabs.length - 1;
+		} else if ( 'ArrowRight' === e.key ) {
+			next = ( idx + 1 ) % tabs.length;
+		} else {
+			next = ( idx - 1 + tabs.length ) % tabs.length;
+		}
+		tabs.eq( next ).trigger( 'click' ).trigger( 'focus' );
 	}
 
 	/* ------------------------------------------------------------------ */
@@ -3851,6 +3920,9 @@
 		} else {
 			$back.attr( 'id', 'scrutinizer-back-to-list' ).text( '← Back to routes' );
 		}
+
+		// Decorate the detail tabs (ARIA roles + roving tabindex) on open.
+		applyTabRoles();
 	}
 
 	/* ------------------------------------------------------------------ */

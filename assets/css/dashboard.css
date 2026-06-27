@@ -3632,3 +3632,14 @@ details.scrutinizer-term > .scrutinizer-term-explain {
 	font-size: 13px;
 	color: #1d2327;
 }
+
+/* ------------------------------------------------------------------ */
+/*  Accessibility: in-text links distinguishable by more than color   */
+/*  (WCAG 1.4.1) — underline links inside body copy / descriptions.   */
+/* ------------------------------------------------------------------ */
+
+#scrutinizer-dashboard p a,
+#scrutinizer-dashboard li a,
+#scrutinizer-dashboard .description a {
+	text-decoration: underline;
+}
