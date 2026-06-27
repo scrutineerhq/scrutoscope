@@ -257,6 +257,34 @@ class QueryReducer {
 				continue;
 			}
 
+			// Line comment: "-- " (MySQL requires whitespace/EOL after the
+			// dashes) or "#" to end of line. Must be consumed before the
+			// operator branch, which would otherwise discard the dashes/hash
+			// and leave the comment body to tokenize as fake verbs/tables.
+			if ( '#' === $ch
+				|| ( '-' === $ch && $i + 1 < $len && '-' === $sql[ $i + 1 ]
+					&& ( $i + 2 >= $len || ctype_space( $sql[ $i + 2 ] ) ) ) ) {
+				while ( $i < $len && "\n" !== $sql[ $i ] ) {
+					++$i;
+				}
+				continue;
+			}
+
+			// Block comment: /* ... */ (covers MySQL /*! ... */ executable
+			// comments and /*+ ... */ optimizer hints). Reducing to verb +
+			// table can only drop information here, never leak it.
+			if ( '/' === $ch && $i + 1 < $len && '*' === $sql[ $i + 1 ] ) {
+				$i += 2;
+				while ( $i + 1 < $len && ! ( '*' === $sql[ $i ] && '/' === $sql[ $i + 1 ] ) ) {
+					++$i;
+				}
+				$i += 2; // Skip the closing */ (or past the unterminated tail).
+				if ( $i > $len ) {
+					$i = $len;
+				}
+				continue;
+			}
+
 			// Single or double quoted string — collapse to placeholder.
 			if ( '\'' === $ch || '"' === $ch ) {
 				$quote = $ch;
