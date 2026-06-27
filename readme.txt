@@ -140,9 +140,9 @@ Yes, with a low sample rate (0.1% or 1%). Scrutinizer is designed for background
 == Screenshots ==
 
 1. Dashboard — Routes view with source breakdown
-2. Profile detail — Timeline visualization
+2. Profile detail — the redesigned Request Timeline: cost-sorted ownership bar, phase rail, HTTP and query-density lanes, and a memory curve
 3. Profile detail — Source attribution breakdown
-4. Share — Zero-knowledge encrypted report sharing
+4. Shared report — viewed in the zero-knowledge relay (decrypted entirely in the browser); the same timeline renders here as in the dashboard
 
 == Upgrade Notice ==
 
