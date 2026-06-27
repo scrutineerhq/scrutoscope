@@ -173,14 +173,119 @@ class Attribution {
 		// WordPress core (ABSPATH).
 		$abspath = wp_normalize_path( ABSPATH );
 		if ( 0 === strpos( $file, $abspath ) ) {
-			$result['type'] = 'core';
-			$result['slug'] = 'wordpress'; // phpcs:ignore WordPress.WP.CapitalPDangit.MisspelledInText -- data slug, not prose.
-			$result['name'] = 'WordPress Core';
+			$result['type']      = 'core';
+			$result['slug']      = 'wordpress'; // phpcs:ignore WordPress.WP.CapitalPDangit.MisspelledInText -- data slug, not prose.
+			$result['name']      = 'WordPress Core';
+			$result['subsystem'] = self::core_subsystem( $file );
 
 			return $result;
 		}
 
 		return $result;
+	}
+
+	/**
+	 * Map a WordPress core file to a coarse subsystem label.
+	 *
+	 * Breaks the single "core" attribution bucket into the parts a core
+	 * developer cares about (Query, i18n, Blocks, REST...). Returns a label
+	 * only — never the path. Best-effort; unrecognised files fall to
+	 * "Core (other)".
+	 *
+	 * @param string $file Absolute path to a core file.
+	 * @return string Subsystem label.
+	 */
+	private static function core_subsystem( $file ) {
+		$file = wp_normalize_path( $file );
+
+		// Reduce to the path within wp-includes / wp-admin.
+		$rel  = basename( $file );
+		$area = '';
+		$pos  = strpos( $file, '/wp-includes/' );
+		if ( false !== $pos ) {
+			$rel = substr( $file, $pos + 13 );
+		} else {
+			$pos = strpos( $file, '/wp-admin/' );
+			if ( false !== $pos ) {
+				$rel  = substr( $file, $pos + 9 );
+				$area = 'admin';
+			}
+		}
+
+		// Directory-scoped subsystems (checked before filenames).
+		if ( 0 === strpos( $rel, 'blocks/' ) || 0 === strpos( $rel, 'block-bindings/' ) || 0 === strpos( $rel, 'block-patterns/' ) || 0 === strpos( $rel, 'block-supports/' ) ) {
+			return 'Blocks';
+		}
+		if ( 0 === strpos( $rel, 'rest-api/' ) ) {
+			return 'REST API';
+		}
+		if ( 0 === strpos( $rel, 'pomo/' ) || 0 === strpos( $rel, 'l10n/' ) ) {
+			return 'i18n';
+		}
+		if ( 0 === strpos( $rel, 'html-api/' ) ) {
+			return 'HTML API';
+		}
+		if ( 0 === strpos( $rel, 'sodium_compat/' ) || 0 === strpos( $rel, 'Requests/' ) || 0 === strpos( $rel, 'SimplePie/' ) || 0 === strpos( $rel, 'Text/' ) || 0 === strpos( $rel, 'ID3/' ) || 0 === strpos( $rel, 'IXR/' ) ) {
+			return 'Vendored libs';
+		}
+		if ( 'admin' === $area ) {
+			return 'Admin';
+		}
+
+		// Filename-scoped subsystems — ordered, most specific needle first.
+		$base = basename( $rel );
+		$map  = array(
+			'textdomain'        => 'i18n',
+			'translation'       => 'i18n',
+			'locale'            => 'i18n',
+			'l10n'              => 'i18n',
+			'rest'              => 'REST API',
+			'block'             => 'Blocks',
+			'query'             => 'Query',
+			'option'            => 'Options',
+			'script-loader'     => 'Assets',
+			'scripts'           => 'Assets',
+			'styles'            => 'Assets',
+			'dependencies'      => 'Assets',
+			'rewrite'           => 'Rewrite',
+			'cron'              => 'Cron',
+			'widget'            => 'Widgets',
+			'shortcode'         => 'Shortcodes',
+			'embed'             => 'Embeds',
+			'kses'              => 'Sanitization',
+			'formatting'        => 'Formatting',
+			'taxonomy'          => 'Taxonomy',
+			'category'          => 'Taxonomy',
+			'term'              => 'Taxonomy',
+			'comment'           => 'Comments',
+			'capabilit'         => 'Users & auth',
+			'pluggable'         => 'Users & auth',
+			'session'           => 'Users & auth',
+			'role'              => 'Users & auth',
+			'user'              => 'Users & auth',
+			'auth'              => 'Users & auth',
+			'revision'          => 'Posts',
+			'post'              => 'Posts',
+			'template'          => 'Template',
+			'theme'             => 'Theme',
+			'media'             => 'Media',
+			'image'             => 'Media',
+			'thumbnail'         => 'Media',
+			'http'              => 'HTTP',
+			'cache'             => 'Cache',
+			'hook'              => 'Hooks',
+			'meta'              => 'Meta',
+			'default-filters'   => 'Bootstrap',
+			'default-constants' => 'Bootstrap',
+			'load'              => 'Bootstrap',
+		);
+		foreach ( $map as $needle => $sub ) {
+			if ( false !== strpos( $base, $needle ) ) {
+				return $sub;
+			}
+		}
+
+		return 'Core (other)';
 	}
 
 	/**
