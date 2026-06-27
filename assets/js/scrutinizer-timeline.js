@@ -573,10 +573,22 @@
     function hideTip() { state.hoveredId = null; paint(); }
     function clickSelect(id) { state.selectedId = (state.selectedId === id) ? null : id; paint(); }
 
+    // Catch-all so the tooltip can never stick: when a re-render (zoom / pan /
+    // selection) replaces the node under the cursor, that node's mouseleave
+    // never fires and hoveredId is stranded. On any pointermove that isn't over
+    // a hoverable [data-id] element, clear the tooltip. (tipEl is
+    // pointer-events:none, so it never becomes the target itself.)
+    function onPointerLeaveCatchAll(e) {
+      if (state.hoveredId && !(e.target && e.target.closest && e.target.closest('[data-id]'))) {
+        hideTip();
+      }
+    }
+
     // persistent listeners (attached once)
     container.addEventListener('wheel', onWheel, { passive: false });
     container.addEventListener('pointerdown', onPointerDown);
     global.addEventListener('pointermove', onPointerMove);
+    global.addEventListener('pointermove', onPointerLeaveCatchAll);
     global.addEventListener('pointerup', onPointerUp);
 
     /* ---------- tooltip ---------- */
@@ -994,22 +1006,41 @@
       model.http.forEach(function (h) {
         var w = Math.max(pct(h.dur), 0.6);
         var blocking = h.dur / T > 0.2;
+        var xStart = pct(h.start);
+        var xEnd = pct(h.start + h.dur);
         var bar = el('div', {
-          position: 'absolute', left: pct(h.start) + '%', width: w + '%', top: blocking ? '3px' : '5px',
+          position: 'absolute', left: xStart + '%', width: w + '%', top: blocking ? '3px' : '5px',
           height: blocking ? '18px' : '15px', background: blocking ? '#9a4708' : '#b45309', borderRadius: '3px',
-          cursor: 'pointer', display: 'flex', alignItems: 'center', minWidth: '8px',
+          cursor: 'pointer', display: 'flex', alignItems: 'center', minWidth: '8px', overflow: 'hidden',
           boxShadow: '0 1px 2px rgba(180,83,9,.35)', zIndex: 3
         }, { 'data-id': h.id, title: h.host + ' · ' + h.method + ' ' + h.status + ' · ' + fmtMs(h.dur) + ' ms' });
-        if (blocking) bar.appendChild(el('span', { padding: '0 6px', fontSize: '9px', fontWeight: 700, letterSpacing: '.04em', color: '#fff', pointerEvents: 'none', whiteSpace: 'nowrap' }, { text: 'BLOCKING' }));
+        if (blocking) {
+          // A blocking call is wide by definition — self-label INSIDE the bar so
+          // its label can never collide with a trailing call near the right edge.
+          bar.appendChild(el('span', {
+            padding: '0 6px', fontSize: '9px', fontWeight: 700, letterSpacing: '.04em', color: '#fff',
+            pointerEvents: 'none', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+          }, { text: 'BLOCKING · ' + h.host + ' · ' + fmtMs(h.dur) + ' ms' }));
+        }
         bar.addEventListener('mouseenter', function (e) { showTip(h.id, e.clientX, e.clientY); });
         bar.addEventListener('mousemove', function (e) { moveTip(e.clientX, e.clientY); });
         bar.addEventListener('mouseleave', hideTip);
         lane.appendChild(bar);
-        // trailing label
-        lane.appendChild(el('span', {
-          position: 'absolute', left: 'calc(' + pct(h.start + h.dur) + '% + 6px)', top: '7px',
-          whiteSpace: 'nowrap', fontSize: '10px', color: '#92400e', fontWeight: 600, pointerEvents: 'none', zIndex: 3
-        }, { text: h.host + ' · ' + fmtMs(h.dur) + ' ms' }));
+        // Non-blocking calls keep an external label, but flip it to the LEFT of
+        // the bar when the bar ends near the right edge so it can't run off-screen.
+        if (!blocking) {
+          var lblStyle = {
+            position: 'absolute', top: '7px', whiteSpace: 'nowrap', fontSize: '10px',
+            color: '#92400e', fontWeight: 600, pointerEvents: 'none', zIndex: 3
+          };
+          if (xEnd > 68) {
+            lblStyle.right = 'calc(' + (100 - xStart) + '% + 6px)';
+            lblStyle.textAlign = 'right';
+          } else {
+            lblStyle.left = 'calc(' + xEnd + '% + 6px)';
+          }
+          lane.appendChild(el('span', lblStyle, { text: h.host + ' · ' + fmtMs(h.dur) + ' ms' }));
+        }
       });
       return lane;
     }
