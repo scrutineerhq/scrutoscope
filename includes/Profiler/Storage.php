@@ -415,6 +415,100 @@ class Storage {
 	}
 
 	/**
+	 * Merge a fingerprint's daily histograms over a [from, to) day range.
+	 *
+	 * @param string      $fingerprint Route fingerprint.
+	 * @param string      $from_day    Inclusive start day (Y-m-d).
+	 * @param string|null $to_day      Exclusive end day (Y-m-d), or null for "up to now".
+	 * @return array { @type int[] $histogram, @type int $sample_count }.
+	 */
+	private static function merge_stat_range( $fingerprint, $from_day, $to_day = null ) {
+		global $wpdb;
+
+		$table = self::route_stats_table();
+
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+		if ( null === $to_day ) {
+			$sql = $wpdb->prepare( "SELECT histogram, sample_count FROM {$table} WHERE fingerprint = %s AND stat_day >= %s", $fingerprint, $from_day );
+		} else {
+			$sql = $wpdb->prepare( "SELECT histogram, sample_count FROM {$table} WHERE fingerprint = %s AND stat_day >= %s AND stat_day < %s", $fingerprint, $from_day, $to_day );
+		}
+		$rows = $wpdb->get_results( $sql, ARRAY_A );
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+
+		$histograms = array();
+		$count      = 0;
+		foreach ( (array) $rows as $r ) {
+			$histograms[] = json_decode( $r['histogram'], true );
+			$count       += (int) $r['sample_count'];
+		}
+
+		return array(
+			'histogram'    => RouteStats::merge( $histograms ),
+			'sample_count' => $count,
+		);
+	}
+
+	/**
+	 * Recent and baseline aggregate windows for a fingerprint.
+	 *
+	 * Recent = the last $recent_days. Baseline = the $baseline_days window ending
+	 * $gap_days before the recent window starts (default: the period immediately
+	 * before it — "this week vs last week", extending past the profile TTL).
+	 *
+	 * @param string $fingerprint   Route fingerprint.
+	 * @param int    $recent_days   Recent window length in days.
+	 * @param int    $baseline_days Baseline window length in days.
+	 * @param int    $gap_days      Gap between the two windows.
+	 * @return array { @type array $recent, @type array $baseline } (each histogram + count).
+	 */
+	public static function get_route_stat_windows( $fingerprint, $recent_days = 7, $baseline_days = 7, $gap_days = 0 ) {
+		$recent_days   = max( 1, (int) $recent_days );
+		$baseline_days = max( 1, (int) $baseline_days );
+		$gap_days      = max( 0, (int) $gap_days );
+
+		$now           = time();
+		$recent_from   = gmdate( 'Y-m-d', $now - $recent_days * DAY_IN_SECONDS );
+		$baseline_to   = gmdate( 'Y-m-d', $now - ( $recent_days + $gap_days ) * DAY_IN_SECONDS );
+		$baseline_from = gmdate( 'Y-m-d', $now - ( $recent_days + $gap_days + $baseline_days ) * DAY_IN_SECONDS );
+
+		return array(
+			'recent'   => self::merge_stat_range( (string) $fingerprint, $recent_from, null ),
+			'baseline' => self::merge_stat_range( (string) $fingerprint, $baseline_from, $baseline_to ),
+		);
+	}
+
+	/**
+	 * The aggregate fingerprint for a route key (from its most recent profile).
+	 *
+	 * @param string $route_key Route grouping key.
+	 * @return string Fingerprint, or '' when the route has no profiles.
+	 */
+	public static function fingerprint_for_route_key( $route_key ) {
+		global $wpdb;
+
+		$table = self::table_name();
+
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$row = $wpdb->get_row(
+			$wpdb->prepare( "SELECT route_class, user_role FROM {$table} WHERE route_key = %s ORDER BY captured_at DESC LIMIT 1", $route_key ),
+			ARRAY_A
+		);
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		if ( ! $row ) {
+			return '';
+		}
+
+		return Report::route_fingerprint(
+			array(
+				'route_class' => isset( $row['route_class'] ) ? $row['route_class'] : '',
+				'user_role'   => isset( $row['user_role'] ) ? $row['user_role'] : 'anonymous',
+			)
+		);
+	}
+
+	/**
 	 * Rebuild the route-stats aggregate from all stored profiles.
 	 *
 	 * Accumulates in memory keyed by (fingerprint, day) and writes one row per

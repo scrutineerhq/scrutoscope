@@ -10,6 +10,7 @@ namespace Scrutinizer\Admin;
 use Scrutinizer\Profiler\Session;
 use Scrutinizer\Profiler\Storage;
 use Scrutinizer\Profiler\Report;
+use Scrutinizer\Profiler\Regression;
 use Scrutinizer\Api\Sanitizer;
 
 // Every action in this file is registered through self::add_ajax(), which runs
@@ -241,9 +242,7 @@ class Ajax {
 			);
 		}
 
-		$samples = Storage::get_route_comparison_samples( $route_key );
-
-		wp_send_json_success( Report::regression_summary( $samples ) );
+		wp_send_json_success( Regression::for_route( $route_key ) );
 	}
 
 	/**
