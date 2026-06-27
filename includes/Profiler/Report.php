@@ -382,4 +382,217 @@ class Report {
 
 		return $timeline;
 	}
+
+	/**
+	 * Regression-classification thresholds (INVARIANTS / D7). A "Likely
+	 * Regression" requires ALL THREE; anything weaker is "Difference Observed"
+	 * or within noise.
+	 */
+	const REGRESSION_MIN_SAMPLES   = 5;          // Matched requests per set.
+	const REGRESSION_MIN_PCT       = 0.20;       // +20% median.
+	const REGRESSION_MIN_DELTA_NS  = 100000000;  // +100ms median (in ns).
+	const REGRESSION_MIN_DIRECTION = 3;          // Slower in >=3 of 5 quantiles.
+	const NOISE_DELTA_NS           = 10000000;   // <10ms is within noise.
+	const NOISE_PCT                = 0.05;       // <5% is within noise.
+
+	/**
+	 * Classify a duration change between two sets of route-matched requests.
+	 *
+	 * This is the statistical gate behind the "Likely Regression" language. It
+	 * is deliberately conservative: a verdict of `likely_regression` is only
+	 * returned when ALL THREE thresholds hold — enough samples, a meaningful
+	 * median increase (both percentage AND absolute), and a consistent slower
+	 * direction across quantiles. Otherwise the strongest claim is
+	 * `difference_observed`. Pure function; callers supply route-matched
+	 * baseline/current duration samples (nanoseconds).
+	 *
+	 * @param int[] $baseline_ns Baseline request durations (ns).
+	 * @param int[] $current_ns  Current request durations (ns).
+	 * @return array{verdict: string, median_baseline_ns: int, median_current_ns: int, delta_ns: int, pct_change: float, sample_count: array{baseline: int, current: int}, direction_slower: int}
+	 */
+	public static function classify_change( array $baseline_ns, array $current_ns ) {
+		$nb = count( $baseline_ns );
+		$nc = count( $current_ns );
+
+		$median_baseline = self::median( $baseline_ns );
+		$median_current  = self::median( $current_ns );
+		$delta_ns        = $median_current - $median_baseline;
+		$pct             = ( $median_baseline > 0 ) ? ( $delta_ns / $median_baseline ) : 0.0;
+
+		$result = array(
+			'verdict'            => 'within_noise',
+			'median_baseline_ns' => $median_baseline,
+			'median_current_ns'  => $median_current,
+			'delta_ns'           => $delta_ns,
+			'pct_change'         => $pct,
+			'sample_count'       => array(
+				'baseline' => $nb,
+				'current'  => $nc,
+			),
+			'direction_slower'   => 0,
+		);
+
+		// Threshold 1: enough matched samples on both sides.
+		if ( $nb < self::REGRESSION_MIN_SAMPLES || $nc < self::REGRESSION_MIN_SAMPLES ) {
+			$result['verdict'] = 'insufficient_data';
+			return $result;
+		}
+
+		// Threshold 3 input: how many of 5 quantiles moved slower.
+		$slower                     = self::direction_slower_count( $baseline_ns, $current_ns );
+		$result['direction_slower'] = $slower;
+
+		// Threshold 2: median increase >= 20% AND >= 100ms.
+		$meets_magnitude = ( $delta_ns >= self::REGRESSION_MIN_DELTA_NS ) && ( $pct >= self::REGRESSION_MIN_PCT );
+		$meets_direction = ( $slower >= self::REGRESSION_MIN_DIRECTION );
+
+		if ( $meets_magnitude && $meets_direction ) {
+			$result['verdict'] = 'likely_regression';
+			return $result;
+		}
+
+		// Past the noise floor but not all three thresholds: difference observed.
+		$within_noise      = ( abs( $delta_ns ) < self::NOISE_DELTA_NS ) && ( abs( $pct ) < self::NOISE_PCT );
+		$result['verdict'] = $within_noise ? 'within_noise' : 'difference_observed';
+
+		return $result;
+	}
+
+	/**
+	 * Build a coarse route fingerprint for baseline matching (D6).
+	 *
+	 * Only requests with the same fingerprint are comparable — this keeps
+	 * checkout matched to checkout, not to the homepage. Dimensions: route
+	 * class (which already encodes the page type, admin/front, and ajax/rest),
+	 * authenticated vs anonymous, and — when a collector provides it — cache
+	 * state. The fingerprint is deliberately coarse so genuinely-similar
+	 * requests group together.
+	 *
+	 * @param array $request The `request` section of a compiled profile.
+	 * @return string Stable fingerprint key.
+	 */
+	public static function route_fingerprint( array $request ) {
+		$route_class = isset( $request['route_class'] ) && '' !== $request['route_class']
+			? $request['route_class']
+			: 'unknown';
+
+		$role = ( isset( $request['user_role'] ) && 'anonymous' !== $request['user_role'] ) ? 'auth' : 'anon';
+
+		$parts = array(
+			'route:' . $route_class,
+			'role:' . $role,
+		);
+
+		// Cache state is a forward-looking dimension; included only when present
+		// so existing profiles (captured without it) still match each other.
+		if ( ! empty( $request['cache_state'] ) ) {
+			$parts[] = 'cache:' . $request['cache_state'];
+		}
+
+		return implode( '|', $parts );
+	}
+
+	/**
+	 * Extract the duration samples (ns) of the profiles whose request matches
+	 * a given route fingerprint.
+	 *
+	 * @param array[] $profiles    Compiled profiles (each with `request` + `summary`).
+	 * @param string  $fingerprint Target fingerprint from route_fingerprint().
+	 * @return int[] Matched durations in nanoseconds.
+	 */
+	public static function match_samples( array $profiles, $fingerprint ) {
+		$samples = array();
+		foreach ( $profiles as $profile ) {
+			$request = isset( $profile['request'] ) && is_array( $profile['request'] ) ? $profile['request'] : array();
+			if ( self::route_fingerprint( $request ) !== $fingerprint ) {
+				continue;
+			}
+			if ( isset( $profile['summary']['duration_ns'] ) ) {
+				$samples[] = (int) $profile['summary']['duration_ns'];
+			}
+		}
+		return $samples;
+	}
+
+	/**
+	 * Compare two route-matched sets of profiles and classify the change.
+	 *
+	 * Fingerprints the current set (using its first profile), gathers the
+	 * route-matched duration samples from each set, and runs them through
+	 * classify_change(). The returned verdict carries the fingerprint used so
+	 * callers can show what was compared.
+	 *
+	 * @param array[] $baseline_profiles Earlier profiles.
+	 * @param array[] $current_profiles  Later profiles.
+	 * @return array classify_change() result plus a `fingerprint` key.
+	 */
+	public static function compare_route( array $baseline_profiles, array $current_profiles ) {
+		$reference   = isset( $current_profiles[0]['request'] ) && is_array( $current_profiles[0]['request'] )
+			? $current_profiles[0]['request']
+			: array();
+		$fingerprint = self::route_fingerprint( $reference );
+
+		$result                = self::classify_change(
+			self::match_samples( $baseline_profiles, $fingerprint ),
+			self::match_samples( $current_profiles, $fingerprint )
+		);
+		$result['fingerprint'] = $fingerprint;
+
+		return $result;
+	}
+
+	/**
+	 * Integer median of a list of values.
+	 *
+	 * @param int[] $values Values.
+	 * @return int Median (0 for an empty list).
+	 */
+	private static function median( array $values ) {
+		$n = count( $values );
+		if ( 0 === $n ) {
+			return 0;
+		}
+		sort( $values );
+		$mid = intdiv( $n, 2 );
+		if ( 0 !== $n % 2 ) {
+			return (int) $values[ $mid ];
+		}
+		return (int) round( ( $values[ $mid - 1 ] + $values[ $mid ] ) / 2 );
+	}
+
+	/**
+	 * Count how many of five quantiles (10/30/50/70/90%) are slower in the
+	 * current set than the baseline — the "consistent direction" signal.
+	 *
+	 * @param int[] $baseline Baseline durations.
+	 * @param int[] $current  Current durations.
+	 * @return int Number of quantiles (0-5) that moved slower.
+	 */
+	private static function direction_slower_count( array $baseline, array $current ) {
+		sort( $baseline );
+		sort( $current );
+		$slower = 0;
+		foreach ( array( 0.10, 0.30, 0.50, 0.70, 0.90 ) as $q ) {
+			if ( self::quantile( $current, $q ) > self::quantile( $baseline, $q ) ) {
+				++$slower;
+			}
+		}
+		return $slower;
+	}
+
+	/**
+	 * Nearest-rank quantile of a pre-sorted list.
+	 *
+	 * @param int[] $sorted Sorted values.
+	 * @param float $q      Quantile in [0, 1].
+	 * @return int Value at the quantile (0 for an empty list).
+	 */
+	private static function quantile( array $sorted, $q ) {
+		$n = count( $sorted );
+		if ( 0 === $n ) {
+			return 0;
+		}
+		$idx = (int) floor( $q * ( $n - 1 ) );
+		return (int) $sorted[ $idx ];
+	}
 }
