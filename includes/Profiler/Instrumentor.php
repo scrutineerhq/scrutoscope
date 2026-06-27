@@ -17,6 +17,14 @@ namespace Scrutinizer\Profiler;
 class Instrumentor {
 
 	/**
+	 * Hard cap on stored per-invocation timing entries. A page that fires
+	 * hundreds of thousands of hook callbacks would otherwise exhaust the PHP
+	 * memory limit by recording one entry per invocation. Past this cap we
+	 * stop recording (is_truncated() reports it); the request still runs.
+	 */
+	const MAX_TIMINGS = 20000;
+
+	/**
 	 * Reference to the CallStack instance for nested tracking.
 	 *
 	 * @var CallStack
@@ -120,6 +128,7 @@ class Instrumentor {
 		$label      = Attribution::callback_label( $original );
 		$call_stack = $this->call_stack;
 		$timings    = &$this->timings;
+		$max        = self::MAX_TIMINGS;
 
 		/*
 		 * Build the wrapper closure. It pushes/pops the call stack, records
@@ -128,7 +137,7 @@ class Instrumentor {
 		 * The closure captures $original by value so the reference remains
 		 * valid even if the hook registry is later modified.
 		 */
-		$wrapper = function () use ( $original, $tag, $priority, $identity, $label, $attribution, $call_stack, &$timings ) {
+		$wrapper = function () use ( $original, $tag, $priority, $identity, $label, $attribution, $call_stack, &$timings, $max ) {
 			$args       = func_get_args();
 			$frame_id   = $identity . '@' . $tag . ':' . $priority;
 			$mem_before = memory_get_usage();
@@ -144,6 +153,33 @@ class Instrumentor {
 
 				$frame = $call_stack->pop( $frame_id, $end_ns, $mem_after );
 
+				if ( count( $timings ) < $max ) {
+					$timings[] = array(
+						'tag'              => $tag,
+						'priority'         => $priority,
+						'callback'         => $label,
+						'identity'         => $identity,
+						'attribution'      => $attribution,
+						'start_ns'         => $start_ns,
+						'end_ns'           => $end_ns,
+						'inclusive_ns'     => $frame ? $frame['inclusive_ns'] : ( $end_ns - $start_ns ),
+						'exclusive_ns'     => $frame ? $frame['exclusive_ns'] : ( $end_ns - $start_ns ),
+						'memory_before'    => $mem_before,
+						'memory_after'     => $mem_after,
+						'memory_exclusive' => $frame ? $frame['exclusive_mem'] : ( $mem_after - $mem_before ),
+						'threw'            => true,
+					);
+				}
+
+				throw $e;
+			}
+
+			$end_ns    = hrtime( true );
+			$mem_after = memory_get_usage();
+
+			$frame = $call_stack->pop( $frame_id, $end_ns, $mem_after );
+
+			if ( count( $timings ) < $max ) {
 				$timings[] = array(
 					'tag'              => $tag,
 					'priority'         => $priority,
@@ -157,32 +193,9 @@ class Instrumentor {
 					'memory_before'    => $mem_before,
 					'memory_after'     => $mem_after,
 					'memory_exclusive' => $frame ? $frame['exclusive_mem'] : ( $mem_after - $mem_before ),
-					'threw'            => true,
+					'threw'            => false,
 				);
-
-				throw $e;
 			}
-
-			$end_ns    = hrtime( true );
-			$mem_after = memory_get_usage();
-
-			$frame = $call_stack->pop( $frame_id, $end_ns, $mem_after );
-
-			$timings[] = array(
-				'tag'              => $tag,
-				'priority'         => $priority,
-				'callback'         => $label,
-				'identity'         => $identity,
-				'attribution'      => $attribution,
-				'start_ns'         => $start_ns,
-				'end_ns'           => $end_ns,
-				'inclusive_ns'     => $frame ? $frame['inclusive_ns'] : ( $end_ns - $start_ns ),
-				'exclusive_ns'     => $frame ? $frame['exclusive_ns'] : ( $end_ns - $start_ns ),
-				'memory_before'    => $mem_before,
-				'memory_after'     => $mem_after,
-				'memory_exclusive' => $frame ? $frame['exclusive_mem'] : ( $mem_after - $mem_before ),
-				'threw'            => false,
-			);
 
 			return $result;
 		};
@@ -191,6 +204,15 @@ class Instrumentor {
 		$hook_obj->callbacks[ $priority ][ $idx ]['function'] = $wrapper;
 
 		$this->instrumented[ $unique_key ] = true;
+	}
+
+	/**
+	 * Whether the per-invocation cap was hit (captured data is partial).
+	 *
+	 * @return bool
+	 */
+	public function is_truncated() {
+		return count( $this->timings ) >= self::MAX_TIMINGS;
 	}
 
 	/**

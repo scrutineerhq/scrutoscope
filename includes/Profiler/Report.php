@@ -138,6 +138,7 @@ class Report {
 				'unattributed_ns'    => $unattributed_ns,
 				'breakdown'          => $breakdown,
 				'callback_count'     => count( $raw_timings ),
+				'truncated'          => ! empty( $request_metadata['truncated'] ),
 				'source_count'       => count( $by_source ),
 				'query_count'        => isset( $request_metadata['query_count'] ) ? (int) $request_metadata['query_count'] : 0,
 				'http_call_count'    => count( $http_calls ),

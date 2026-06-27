@@ -17,6 +17,12 @@ namespace Scrutinizer\Profiler;
 class CallStack {
 
 	/**
+	 * Hard cap on stored trace entries (mirrors Instrumentor::MAX_TIMINGS) so
+	 * memory stays bounded on pages with very many callback invocations.
+	 */
+	const MAX_TRACE = 20000;
+
+	/**
 	 * Stack of active frames.
 	 *
 	 * Each frame is an associative array:
@@ -103,7 +109,9 @@ class CallStack {
 			'exclusive_mem' => $exclusive_mem,
 		);
 
-		$this->trace[] = $result;
+		if ( count( $this->trace ) < self::MAX_TRACE ) {
+			$this->trace[] = $result;
+		}
 
 		return $result;
 	}

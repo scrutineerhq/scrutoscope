@@ -119,4 +119,22 @@ class CallStackTest extends TestCase {
 		$this->assertSame( 0, $frame['inclusive_mem'] );
 		$this->assertSame( 0, $frame['exclusive_mem'] );
 	}
+
+	/**
+	 * The trace is capped to bound memory on pages with very many callback
+	 * invocations — but pop() still returns valid timing past the cap, so the
+	 * exclusive/inclusive math is never affected.
+	 */
+	public function test_trace_storage_is_capped() {
+		$cs   = new CallStack();
+		$cap  = CallStack::MAX_TRACE;
+		$last = null;
+		for ( $i = 0; $i < $cap + 50; $i++ ) {
+			$cs->push( "f{$i}", $i * 10 );
+			$last = $cs->pop( "f{$i}", $i * 10 + 5 );
+		}
+
+		$this->assertSame( 5, $last['inclusive_ns'], 'pop() must still compute timing past the cap' );
+		$this->assertCount( $cap, $cs->get_trace(), 'trace storage must be bounded by the cap' );
+	}
 }
