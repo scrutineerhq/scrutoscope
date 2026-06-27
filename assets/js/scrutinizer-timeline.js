@@ -664,8 +664,9 @@
       });
       container.appendChild(card);
 
-      card.appendChild(buildTabs());
-
+      // No tab strip here — the host surface (plugin detail view / relay viewer)
+      // already provides the Timeline/Sources/Queries/... tabs. Rendering our
+      // own would duplicate them (and ours are non-functional chrome).
       var body = el('div', { padding: '18px 22px 20px' });
       card.appendChild(body);
 
@@ -688,26 +689,6 @@
     }
 
     /* ---------- chrome pieces ---------- */
-    function buildTabs() {
-      var bar = el('div', {
-        display: 'flex', alignItems: 'stretch', gap: '2px', borderBottom: '1px solid ' + TH.line,
-        padding: '0 8px', background: TH.tabBar, fontSize: '13px', flexWrap: 'wrap'
-      });
-      var c = model.tabCounts;
-      var defs = [['Timeline', null, true], ['Sources', c.sources], ['Queries', c.queries],
-        ['HTTP Calls', c.http], ['Assets', c.assets], ['Trace', c.trace], ['Metadata', null]];
-      defs.forEach(function (d) {
-        var active = d[2];
-        var tab = el('div', active
-          ? { padding: '13px 12px 11px', fontWeight: 600, color: TH.text, borderBottom: '2px solid ' + TH.accent, marginBottom: '-1px' }
-          : { padding: '13px 12px 11px', color: TH.sub });
-        tab.appendChild(document.createTextNode(d[0] + ' '));
-        if (d[1] != null) tab.appendChild(el('span', { color: TH.muted }, { text: '(' + d[1].toLocaleString() + ')' }));
-        bar.appendChild(tab);
-      });
-      return bar;
-    }
-
     function buildSummary() {
       var wrap = el('div', { display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: '6px 22px', marginBottom: '14px' });
       var labelStyle = { fontSize: '12px', color: TH.muted };
