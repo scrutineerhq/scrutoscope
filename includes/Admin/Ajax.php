@@ -9,6 +9,7 @@ namespace Scrutinizer\Admin;
 
 use Scrutinizer\Profiler\Session;
 use Scrutinizer\Profiler\Storage;
+use Scrutinizer\Api\Sanitizer;
 
 /**
  * Registers and handles AJAX actions for the dashboard.
@@ -352,6 +353,13 @@ class Ajax {
 			unset( $data['timeline'] );
 		}
 
+		// Hard sanitization (D26) — this endpoint feeds the share/export flow
+		// (the relay payload is the full, non-lightweight response), so the
+		// read-time safety pass must run here, not only on the REST routes.
+		if ( isset( $profile['profile_data'] ) ) {
+			$profile['profile_data'] = Sanitizer::sanitize( $profile['profile_data'] );
+		}
+
 		wp_send_json_success( array( 'profile' => $profile ) );
 	}
 
@@ -390,6 +398,7 @@ class Ajax {
 		}
 
 		$trace = isset( $profile['profile_data']['trace'] ) ? $profile['profile_data']['trace'] : array();
+		$trace = Sanitizer::sanitize( $trace );
 
 		wp_send_json_success( array( 'trace' => $trace ) );
 	}
@@ -433,9 +442,11 @@ class Ajax {
 		$phase_markers = isset( $data['phase_markers'] ) ? $data['phase_markers'] : array();
 
 		wp_send_json_success(
-			array(
-				'timeline'      => $timeline,
-				'phase_markers' => $phase_markers,
+			Sanitizer::sanitize(
+				array(
+					'timeline'      => $timeline,
+					'phase_markers' => $phase_markers,
+				)
 			)
 		);
 	}

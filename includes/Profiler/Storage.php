@@ -114,12 +114,43 @@ class Storage {
 		if ( ! empty( $profile_data['http_calls'] ) && is_array( $profile_data['http_calls'] ) ) {
 			foreach ( $profile_data['http_calls'] as $i => $call ) {
 				if ( isset( $call['url'] ) ) {
-					$profile_data['http_calls'][ $i ]['url'] = self::strip_url_query( $call['url'] );
+					// Outbound calls are reduced to scheme + host, not just the
+					// query string. Webhook/bot endpoints embed secret tokens in
+					// the PATH (e.g. hooks.slack.com/services/T../B../<token>,
+					// api.telegram.org/bot<token>/...), which strip_url_query
+					// would preserve. The destination host is enough for
+					// attribution; the path never reaches storage or a share.
+					$profile_data['http_calls'][ $i ]['url'] = self::strip_url_to_host( $call['url'] );
 				}
 			}
 		}
 
 		return $profile_data;
+	}
+
+	/**
+	 * Reduce a URL to scheme + host (+ port), dropping path, query, and fragment.
+	 *
+	 * Used for outbound HTTP calls, whose paths commonly carry credentials.
+	 *
+	 * @param string $url URL to reduce.
+	 * @return string Reduced URL, or '' when the input is empty/unparseable.
+	 */
+	private static function strip_url_to_host( $url ) {
+		if ( ! is_string( $url ) || '' === $url ) {
+			return '';
+		}
+
+		$parts = wp_parse_url( $url );
+
+		if ( ! is_array( $parts ) || empty( $parts['host'] ) ) {
+			return '';
+		}
+
+		$scheme = isset( $parts['scheme'] ) ? $parts['scheme'] . '://' : '';
+		$port   = isset( $parts['port'] ) ? ':' . $parts['port'] : '';
+
+		return $scheme . $parts['host'] . $port;
 	}
 
 	/**
