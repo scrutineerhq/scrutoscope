@@ -70,4 +70,53 @@ class CallStackTest extends TestCase {
 		$cs = new CallStack();
 		$this->assertNull( $cs->pop( 'nope', 5 ) );
 	}
+
+	/**
+	 * Exclusive memory subtracts a nested child's inclusive memory from the
+	 * parent, so per-source totals are additive instead of double-counting.
+	 */
+	public function test_nested_child_memory_is_subtracted_from_parent() {
+		$cs = new CallStack();
+		$cs->push( 'parent', 0, 0 );    // parent starts at 0 bytes
+		$cs->push( 'child', 3, 100 );   // child starts at 100 bytes
+		$child  = $cs->pop( 'child', 7, 300 );   // child inclusive 200
+		$parent = $cs->pop( 'parent', 10, 500 ); // parent inclusive 500, child 200 => exclusive 300
+
+		$this->assertSame( 200, $child['inclusive_mem'] );
+		$this->assertSame( 200, $child['exclusive_mem'] );
+		$this->assertSame( 500, $parent['inclusive_mem'] );
+		$this->assertSame( 300, $parent['exclusive_mem'] );
+
+		// Exclusive sum is additive and equals the parent's inclusive total.
+		$this->assertSame(
+			$parent['inclusive_mem'],
+			$parent['exclusive_mem'] + $child['exclusive_mem']
+		);
+	}
+
+	/**
+	 * Memory deltas are not clamped — freed memory yields a negative
+	 * Observed Memory Delta, which is meaningful (not per-plugin ownership).
+	 */
+	public function test_negative_memory_delta_is_not_clamped() {
+		$cs = new CallStack();
+		$cs->push( 'frees', 0, 1000 );
+		$frame = $cs->pop( 'frees', 5, 600 ); // freed 400 bytes
+
+		$this->assertSame( -400, $frame['inclusive_mem'] );
+		$this->assertSame( -400, $frame['exclusive_mem'] );
+	}
+
+	/**
+	 * pop() without a memory argument leaves memory deltas at zero (the
+	 * legacy/timing-only call path stays valid).
+	 */
+	public function test_memory_optional_on_pop() {
+		$cs = new CallStack();
+		$cs->push( 'frame', 0 );
+		$frame = $cs->pop( 'frame', 10 );
+
+		$this->assertSame( 0, $frame['inclusive_mem'] );
+		$this->assertSame( 0, $frame['exclusive_mem'] );
+	}
 }
