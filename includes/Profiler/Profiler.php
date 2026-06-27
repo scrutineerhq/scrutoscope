@@ -105,6 +105,13 @@ class Profiler {
 	private $dev_signals = array();
 
 	/**
+	 * Just-in-time textdomain loads, keyed by domain|hook so repeats coalesce.
+	 *
+	 * @var array<string, array>
+	 */
+	private $textdomain_jit = array();
+
+	/**
 	 * Completed external HTTP call records.
 	 *
 	 * @var array<int, array>
@@ -331,6 +338,10 @@ class Profiler {
 		add_action( 'deprecated_file_included', array( $this, 'record_deprecated_file' ), 10, 4 );
 		add_action( 'doing_it_wrong_run', array( $this, 'record_doing_it_wrong' ), 10, 3 );
 
+		// i18n just-in-time translation loads — a textdomain loaded on demand
+		// because a translation function ran before it was registered.
+		add_action( 'load_textdomain', array( $this, 'record_textdomain_load' ), 10, 1 );
+
 		// Catch late-registered hooks at key lifecycle points.
 		add_action( 'wp_loaded', array( $this, 'reinstrument' ), PHP_INT_MAX );
 		add_action( 'admin_init', array( $this, 'reinstrument' ), PHP_INT_MAX );
@@ -472,6 +483,7 @@ class Profiler {
 			'queries'            => $this->get_query_log(),
 			'http_calls'         => $this->build_http_calls(),
 			'dev_signals'        => $this->build_dev_signals(),
+			'textdomain_jit'     => $this->build_textdomain_jit(),
 			'autoloaded_options' => self::get_autoloaded_options(),
 			'enqueued_assets'    => self::get_enqueued_assets(),
 			// Background sampling profiles anonymous visitor traffic, so the
@@ -941,6 +953,67 @@ class Profiler {
 			}
 		);
 		return $signals;
+	}
+
+	/**
+	 * Record a just-in-time textdomain load (load_textdomain).
+	 *
+	 * Flags only loads triggered on demand by _load_textdomain_just_in_time —
+	 * a translation function ran before the textdomain was explicitly loaded,
+	 * so WordPress loads it mid-request (a real i18n perf topic). Captures the
+	 * domain and the hook it fired on. Aggregate only.
+	 *
+	 * @param string $domain Textdomain being loaded.
+	 */
+	public function record_textdomain_load( $domain ) {
+		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_debug_backtrace
+		$trace  = debug_backtrace( DEBUG_BACKTRACE_IGNORE_ARGS, 15 );
+		$is_jit = false;
+		foreach ( $trace as $frame ) {
+			if ( isset( $frame['function'] ) && '_load_textdomain_just_in_time' === $frame['function'] ) {
+				$is_jit = true;
+				break;
+			}
+		}
+		if ( ! $is_jit ) {
+			return;
+		}
+		// current_filter() here is 'load_textdomain' (the action we're inside).
+		// The useful hook is the OUTER lifecycle hook that was running when the
+		// translation fired — read it from the filter stack.
+		$stack = isset( $GLOBALS['wp_current_filter'] ) ? (array) $GLOBALS['wp_current_filter'] : array();
+		$hook  = '';
+		for ( $si = count( $stack ) - 1; $si >= 0; $si-- ) {
+			if ( 'load_textdomain' !== $stack[ $si ] ) {
+				$hook = $stack[ $si ];
+				break;
+			}
+		}
+		$key = $domain . '|' . $hook;
+		if ( ! isset( $this->textdomain_jit[ $key ] ) ) {
+			$this->textdomain_jit[ $key ] = array(
+				'domain' => (string) $domain,
+				'hook'   => (string) $hook,
+				'count'  => 0,
+			);
+		}
+		++$this->textdomain_jit[ $key ]['count'];
+	}
+
+	/**
+	 * Build the just-in-time textdomain list, ordered by count (desc).
+	 *
+	 * @return array<int, array>
+	 */
+	private function build_textdomain_jit() {
+		$loads = array_values( $this->textdomain_jit );
+		usort(
+			$loads,
+			function ( $a, $b ) {
+				return $b['count'] <=> $a['count'];
+			}
+		);
+		return $loads;
 	}
 
 	/**

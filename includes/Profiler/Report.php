@@ -198,6 +198,7 @@ class Report {
 			'queries'            => isset( $request_metadata['queries'] ) ? $request_metadata['queries'] : array(),
 			'http_calls'         => $http_calls,
 			'dev_signals'        => isset( $request_metadata['dev_signals'] ) ? $request_metadata['dev_signals'] : array(),
+			'textdomain_jit'     => isset( $request_metadata['textdomain_jit'] ) ? $request_metadata['textdomain_jit'] : array(),
 			'autoloaded_options' => isset( $request_metadata['autoloaded_options'] ) ? $request_metadata['autoloaded_options'] : array(),
 			'enqueued_assets'    => isset( $request_metadata['enqueued_assets'] ) ? $request_metadata['enqueued_assets'] : array(),
 			'timeline'           => self::build_timeline( $raw_timings, $duration_ns ),
