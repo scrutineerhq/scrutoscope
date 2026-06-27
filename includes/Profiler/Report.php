@@ -459,6 +459,89 @@ class Report {
 	}
 
 	/**
+	 * Build a coarse route fingerprint for baseline matching (D6).
+	 *
+	 * Only requests with the same fingerprint are comparable — this keeps
+	 * checkout matched to checkout, not to the homepage. Dimensions: route
+	 * class (which already encodes the page type, admin/front, and ajax/rest),
+	 * authenticated vs anonymous, and — when a collector provides it — cache
+	 * state. The fingerprint is deliberately coarse so genuinely-similar
+	 * requests group together.
+	 *
+	 * @param array $request The `request` section of a compiled profile.
+	 * @return string Stable fingerprint key.
+	 */
+	public static function route_fingerprint( array $request ) {
+		$route_class = isset( $request['route_class'] ) && '' !== $request['route_class']
+			? $request['route_class']
+			: 'unknown';
+
+		$role = ( isset( $request['user_role'] ) && 'anonymous' !== $request['user_role'] ) ? 'auth' : 'anon';
+
+		$parts = array(
+			'route:' . $route_class,
+			'role:' . $role,
+		);
+
+		// Cache state is a forward-looking dimension; included only when present
+		// so existing profiles (captured without it) still match each other.
+		if ( ! empty( $request['cache_state'] ) ) {
+			$parts[] = 'cache:' . $request['cache_state'];
+		}
+
+		return implode( '|', $parts );
+	}
+
+	/**
+	 * Extract the duration samples (ns) of the profiles whose request matches
+	 * a given route fingerprint.
+	 *
+	 * @param array[] $profiles    Compiled profiles (each with `request` + `summary`).
+	 * @param string  $fingerprint Target fingerprint from route_fingerprint().
+	 * @return int[] Matched durations in nanoseconds.
+	 */
+	public static function match_samples( array $profiles, $fingerprint ) {
+		$samples = array();
+		foreach ( $profiles as $profile ) {
+			$request = isset( $profile['request'] ) && is_array( $profile['request'] ) ? $profile['request'] : array();
+			if ( self::route_fingerprint( $request ) !== $fingerprint ) {
+				continue;
+			}
+			if ( isset( $profile['summary']['duration_ns'] ) ) {
+				$samples[] = (int) $profile['summary']['duration_ns'];
+			}
+		}
+		return $samples;
+	}
+
+	/**
+	 * Compare two route-matched sets of profiles and classify the change.
+	 *
+	 * Fingerprints the current set (using its first profile), gathers the
+	 * route-matched duration samples from each set, and runs them through
+	 * classify_change(). The returned verdict carries the fingerprint used so
+	 * callers can show what was compared.
+	 *
+	 * @param array[] $baseline_profiles Earlier profiles.
+	 * @param array[] $current_profiles  Later profiles.
+	 * @return array classify_change() result plus a `fingerprint` key.
+	 */
+	public static function compare_route( array $baseline_profiles, array $current_profiles ) {
+		$reference   = isset( $current_profiles[0]['request'] ) && is_array( $current_profiles[0]['request'] )
+			? $current_profiles[0]['request']
+			: array();
+		$fingerprint = self::route_fingerprint( $reference );
+
+		$result                = self::classify_change(
+			self::match_samples( $baseline_profiles, $fingerprint ),
+			self::match_samples( $current_profiles, $fingerprint )
+		);
+		$result['fingerprint'] = $fingerprint;
+
+		return $result;
+	}
+
+	/**
 	 * Integer median of a list of values.
 	 *
 	 * @param int[] $values Values.
