@@ -49,9 +49,12 @@ The rules that never bend. Every PR, every refactor, every "quick fix" must pass
 
 ## Overhead budget
 
-Targets — not yet benchmarked. Do not hardcode specific numbers (e.g. "2-5ms") until measured.
+Measured, not aspirational — but highly variable (number of active plugins, OPcache on/off, MySQL local vs remote, hardware, load). There is **one profiling depth**, not tiered modes; the only knob that changes what's captured is the query-profiling toggle. We report what we measured, not a guarantee.
 
-| Mode | Target |
-|---|---|
-| Session profiling | < 2% |
-| Background profiling | Near-zero average |
+| Cost | Measured | Notes |
+|---|---|---|
+| Always-on check (every request) | ~2ms or less | The "are we profiling?" branch every visitor pays. Typically well under 2% of request time. This is the cost that must stay tiny. |
+| Active profiling (per profiled request) | ~250ms | Bringing up the hooks and timing every callback. Paid only on requests actually being profiled (an admin session, or the sampled slice of background traffic). |
+| Background sampling | ≈ always-on + (sample rate × active) | Near-zero at low sample rates; at 100% you pay the active cost on every request. |
+
+Deactivating the plugin removes all per-request overhead and keeps captured profiles — only uninstalling drops the data.

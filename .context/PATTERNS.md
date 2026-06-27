@@ -317,8 +317,11 @@ Button descriptions (shown via <details> expand below the control):
 - 10% — Detailed view. Captures enough to spot patterns quickly.
 - 100% — Every request. Best for debugging; adds measurable overhead per request.
 
-Overhead number is TBD — needs benchmarking on shared hosting before qualifying.
-Do NOT hardcode "2-5ms" or any specific number until measured.
+Overhead (measured): the always-on "are we profiling?" check is ~2ms or less per
+request; a request that is actively profiled adds ~250ms (full hook
+instrumentation + trace storage). Both vary widely with environment — active
+plugin count, OPcache, local vs remote MySQL, hardware, load — so always qualify
+the numbers; never present them as a guarantee.
 
 Clicking a snap button sets the value and highlights it. Typing a custom value
 deselects all snap buttons. Valid range: 0.0–100.0, one decimal place.

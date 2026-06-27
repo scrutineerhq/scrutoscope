@@ -93,6 +93,7 @@ Returns two profiles side by side with computed deltas for duration, query count
 - A plugin with high exclusive time and many callbacks is not necessarily "slow" — it may be doing its job (e.g., WooCommerce on a shop page).
 - Distinguish **volume** (many callbacks) from **cost** (high per-callback time). 300 callbacks at 0.1ms each is different from 3 callbacks at 10ms each.
 - When unattributed time is high (>40%), check PHP/OPcache configuration before blaming plugins. Core overhead scales with complexity.
+- While a request is actively profiled, the profiler's own instrumentation adds overhead (~250ms in our benchmarks, environment-dependent) that lands in unattributed/measured time. Treat absolute durations from a profiled request as inflated relative to normal traffic; compare callbacks against each other, not against an unprofiled baseline.
 - Context matters: 500ms with 23 active plugins is different from 500ms with 3 plugins.
 - Database query time should be evaluated relative to total duration. 50ms of query time in a 500ms request is 10% — notable but not alarming. 50ms in a 100ms request is 50% — worth investigating.
 - HTTP calls (outbound requests to external APIs, update checks, license verifiers) are captured with URL, HTTP status, duration, and the callback that initiated them. These are often the single largest contributor to slow requests because network I/O blocks the PHP process. A plugin making a blocking HTTP call on every page load is a significant finding.

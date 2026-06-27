@@ -60,7 +60,7 @@ Profiles begin capturing automatically at 10% sample rate.
 
 = Does Scrutinizer slow down my site? =
 
-Scrutinizer captures profiles by sampling requests at a configurable rate. At the default 10% sample rate, 90% of requests have zero profiling overhead. During active profiling, overhead is minimal — monotonic timing calls on existing WordPress hooks.
+There are two kinds of overhead. An always-on check on every request — about 2ms or less — decides whether the request is being profiled; this is what every visitor pays, and it's negligible. When a request *is* being profiled (an admin session, or the sampled fraction of background traffic), instrumenting the hooks and timing every callback adds roughly 250ms in our benchmarks. Both vary a lot with your environment — number of active plugins, OPcache, whether MySQL is local or remote, your hardware, and current load — so we report what we measured rather than promising a number. At the default 10% background sample rate, most requests only pay the ~2ms check. And you're always one click from zero: deactivating Scrutinizer removes all overhead and keeps your captured profiles (only deleting the plugin removes the data).
 
 = What data leaves my server? =
 
