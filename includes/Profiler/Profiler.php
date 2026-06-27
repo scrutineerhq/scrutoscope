@@ -86,6 +86,17 @@ class Profiler {
 	private $phase_markers = array();
 
 	/**
+	 * Memory usage (bytes) sampled at each phase marker, keyed by hook.
+	 *
+	 * Sampled at the same priority-0 lifecycle hooks as the phase markers, so
+	 * the cost is one memory_get_usage() per marker (~a dozen per request) and
+	 * the resulting curve aligns exactly to the timeline phases.
+	 *
+	 * @var array<string, int>
+	 */
+	private $phase_memory = array();
+
+	/**
 	 * Completed external HTTP call records.
 	 *
 	 * @var array<int, array>
@@ -250,6 +261,7 @@ class Profiler {
 
 		// Record the start as the first phase marker.
 		$this->phase_markers['profiler_start'] = $this->request_start_ns;
+		$this->phase_memory['profiler_start']  = memory_get_usage();
 
 		$this->call_stack   = new CallStack();
 		$this->instrumentor = new Instrumentor( $this->call_stack );
@@ -324,6 +336,7 @@ class Profiler {
 		$hook = current_filter();
 		if ( ! isset( $this->phase_markers[ $hook ] ) ) {
 			$this->phase_markers[ $hook ] = hrtime( true );
+			$this->phase_memory[ $hook ]  = memory_get_usage();
 		}
 	}
 
@@ -435,6 +448,7 @@ class Profiler {
 			'wp_version'         => get_bloginfo( 'version' ),
 			'timestamp'          => time(),
 			'phase_markers'      => $this->build_phase_offsets(),
+			'memory_samples'     => $this->build_memory_samples(),
 			'user_role'          => self::get_current_role(),
 			'query_count'        => self::get_query_count(),
 			'queries'            => $this->get_query_log(),
@@ -848,6 +862,39 @@ class Profiler {
 			}
 		);
 		return $offsets;
+	}
+
+	/**
+	 * Build the memory-over-time curve from phase-marker samples.
+	 *
+	 * Memory is sampled at each lifecycle phase marker (hooked at priority 0)
+	 * plus a final reading here at compile time, giving an honest usage curve
+	 * aligned to the request timeline. Returns ascending {offset_ns, bytes}
+	 * points. The peak is reported separately in the summary.
+	 *
+	 * @return array<int, array{offset_ns: int, bytes: int}>
+	 */
+	private function build_memory_samples() {
+		$samples = array();
+		foreach ( $this->phase_memory as $hook => $bytes ) {
+			$ts        = isset( $this->phase_markers[ $hook ] ) ? $this->phase_markers[ $hook ] : $this->request_start_ns;
+			$samples[] = array(
+				'offset_ns' => max( 0, $ts - $this->request_start_ns ),
+				'bytes'     => (int) $bytes,
+			);
+		}
+		// Final sample at end of request.
+		$samples[] = array(
+			'offset_ns' => max( 0, hrtime( true ) - $this->request_start_ns ),
+			'bytes'     => memory_get_usage(),
+		);
+		usort(
+			$samples,
+			function ( $a, $b ) {
+				return $a['offset_ns'] <=> $b['offset_ns'];
+			}
+		);
+		return $samples;
 	}
 
 	/**
