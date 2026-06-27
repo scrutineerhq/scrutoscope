@@ -132,7 +132,11 @@ class Profiler {
 		// Don't profile our own AJAX requests — they'd flood the list.
 		if ( wp_doing_ajax() ) {
 			$action = '';
+			// Read-only request-context detection (deciding whether to profile),
+			// not form processing — nonce verification does not apply.
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			if ( isset( $_REQUEST['action'] ) ) {
+				// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 				$action = sanitize_text_field( wp_unslash( $_REQUEST['action'] ) );
 			}
 			if ( 0 === strpos( $action, 'scrutinizer_' ) ) {
@@ -440,10 +444,12 @@ class Profiler {
 			// Background sampling profiles anonymous visitor traffic, so the
 			// visitor's inbound referer is never-collect data. Only capture it
 			// for admin-driven session profiling (the admin's own navigation).
+			// Request metadata for the profile record — read-only capture, not
+			// form processing, so nonce verification does not apply.
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			'referer'            => ( ! $this->is_background && isset( $_SERVER['HTTP_REFERER'] ) ) ? sanitize_url( wp_unslash( $_SERVER['HTTP_REFERER'] ) ) : '',
-			'ajax_action'        => ( defined( 'DOING_AJAX' ) && DOING_AJAX && isset( $_REQUEST['action'] ) )
-				? sanitize_text_field( wp_unslash( $_REQUEST['action'] ) )
-				: '',
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			'ajax_action'        => ( defined( 'DOING_AJAX' ) && DOING_AJAX && isset( $_REQUEST['action'] ) ) ? sanitize_text_field( wp_unslash( $_REQUEST['action'] ) ) : '',
 			'response_status'    => (int) $response_status,
 			'label'              => self::generate_route_label(),
 		);
@@ -475,9 +481,10 @@ class Profiler {
 	private static function generate_route_label() {
 		// AJAX requests: use the action name.
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
-			$action = isset( $_REQUEST['action'] )
-				? sanitize_text_field( wp_unslash( $_REQUEST['action'] ) )
-				: '';
+			// Read-only route labelling from the AJAX action, not form
+			// processing — nonce verification does not apply.
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			$action = isset( $_REQUEST['action'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['action'] ) ) : '';
 			return $action ? 'AJAX: ' . $action : null;
 		}
 

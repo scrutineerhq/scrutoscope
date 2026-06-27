@@ -419,6 +419,9 @@ class Attribution {
 				continue;
 			}
 
+			// Local file read of a plugin's own composer.json — not a remote
+			// fetch, so wp_remote_get does not apply.
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
 			$json = file_get_contents( $composer_path );
 			if ( ! $json ) {
 				continue;

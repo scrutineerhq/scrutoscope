@@ -65,8 +65,8 @@ class Sanitizer {
 					defined( 'WP_CONTENT_DIR' ) ? WP_CONTENT_DIR : '',
 					defined( 'WP_PLUGIN_DIR' ) ? WP_PLUGIN_DIR : '',
 					defined( 'WPMU_PLUGIN_DIR' ) ? WPMU_PLUGIN_DIR : '',
-					defined( 'TEMPLATEPATH' ) ? TEMPLATEPATH : '',
-					defined( 'STYLESHEETPATH' ) ? STYLESHEETPATH : '',
+					function_exists( 'get_template_directory' ) ? get_template_directory() : '',
+					function_exists( 'get_stylesheet_directory' ) ? get_stylesheet_directory() : '',
 					wp_upload_dir()['basedir'] ?? '',
 				)
 			)

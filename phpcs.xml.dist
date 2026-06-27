@@ -9,7 +9,14 @@
 	<arg name="colors"/>
 	<arg value="sp"/>
 
-	<rule ref="WordPress-Core"/>
+	<rule ref="WordPress-Extra">
+		<!-- WordPress hook, filter, and REST callbacks have fixed signatures;
+		     trailing parameters required by the framework contract are often
+		     unused. Suppressing this sniff avoids inconsistent callback
+		     signatures or scattered per-line ignores. -->
+		<exclude name="Generic.CodeAnalysis.UnusedFunctionParameter"/>
+	</rule>
+	<rule ref="PHPCompatibilityWP"/>
 	<rule ref="WordPress-Docs"/>
 
 	<config name="minimum_supported_wp_version" value="6.0"/>
