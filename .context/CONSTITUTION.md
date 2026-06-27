@@ -20,6 +20,14 @@ The rules that never bend. Every PR, every refactor, every "quick fix" must pass
 6. **No monetization.** No paid tiers, lead funnels, licensing telemetry, or upsell gates.
 7. **Trustworthy defaults, transparency on demand.** Every default should be safe to trust without reading a manual. But when someone is curious — about what a number means, why something is measured this way, what "unknown" contains — the answer should be one click away. Never force the explanation on everyone; never hide it from anyone who asks.
 
+## Posture — measure & attribute, don't inspect
+
+Scrutinizer reports *where* time and memory go and *who* owns them. It does not report the *contents*. Aggregates (durations, counts, attribution), never values (SQL literals, option values, request bodies, full traces). This is the deliberate trade that makes a report **safe for a non-expert to share in public** — and shareability is the whole point (see the zero-knowledge relay, D24). A shared report must never carry enough to target the site that produced it.
+
+- **The output boundary.** Internal measurement may look deeply to attribute — e.g. read a backtrace to decide which subsystem owns a query. The constraint is at the *output*, not the look: **inspect transiently to attribute; persist and share only the aggregate.** Read the stack, store `Query: 41ms, 18 calls`, discard the rest. You can't leak what you never kept.
+- **Category.** This is a *shareable diagnostic*, not an operator's debugger. Triage, not forensics — "the profiler you can screenshot." When someone needs the exact line and value, that's the **handoff** to Query Monitor or Xdebug. We are the safe front door that localizes the problem; we don't replace the deep tools and we don't compete with them.
+- **Privacy-first is a stated promise, not a silent default.** Because it's a promise to users, it does not erode one reasonable feature request at a time. "Sufficient demand" never overrides the output boundary; at most it justifies a new *aggregate*.
+
 ## Hard never-collect
 
 - Passwords, cookies, auth headers, tokens, WordPress salts, private keys, database credentials.

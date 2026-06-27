@@ -100,3 +100,9 @@ The scrutinizer.dev/view SPA has two entry points: (1) `/r/{id}#key` for relay-h
 
 ## D40: Gzip before encryption, R2 for storage
 Report payloads are gzip-compressed before AES-256-GCM encryption. R2 storage (no practical size limit) handles profiles that were previously too large to share. The viewer decompresses after decryption. Client-side DOM pagination handles rendering.
+
+## D41: Query display is deliberately shallow — a feature, not a gap
+Queries are reduced to normalized shape (verb + table; see the INVARIANTS QueryReducer contract), never literals or values, and we do **not** build a full query inspector. This is a deliberate product boundary, not unfinished work: (1) **Shareability** — a report must be safe for a non-expert to post in public, and query values leak PII and secrets. (2) **Lane** — deep query inspection is Query Monitor's job; we hand off to it rather than compete. (3) **Privacy-first** — it follows directly from the Constitution's output boundary. If overwhelming demand ever justifies "more," it must still satisfy the aggregate-only rule (a new aggregate, never raw values). The shallowness is the point.
+
+## D42: No object-cache instrumentation
+We will not instrument the object cache (hit/miss ratios, per-group stats). WP cache functions are not hookable, so it would require an `object-cache.php` drop-in — which collides with the Redis/Memcached drop-ins real sites already run — and the hot path (thousands of `wp_cache_get` calls per request) violates both the overhead budget and the aggregate line. Out of scope. Cache *effectiveness* is another tool's concern; we measure and attribute, we don't inspect the cache.

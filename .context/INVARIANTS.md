@@ -25,6 +25,9 @@
 - [ ] **Hard never-collect fields are enforced.** Passwords, cookies, auth headers, tokens, salts, private keys, DB creds, raw SQL literals, POST bodies, file contents, visitor data — all excluded from profiles, reports, and shared artifacts.
   - _Verify:_ `Storage::sanitize_profile()` strips these. Test suite covers each category.
 
+- [ ] **Output boundary: inspect transiently, persist only aggregates.** Measurement may read a backtrace or callback context to *attribute* time, but only aggregates (durations, counts, attribution labels) are ever stored or shared — never the inspected values. The transient look must not become persistent data. (See Constitution → Posture.)
+  - _Verify:_ No raw backtrace, SQL literal, option value, or request body appears in any stored profile or shared report; attribution persists only `{type, slug, name}` + timings.
+
 - [ ] **SQL queries are reduced to verb + table(s) only.** Stored and displayed queries contain ONLY the SQL verb (SELECT, INSERT, UPDATE, DELETE, SHOW) and the table name(s). No column names, no field lists, no WHERE clauses, no predicates (LIMIT, HAVING, GROUP BY, ORDER BY), no literal values, no query structure beyond verb + table. JOINs include all participating tables. CTE aliases are excluded. Subquery internals are excluded (depth-aware). Enforced by `QueryReducer::reduce()` at both write time (Profiler) AND read time (Sanitizer) as defense-in-depth. This has regressed twice — treat any query output containing SQL keywords beyond the verb as a bug.
   - _Verify:_ `wp eval` to fetch a stored profile's queries array — every `sql` value matches pattern `/^(SELECT|INSERT|UPDATE|DELETE|REPLACE|SHOW|CREATE|ALTER|DROP|TRUNCATE|OPTIMIZE|ANALYZE|CHECK|REPAIR)\s[\w, ]+$/` or is `SELECT FOUND_ROWS()` or a bare verb. (DDL verbs are emitted as verb + table only, same as DML.)
 
@@ -57,12 +60,12 @@
 ## Regression Language
 
 - [ ] **"Likely Regression" requires all three thresholds.** ≥5 matched requests, ≥20% + 100ms median increase, consistent direction in ≥3/5 comparisons. Below that: "Difference Observed" only.
-  - _Status:_ **Deferred to M3.** The server-side classifier (`Report::classify_change()`) is not yet implemented. Until it exists, the UI must never assert a verdict stronger than "Difference observed" for a single comparison (enforced in `dashboard.js` `classifyDelta`).
-  - _Verify (target):_ `Report::classify_change()` checks all three before returning `likely_regression`.
+  - _Status:_ **Server-side classifier shipped.** `Report::classify_change()` enforces all three thresholds and `Report::describe_change()` renders constitution-compliant verdict text; both are unit-tested. The dashboard *display* of the verdict is the remaining piece — until it lands, the UI must not assert a verdict stronger than "Difference observed" for a single comparison (enforced in `dashboard.js` `classifyDelta`).
+  - _Verify:_ `Report::classify_change()` checks all three before returning `likely_regression` (`ReportClassifyTest`).
 
 - [ ] **Route-matched comparison, not URL-based.** Baselines match by route fingerprint (route class + frontend/admin + anon/auth + cache state), not raw URL string.
-  - _Status:_ **Deferred to M3.** `Profiler::route_fingerprint()` / `Report::match_baseline()` do not exist yet; comparison currently keys on the stored `route_key` string.
-  - _Verify (target):_ `Report::match_baseline()` uses `Profiler::route_fingerprint()`, not `$_SERVER['REQUEST_URI']`.
+  - _Status:_ **Shipped.** `Report::route_fingerprint()` + `match_samples()` + `compare_route()` exist; `Storage::get_route_comparison_samples()` and `GET /v1/regression` wire them to stored data. (`match_baseline()` was realized as `compare_route()`.) Comparison no longer keys on raw URL.
+  - _Verify:_ `Report::compare_route()` fingerprints via `route_fingerprint()`, not `$_SERVER['REQUEST_URI']` (`ReportFingerprintTest`).
 
 ## Infrastructure
 

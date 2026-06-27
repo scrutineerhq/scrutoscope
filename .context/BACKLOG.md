@@ -58,3 +58,15 @@ Connect the cron inventory to actual profiler data. The profiler already capture
 - [ ] Screenshot preparation
 - [ ] Security audit — activation flow, cookie handling, CSRF, nonce validation
 - [ ] wp.org submission
+
+## Direction (not scheduled) — Core-developer troubleshooting
+
+Exploratory direction, not committed scope. The pitch: serve people troubleshooting **WordPress core itself** (not plugins) by breaking open the single "core" attribution bucket. **Hard constraint:** every item below must obey the Constitution's output boundary — *aggregates only, never contents.* Object-cache inspection is explicitly out (D42). If any of this ships, attribution comes first; it's the foundation the rest renders on.
+
+- **Subsystem attribution (foundation).** Map a core callback's file to a subsystem (`class-wp-query.php` → Query, `option.php` → Options/autoload, `l10n.php` → i18n, `block-*.php` → Blocks, `rest-api/*` → REST) so "core 180ms" becomes "Query 40ms, i18n 22ms, Blocks 18ms." Mostly a path→subsystem lookup over data already captured.
+- **Cross-build comparison.** Compare the same route across WP builds / PHP versions (the route fingerprint already records both). **Design note:** build/version is a *comparison axis*, NOT a fingerprint dimension — folding it into the match key would stop trunk and 6.7 profiles from matching. It's a second baseline strategy alongside the shipped recent-vs-older window. Stretch: stamp the core git SHA when WP runs from a checkout → bisect a regression to a commit.
+- **Boot-sequence breakdown.** Split pre-plugin `bootstrap_ns` into phases (textdomain load, must-use, drop-ins) — the part a core dev actually cares about.
+- **Dev-signal surfacing.** Hook `deprecated_function_run` / `deprecated_hook_run` / `doing_it_wrong` and attach the call site (aggregate count + location, not values).
+- **i18n JIT visibility.** Surface `_load_textdomain_just_in_time` triggers (which textdomain, which hook) — a real core perf topic, tappable via textdomain-load hooks without wrapping every `__()`.
+
+Deliberately **excluded**: object-cache instrumentation (D42), any query-value/content inspection (D41).
