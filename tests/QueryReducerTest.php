@@ -102,4 +102,40 @@ class QueryReducerTest extends TestCase {
 			array( 'SELECT * FROM wp_posts WHERE post_title = \'My Secret Page\' ORDER BY post_date' ),
 		);
 	}
+
+	/**
+	 * Edge cases that previously under-reported tables or leaked non-table
+	 * tokens (comments, comma joins, qualified names, OUTFILE, @vars).
+	 *
+	 * @dataProvider edgeCaseProvider
+	 *
+	 * @param string $sql      Input query.
+	 * @param string $expected Expected reduced output.
+	 */
+	public function test_edge_cases( $sql, $expected ) {
+		$this->assertSame( $expected, QueryReducer::reduce( $sql ) );
+	}
+
+	/**
+	 * @return array<int, array{0: string, 1: string}>
+	 */
+	public function edgeCaseProvider() {
+		return array(
+			// Comments must not be tokenized as verbs/tables.
+			array( "SELECT * FROM wp_posts -- WHERE secret = 'x'", 'SELECT wp_posts' ),
+			array( "SELECT a FROM wp_users /* DROP_TABLE evil */ JOIN wp_posts ON a = b", 'SELECT wp_users, wp_posts' ),
+			array( "# leading hash\nSELECT id FROM wp_options WHERE k = 'v'", 'SELECT wp_options' ),
+			// Comma joins capture every table, skipping aliases.
+			array( 'SELECT * FROM a, b, c', 'SELECT a, b, c' ),
+			array( 'SELECT * FROM users u, posts p', 'SELECT users, posts' ),
+			// STRAIGHT_JOIN is table-preceding.
+			array( 'SELECT * FROM wp_a STRAIGHT_JOIN wp_b ON wp_a.id = wp_b.id', 'SELECT wp_a, wp_b' ),
+			// Schema-qualified names keep the table, drop the schema.
+			array( 'SELECT * FROM mydb.wp_posts', 'SELECT wp_posts' ),
+			array( 'SELECT * FROM `mydb`.`wp_posts`', 'SELECT wp_posts' ),
+			// INTO OUTFILE/DUMPFILE path and @vars are never treated as tables.
+			array( "SELECT * FROM wp_x INTO OUTFILE '/tmp/secret.csv'", 'SELECT wp_x' ),
+			array( 'SELECT id INTO @myvar FROM wp_posts', 'SELECT wp_posts' ),
+		);
+	}
 }
