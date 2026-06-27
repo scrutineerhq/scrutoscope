@@ -23,8 +23,10 @@ class CallStack {
 	 *   - id              (string)  Unique frame identifier.
 	 *   - start_ns        (int)     hrtime start.
 	 *   - children_time_ns (int)    Sum of direct children's wall time.
+	 *   - mem_start       (int)     memory_get_usage() at push.
+	 *   - children_mem    (int)     Sum of direct children's inclusive memory.
 	 *
-	 * @var array<int, array{id: string, start_ns: int, children_time_ns: int}>
+	 * @var array<int, array>
 	 */
 	private $stack = array();
 
@@ -40,12 +42,15 @@ class CallStack {
 	 *
 	 * @param string $frame_id  Unique callback identifier.
 	 * @param int    $start_ns  Monotonic nanosecond timestamp.
+	 * @param int    $mem_start memory_get_usage() at frame start.
 	 */
-	public function push( $frame_id, $start_ns ) {
+	public function push( $frame_id, $start_ns, $mem_start = 0 ) {
 		$this->stack[] = array(
 			'id'               => $frame_id,
 			'start_ns'         => $start_ns,
 			'children_time_ns' => 0,
+			'mem_start'        => $mem_start,
+			'children_mem'     => 0,
 		);
 	}
 
@@ -54,11 +59,12 @@ class CallStack {
 	 *
 	 * Adds this frame's inclusive time to the parent frame's children_time_ns.
 	 *
-	 * @param string $frame_id  Expected frame identifier (for sanity).
-	 * @param int    $end_ns    Monotonic nanosecond timestamp.
-	 * @return array{id: string, start_ns: int, end_ns: int, inclusive_ns: int, exclusive_ns: int}|null
+	 * @param string   $frame_id  Expected frame identifier (for sanity).
+	 * @param int      $end_ns    Monotonic nanosecond timestamp.
+	 * @param int|null $mem_end   memory_get_usage() at frame end (null to skip).
+	 * @return array|null
 	 */
-	public function pop( $frame_id, $end_ns ) {
+	public function pop( $frame_id, $end_ns, $mem_end = null ) {
 		if ( empty( $this->stack ) ) {
 			return null;
 		}
@@ -72,18 +78,29 @@ class CallStack {
 			$exclusive_ns = 0;
 		}
 
-		// Attribute this frame's wall time to the parent.
+		// Memory accounting mirrors time. Inclusive memory is this frame's
+		// net delta; exclusive subtracts the children's inclusive deltas so the
+		// per-source totals are additive instead of double-counting nested
+		// allocations. Deltas may be negative (memory freed) — not clamped,
+		// because a negative Observed Memory Delta is meaningful.
+		$inclusive_mem = ( null === $mem_end ) ? 0 : $mem_end - $frame['mem_start'];
+		$exclusive_mem = $inclusive_mem - $frame['children_mem'];
+
+		// Attribute this frame's wall time and memory to the parent.
 		$parent_idx = count( $this->stack ) - 1;
 		if ( $parent_idx >= 0 ) {
 			$this->stack[ $parent_idx ]['children_time_ns'] += $inclusive_ns;
+			$this->stack[ $parent_idx ]['children_mem']     += $inclusive_mem;
 		}
 
 		$result = array(
-			'id'           => $frame['id'],
-			'start_ns'     => $frame['start_ns'],
-			'end_ns'       => $end_ns,
-			'inclusive_ns' => $inclusive_ns,
-			'exclusive_ns' => $exclusive_ns,
+			'id'            => $frame['id'],
+			'start_ns'      => $frame['start_ns'],
+			'end_ns'        => $end_ns,
+			'inclusive_ns'  => $inclusive_ns,
+			'exclusive_ns'  => $exclusive_ns,
+			'inclusive_mem' => $inclusive_mem,
+			'exclusive_mem' => $exclusive_mem,
 		);
 
 		$this->trace[] = $result;

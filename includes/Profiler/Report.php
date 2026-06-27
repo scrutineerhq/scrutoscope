@@ -34,46 +34,56 @@ class Report {
 
 			if ( ! isset( $by_source[ $key ] ) ) {
 				$by_source[ $key ] = array(
-					'type'         => $attr['type'],
-					'slug'         => $attr['slug'],
-					'name'         => $attr['name'],
-					'exclusive_ns' => 0,
-					'inclusive_ns' => 0,
-					'call_count'   => 0,
-					'memory_delta' => 0,
-					'callbacks'    => array(),
+					'type'             => $attr['type'],
+					'slug'             => $attr['slug'],
+					'name'             => $attr['name'],
+					'exclusive_ns'     => 0,
+					'inclusive_ns'     => 0,
+					'call_count'       => 0,
+					'memory_delta'     => 0,
+					'memory_exclusive' => 0,
+					'callbacks'        => array(),
 				);
 			}
 
+			// Inclusive memory delta (includes nested allocations).
 			$mem_delta = $timing['memory_after'] - $timing['memory_before'];
+			// Exclusive memory delta (nested allocations subtracted) — additive
+			// across sources. Falls back to the inclusive delta for legacy data
+			// captured before exclusive memory accounting existed.
+			$mem_excl = isset( $timing['memory_exclusive'] ) ? $timing['memory_exclusive'] : $mem_delta;
 
-			$by_source[ $key ]['exclusive_ns'] += $timing['exclusive_ns'];
-			$by_source[ $key ]['inclusive_ns'] += $timing['inclusive_ns'];
-			$by_source[ $key ]['memory_delta'] += $mem_delta;
+			$by_source[ $key ]['exclusive_ns']     += $timing['exclusive_ns'];
+			$by_source[ $key ]['inclusive_ns']     += $timing['inclusive_ns'];
+			$by_source[ $key ]['memory_delta']     += $mem_delta;
+			$by_source[ $key ]['memory_exclusive'] += $mem_excl;
 			++$by_source[ $key ]['call_count'];
 
 			// Per-callback detail.
 			$cb_key = $timing['identity'];
 			if ( ! isset( $by_source[ $key ]['callbacks'][ $cb_key ] ) ) {
 				$by_source[ $key ]['callbacks'][ $cb_key ] = array(
-					'callback'     => $timing['callback'],
-					'tag'          => $timing['tag'],
-					'priority'     => $timing['priority'],
-					'exclusive_ns' => 0,
-					'inclusive_ns' => 0,
-					'call_count'   => 0,
-					'memory_delta' => 0,
+					'callback'         => $timing['callback'],
+					'tag'              => $timing['tag'],
+					'priority'         => $timing['priority'],
+					'exclusive_ns'     => 0,
+					'inclusive_ns'     => 0,
+					'call_count'       => 0,
+					'memory_delta'     => 0,
+					'memory_exclusive' => 0,
 				);
 			}
 
-			$by_source[ $key ]['callbacks'][ $cb_key ]['exclusive_ns'] += $timing['exclusive_ns'];
-			$by_source[ $key ]['callbacks'][ $cb_key ]['inclusive_ns'] += $timing['inclusive_ns'];
-			$by_source[ $key ]['callbacks'][ $cb_key ]['memory_delta'] += $mem_delta;
+			$by_source[ $key ]['callbacks'][ $cb_key ]['exclusive_ns']     += $timing['exclusive_ns'];
+			$by_source[ $key ]['callbacks'][ $cb_key ]['inclusive_ns']     += $timing['inclusive_ns'];
+			$by_source[ $key ]['callbacks'][ $cb_key ]['memory_delta']     += $mem_delta;
+			$by_source[ $key ]['callbacks'][ $cb_key ]['memory_exclusive'] += $mem_excl;
 			++$by_source[ $key ]['callbacks'][ $cb_key ]['call_count'];
 
-			// Track total allocated memory (only positive deltas = actual allocations).
-			if ( $mem_delta > 0 ) {
-				$total_mem_allocated += $mem_delta;
+			// Total allocated memory uses EXCLUSIVE positive deltas so nested
+			// allocations are counted once, not once per enclosing frame.
+			if ( $mem_excl > 0 ) {
+				$total_mem_allocated += $mem_excl;
 			}
 
 			$total_excl_ns += $timing['exclusive_ns'];

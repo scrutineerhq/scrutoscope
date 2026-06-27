@@ -134,7 +134,7 @@ class Instrumentor {
 			$mem_before = memory_get_usage();
 			$start_ns   = hrtime( true );
 
-			$call_stack->push( $frame_id, $start_ns );
+			$call_stack->push( $frame_id, $start_ns, $mem_before );
 
 			try {
 				$result = call_user_func_array( $original, $args );
@@ -142,21 +142,22 @@ class Instrumentor {
 				$end_ns    = hrtime( true );
 				$mem_after = memory_get_usage();
 
-				$frame = $call_stack->pop( $frame_id, $end_ns );
+				$frame = $call_stack->pop( $frame_id, $end_ns, $mem_after );
 
 				$timings[] = array(
-					'tag'           => $tag,
-					'priority'      => $priority,
-					'callback'      => $label,
-					'identity'      => $identity,
-					'attribution'   => $attribution,
-					'start_ns'      => $start_ns,
-					'end_ns'        => $end_ns,
-					'inclusive_ns'  => $frame ? $frame['inclusive_ns'] : ( $end_ns - $start_ns ),
-					'exclusive_ns'  => $frame ? $frame['exclusive_ns'] : ( $end_ns - $start_ns ),
-					'memory_before' => $mem_before,
-					'memory_after'  => $mem_after,
-					'threw'         => true,
+					'tag'              => $tag,
+					'priority'         => $priority,
+					'callback'         => $label,
+					'identity'         => $identity,
+					'attribution'      => $attribution,
+					'start_ns'         => $start_ns,
+					'end_ns'           => $end_ns,
+					'inclusive_ns'     => $frame ? $frame['inclusive_ns'] : ( $end_ns - $start_ns ),
+					'exclusive_ns'     => $frame ? $frame['exclusive_ns'] : ( $end_ns - $start_ns ),
+					'memory_before'    => $mem_before,
+					'memory_after'     => $mem_after,
+					'memory_exclusive' => $frame ? $frame['exclusive_mem'] : ( $mem_after - $mem_before ),
+					'threw'            => true,
 				);
 
 				throw $e;
@@ -165,21 +166,22 @@ class Instrumentor {
 			$end_ns    = hrtime( true );
 			$mem_after = memory_get_usage();
 
-			$frame = $call_stack->pop( $frame_id, $end_ns );
+			$frame = $call_stack->pop( $frame_id, $end_ns, $mem_after );
 
 			$timings[] = array(
-				'tag'           => $tag,
-				'priority'      => $priority,
-				'callback'      => $label,
-				'identity'      => $identity,
-				'attribution'   => $attribution,
-				'start_ns'      => $start_ns,
-				'end_ns'        => $end_ns,
-				'inclusive_ns'  => $frame ? $frame['inclusive_ns'] : ( $end_ns - $start_ns ),
-				'exclusive_ns'  => $frame ? $frame['exclusive_ns'] : ( $end_ns - $start_ns ),
-				'memory_before' => $mem_before,
-				'memory_after'  => $mem_after,
-				'threw'         => false,
+				'tag'              => $tag,
+				'priority'         => $priority,
+				'callback'         => $label,
+				'identity'         => $identity,
+				'attribution'      => $attribution,
+				'start_ns'         => $start_ns,
+				'end_ns'           => $end_ns,
+				'inclusive_ns'     => $frame ? $frame['inclusive_ns'] : ( $end_ns - $start_ns ),
+				'exclusive_ns'     => $frame ? $frame['exclusive_ns'] : ( $end_ns - $start_ns ),
+				'memory_before'    => $mem_before,
+				'memory_after'     => $mem_after,
+				'memory_exclusive' => $frame ? $frame['exclusive_mem'] : ( $mem_after - $mem_before ),
+				'threw'            => false,
 			);
 
 			return $result;
