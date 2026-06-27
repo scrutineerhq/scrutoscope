@@ -58,6 +58,23 @@ test('route drill-down opens the profile table and Back returns', async ({ page 
   await expect(page.locator('#scrutinizer-route-filter')).toBeVisible({ timeout: 15000 });
 });
 
+test('profile detail opens and the timeline tab renders without errors', async ({ page }) => {
+  test.setTimeout(90000); // large legacy profiles take a moment to render
+  await page.goto(DASH, { waitUntil: 'networkidle' });
+  await page.click('#scrutinizer-home-profiles');
+  await expect(page.locator('tbody tr').first()).toBeVisible({ timeout: 15000 });
+  await page.locator('tbody tr').first().click();
+  // Open a profile via its "View" action (not a row click).
+  await page.locator('#scrutinizer-route-detail a:has-text("View"), #scrutinizer-profile-table a:has-text("View")')
+    .first().click({ timeout: 15000 });
+  await expect(page.locator('.scrutinizer-pin-toolbar, .scrutinizer-tabs').first()).toBeVisible({ timeout: 25000 });
+  // Timeline tab is lazy-loaded; it must render (the page-error fixture guards
+  // against the asset-src crash class).
+  await page.locator('.scrutinizer-tab[data-tab="timeline"]').first().click();
+  await page.waitForTimeout(2500);
+  await expect(page.locator('.scrutinizer-tab[data-tab="timeline"]').first()).toHaveClass(/active/);
+});
+
 test('route detail shows a regression verdict banner', async ({ page }) => {
   await page.goto(DASH, { waitUntil: 'networkidle' });
   await page.click('#scrutinizer-home-profiles');

@@ -3160,7 +3160,9 @@
 		for ( var i = 0; i < assetList.length; i++ ) {
 			var a      = assetList[ i ];
 			var attr   = a.attribution || {};
-			var srcUrl = a.src || '';
+			// A registered asset's src can be a non-string (e.g. boolean true for
+			// bundle-only handles); only treat an actual string as a URL.
+			var srcUrl = ( typeof a.src === 'string' ) ? a.src : '';
 			// Show just the path portion, truncated.
 			var srcDisplay = srcUrl.replace( /^https?:\/\/[^\/]+/, '' );
 
