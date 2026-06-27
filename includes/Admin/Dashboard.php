@@ -340,7 +340,7 @@ class Dashboard {
 	 * @return array List of detected header names (empty if none).
 	 */
 	private static function detect_proxy_headers() {
-		$check   = array(
+		$check = array(
 			'HTTP_CF_CONNECTING_IP' => 'CF-Connecting-IP',
 			'HTTP_X_FORWARDED_FOR'  => 'X-Forwarded-For',
 			'HTTP_X_REAL_IP'        => 'X-Real-IP',

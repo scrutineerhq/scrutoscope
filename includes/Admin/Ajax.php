@@ -1260,8 +1260,8 @@ class Ajax {
 		$exclude_paths = '';
 		if ( isset( $_POST['exclude_paths'] ) ) {
 			// Sanitize each line individually, strip empty lines.
-			$raw   = sanitize_textarea_field( wp_unslash( $_POST['exclude_paths'] ) );
-			$lines = array_filter( array_map( 'trim', explode( "\n", $raw ) ) );
+			$raw           = sanitize_textarea_field( wp_unslash( $_POST['exclude_paths'] ) );
+			$lines         = array_filter( array_map( 'trim', explode( "\n", $raw ) ) );
 			$exclude_paths = implode( "\n", $lines );
 		}
 
@@ -1276,5 +1276,4 @@ class Ajax {
 			)
 		);
 	}
-
 }

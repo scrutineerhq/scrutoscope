@@ -319,7 +319,11 @@ class Storage {
 			return null;
 		}
 
-		// Try gzip decompression first (new format).
+		// Try gzip decompression first (new format). Legacy rows are stored
+		// uncompressed, so gzuncompress() emits a warning and returns false on
+		// them; the silence is intentional and the false-return fallback below
+		// handles that case cleanly.
+		// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
 		$json = @gzuncompress( $raw );
 
 		if ( false === $json ) {
