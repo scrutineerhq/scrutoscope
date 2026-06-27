@@ -58,6 +58,17 @@ test('route drill-down opens the profile table and Back returns', async ({ page 
   await expect(page.locator('#scrutinizer-route-filter')).toBeVisible({ timeout: 15000 });
 });
 
+test('route detail shows a regression verdict banner', async ({ page }) => {
+  await page.goto(DASH, { waitUntil: 'networkidle' });
+  await page.click('#scrutinizer-home-profiles');
+  await expect(page.locator('tbody tr').first()).toBeVisible({ timeout: 15000 });
+  await page.locator('tbody tr').first().click();
+  // The banner loads via AJAX; any verdict (incl. insufficient_data) is valid.
+  const banner = page.locator('#scrutinizer-route-regression');
+  await expect(banner).toBeVisible({ timeout: 15000 });
+  await expect(banner).toHaveClass(/verdict-(likely_regression|difference_observed|within_noise|insufficient_data)/);
+});
+
 test('settings render and a toggle saves', async ({ page }) => {
   await page.goto(DASH, { waitUntil: 'networkidle' });
   await page.click('#scrutinizer-home-settings');
