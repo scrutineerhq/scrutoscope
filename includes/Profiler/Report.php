@@ -27,6 +27,7 @@ class Report {
 		$by_source           = array();
 		$total_excl_ns       = 0;
 		$total_mem_allocated = 0;
+		$core_subsystems     = array();
 
 		foreach ( $raw_timings as $timing ) {
 			$attr = $timing['attribution'];
@@ -87,7 +88,32 @@ class Report {
 			}
 
 			$total_excl_ns += $timing['exclusive_ns'];
+
+			// Core-developer view: break the single "core" bucket into WordPress
+			// subsystems (Query, i18n, Blocks, REST...). Aggregate only — a
+			// label + time + count, never file paths or values.
+			if ( 'core' === $attr['type'] ) {
+				$sub = ( isset( $attr['subsystem'] ) && '' !== $attr['subsystem'] ) ? $attr['subsystem'] : 'Core (other)';
+				if ( ! isset( $core_subsystems[ $sub ] ) ) {
+					$core_subsystems[ $sub ] = array(
+						'subsystem'    => $sub,
+						'exclusive_ns' => 0,
+						'call_count'   => 0,
+					);
+				}
+				$core_subsystems[ $sub ]['exclusive_ns'] += $timing['exclusive_ns'];
+				++$core_subsystems[ $sub ]['call_count'];
+			}
 		}
+
+		// Sort the core subsystem breakdown by exclusive time (desc).
+		$core_subsystems = array_values( $core_subsystems );
+		usort(
+			$core_subsystems,
+			function ( $a, $b ) {
+				return $b['exclusive_ns'] <=> $a['exclusive_ns'];
+			}
+		);
 
 		// Sort sources by exclusive time descending.
 		uasort(
@@ -153,6 +179,7 @@ class Report {
 					: 0,
 			),
 			'sources'            => array_values( $by_source ),
+			'core_subsystems'    => $core_subsystems,
 			'trace'              => $call_stack_trace,
 			'request'            => array(
 				'url'         => isset( $request_metadata['url'] ) ? $request_metadata['url'] : '',
