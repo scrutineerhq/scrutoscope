@@ -31,3 +31,9 @@ debug.log
 
 # PHPUnit
 .phpunit.result.cache
+
+# Playwright browser QA (e2e/)
+/test-results/
+/playwright-report/
+/e2e/.auth/
+/e2e/.artifacts/

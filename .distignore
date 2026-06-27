@@ -3,6 +3,9 @@
 .git/
 .github/
 tests/
+e2e/
+test-results/
+playwright-report/
 node_modules/
 vendor/
 
@@ -16,6 +19,7 @@ composer.json
 composer.lock
 package.json
 package-lock.json
+playwright.config.js
 phpunit.xml.dist
 CONTRIBUTING.md
 Gruntfile.js
