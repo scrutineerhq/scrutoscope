@@ -13,6 +13,7 @@ namespace Scrutinizer\Api;
 
 use Scrutinizer\Profiler\Storage;
 use Scrutinizer\Profiler\Report;
+use Scrutinizer\Profiler\Regression;
 
 /**
  * Registers and handles REST API routes.
@@ -608,13 +609,7 @@ class RestApi {
 		self::log_access( '/v1/regression' );
 
 		$route_key = (string) $request->get_param( 'route' );
-		$current   = (int) $request->get_param( 'current' );
-		$baseline  = (int) $request->get_param( 'baseline' );
-		$current   = $current > 0 ? $current : 10;
-		$baseline  = $baseline > 0 ? $baseline : 10;
-
-		$samples = Storage::get_route_comparison_samples( $route_key, $current, $baseline );
-		$data    = array_merge( array( 'route' => $route_key ), Report::regression_summary( $samples ) );
+		$data      = array_merge( array( 'route' => $route_key ), Regression::for_route( $route_key ) );
 
 		return new \WP_REST_Response( Sanitizer::sanitize( $data ), 200 );
 	}

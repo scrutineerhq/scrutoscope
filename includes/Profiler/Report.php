@@ -412,13 +412,62 @@ class Report {
 	 * @return array{verdict: string, median_baseline_ns: int, median_current_ns: int, delta_ns: int, pct_change: float, sample_count: array{baseline: int, current: int}, direction_slower: int}
 	 */
 	public static function classify_change( array $baseline_ns, array $current_ns ) {
-		$nb = count( $baseline_ns );
-		$nc = count( $current_ns );
-
 		$median_baseline = self::median( $baseline_ns );
 		$median_current  = self::median( $current_ns );
-		$delta_ns        = $median_current - $median_baseline;
-		$pct             = ( $median_baseline > 0 ) ? ( $delta_ns / $median_baseline ) : 0.0;
+		$slower          = self::direction_slower_count( $baseline_ns, $current_ns );
+
+		return self::build_verdict(
+			$median_baseline,
+			$median_current,
+			count( $baseline_ns ),
+			count( $current_ns ),
+			$slower
+		);
+	}
+
+	/**
+	 * Classify a change from two duration histograms (the long-term aggregate).
+	 *
+	 * Same thresholds and direction logic as classify_change(), but the medians
+	 * and quantiles are read from merged histograms rather than raw samples — so
+	 * the comparison can reach across windows that outlive the profile TTL.
+	 *
+	 * @param int[] $baseline_hist Baseline window histogram.
+	 * @param int[] $current_hist  Current window histogram.
+	 * @return array Same shape as classify_change().
+	 */
+	public static function classify_histograms( $baseline_hist, $current_hist ) {
+		$nb              = RouteStats::total( $baseline_hist );
+		$nc              = RouteStats::total( $current_hist );
+		$median_baseline = RouteStats::quantile( $baseline_hist, 0.50 );
+		$median_current  = RouteStats::quantile( $current_hist, 0.50 );
+
+		$slower = 0;
+		foreach ( array( 0.10, 0.30, 0.50, 0.70, 0.90 ) as $q ) {
+			if ( RouteStats::quantile( $current_hist, $q ) > RouteStats::quantile( $baseline_hist, $q ) ) {
+				++$slower;
+			}
+		}
+
+		return self::build_verdict( $median_baseline, $median_current, $nb, $nc, $slower );
+	}
+
+	/**
+	 * Apply the three-threshold gate to pre-computed medians/counts/direction.
+	 *
+	 * Shared by classify_change() (raw samples) and classify_histograms()
+	 * (aggregate), so the verdict rules live in exactly one place.
+	 *
+	 * @param int $median_baseline Baseline median (ns).
+	 * @param int $median_current  Current median (ns).
+	 * @param int $nb              Baseline sample count.
+	 * @param int $nc              Current sample count.
+	 * @param int $slower          How many of five quantiles moved slower (0-5).
+	 * @return array Verdict result.
+	 */
+	private static function build_verdict( $median_baseline, $median_current, $nb, $nc, $slower ) {
+		$delta_ns = $median_current - $median_baseline;
+		$pct      = ( $median_baseline > 0 ) ? ( $delta_ns / $median_baseline ) : 0.0;
 
 		$result = array(
 			'verdict'            => 'within_noise',
@@ -439,11 +488,10 @@ class Report {
 			return $result;
 		}
 
-		// Threshold 3 input: how many of 5 quantiles moved slower.
-		$slower                     = self::direction_slower_count( $baseline_ns, $current_ns );
 		$result['direction_slower'] = $slower;
 
-		// Threshold 2: median increase >= 20% AND >= 100ms.
+		// Threshold 2 (magnitude): median increase >= 20% AND >= 100ms.
+		// Threshold 3 (direction): a majority of quantiles moved slower.
 		$meets_magnitude = ( $delta_ns >= self::REGRESSION_MIN_DELTA_NS ) && ( $pct >= self::REGRESSION_MIN_PCT );
 		$meets_direction = ( $slower >= self::REGRESSION_MIN_DIRECTION );
 
@@ -452,7 +500,6 @@ class Report {
 			return $result;
 		}
 
-		// Past the noise floor but not all three thresholds: difference observed.
 		$within_noise      = ( abs( $delta_ns ) < self::NOISE_DELTA_NS ) && ( abs( $pct ) < self::NOISE_PCT );
 		$result['verdict'] = $within_noise ? 'within_noise' : 'difference_observed';
 
