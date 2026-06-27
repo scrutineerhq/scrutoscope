@@ -316,6 +316,14 @@
 			showHomeView();
 		} );
 
+		// Accessibility: Escape closes the settings view (mirrors the Back
+		// button) when it is the active view.
+		$( document ).on( 'keydown', function( e ) {
+			if ( 'Escape' === e.key && 'settings' === currentView ) {
+				showHomeView();
+			}
+		} );
+
 		// Stop button.
 		$( document ).on( 'click', '#scrutinizer-stop', stopProfiling );
 
