@@ -2215,18 +2215,6 @@
 	white-space: nowrap;
 }
 
-.verdict-regression {
-	background: #fcf0f1;
-	color: #d63638;
-	border: 1px solid #d63638;
-}
-
-.verdict-improvement {
-	background: #edfaef;
-	color: #00a32a;
-	border: 1px solid #00a32a;
-}
-
 .verdict-slower {
 	background: #fef8ee;
 	color: #996800;

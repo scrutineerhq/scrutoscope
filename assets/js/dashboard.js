@@ -4638,20 +4638,27 @@
 	}
 
 	/**
-	 * Classify a delta into regression / improvement / noise.
+	 * Classify a single A/B delta into a direction label.
 	 *
-	 * Thresholds: >20% AND >100ms = regression. <-20% AND <-100ms = improvement.
-	 * Everything else is within noise.
+	 * A lone comparison is ONE observation, so it can never satisfy the
+	 * "Likely Regression" gate (>=5 matched requests, >=20% + 100ms median
+	 * increase, consistent direction in >=3/5 comparisons — see INVARIANTS /
+	 * D7). The strongest claim a single pair supports is "Difference observed"
+	 * with a direction; it must never say "Regression". When the statistical
+	 * gate exists server-side, the stronger verdict can be surfaced from there.
+	 *
+	 * Thresholds here are purely for emphasis/styling, not for a verdict:
+	 * >20% AND >100ms is a notable difference; <10ms AND <5% is within noise.
 	 */
 	function classifyDelta( deltaMs, pctChange ) {
-		if ( deltaMs > 100 && pctChange > 20 ) {
-			return { cls: 'verdict-regression', label: '⚠ Regression' };
-		}
-		if ( deltaMs < -100 && pctChange < -20 ) {
-			return { cls: 'verdict-improvement', label: '✓ Improvement' };
-		}
 		if ( Math.abs( deltaMs ) < 10 && Math.abs( pctChange ) < 5 ) {
 			return { cls: 'verdict-noise', label: '≈ Within noise' };
+		}
+		if ( deltaMs > 100 && pctChange > 20 ) {
+			return { cls: 'verdict-slower', label: '↑ Difference observed (slower)' };
+		}
+		if ( deltaMs < -100 && pctChange < -20 ) {
+			return { cls: 'verdict-faster', label: '↓ Difference observed (faster)' };
 		}
 		if ( deltaMs > 0 ) {
 			return { cls: 'verdict-slower', label: '↑ Slower' };
@@ -4857,10 +4864,11 @@
 				cls = deltaNs < 0 ? 'scrutinizer-delta-negative' : 'scrutinizer-delta-positive';
 				deltaStr = ( deltaMs > 0 ? '+' : '' ) + deltaMs.toFixed( 1 ) + ' ms';
 				deltaStr += ' (' + ( pctChange > 0 ? '+' : '' ) + pctChange.toFixed( 1 ) + '%)';
-				if ( deltaMs > 100 && pctChange > 20 ) {
-					deltaStr += ' · regression';
-				} else if ( deltaMs < -100 && pctChange < -20 ) {
-					deltaStr += ' · improved';
+				if ( ( deltaMs > 100 && pctChange > 20 ) || ( deltaMs < -100 && pctChange < -20 ) ) {
+					// A single comparison never supports a "regression" verdict
+					// (see classifyDelta / INVARIANTS). The signed delta already
+					// shows direction; label it only as a difference observed.
+					deltaStr += ' · difference observed';
 				} else {
 					deltaStr += deltaNs > 0 ? ' slower' : ' faster';
 				}
