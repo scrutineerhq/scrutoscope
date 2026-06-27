@@ -25,9 +25,6 @@ Thumbs.db
 .env
 .env.local
 
-# Composer
-composer.lock
-
 # Debug
 *.log
 debug.log
