@@ -31,3 +31,6 @@ composer.lock
 # Debug
 *.log
 debug.log
+
+# PHPUnit
+.phpunit.result.cache
