@@ -522,7 +522,9 @@ class RestApi {
 		// Send the status code.
 		status_header( $result->get_status() );
 
-		// Output raw text — no JSON wrapping.
+		// Output raw text — no JSON wrapping. This is a text/plain response of
+		// plugin-generated prompt content; HTML-escaping would corrupt it.
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		echo $result->get_data();
 
 		return true;

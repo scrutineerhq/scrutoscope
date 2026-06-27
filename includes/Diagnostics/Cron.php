@@ -316,7 +316,8 @@ class Cron {
 				return $ref->getFileName();
 			}
 		} catch ( \ReflectionException $e ) {
-			// Callback might not be resolvable.
+			// Callback isn't reflectable; report the source as unknown.
+			return false;
 		}
 
 		return false;

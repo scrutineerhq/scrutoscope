@@ -334,6 +334,9 @@ class Commands {
 		$file = Utils\get_flag_value( $assoc_args, 'file', '' );
 
 		if ( $file ) {
+			// WP-CLI command writing an export to an operator-specified path;
+			// direct file I/O is appropriate here, not the WP_Filesystem API.
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
 			$bytes = file_put_contents( $file, $json . "\n" );
 			if ( false === $bytes ) {
 				WP_CLI::error( "Could not write to {$file}." );
@@ -529,7 +532,8 @@ class Commands {
 					\WP_CLI::log( 'Already removed.' );
 					return;
 				}
-				if ( ! unlink( $mu_file ) ) {
+				wp_delete_file( $mu_file );
+				if ( file_exists( $mu_file ) ) {
 					\WP_CLI::error( "Failed to remove {$mu_file}" );
 				}
 				\WP_CLI::success( 'Early boot timer removed.' );
