@@ -543,6 +543,51 @@ class Report {
 	}
 
 	/**
+	 * Render a classify_change()/compare_route() result as a human-readable,
+	 * constitution-compliant sentence.
+	 *
+	 * Uses the exact approved terminology — "Likely Regression" and "Difference
+	 * observed" — and never causal language ("caused", "slow"). Pure function;
+	 * safe for both the dashboard and the API.
+	 *
+	 * @param array $result A classify_change() result.
+	 * @return string One-line description.
+	 */
+	public static function describe_change( array $result ) {
+		$verdict  = isset( $result['verdict'] ) ? $result['verdict'] : 'insufficient_data';
+		$delta_ns = isset( $result['delta_ns'] ) ? (int) $result['delta_ns'] : 0;
+		$delta_ms = round( $delta_ns / 1e6, 1 );
+		$pct      = isset( $result['pct_change'] ) ? round( $result['pct_change'] * 100, 1 ) : 0.0;
+		$count    = isset( $result['sample_count']['current'] ) ? (int) $result['sample_count']['current'] : 0;
+
+		$signed_ms  = ( $delta_ms >= 0 ? '+' : '' ) . $delta_ms . 'ms';
+		$signed_pct = ( $pct >= 0 ? '+' : '' ) . $pct . '%';
+
+		switch ( $verdict ) {
+			case 'likely_regression':
+				return sprintf(
+					'Likely Regression: %s (%s) median across %d matched requests.',
+					$signed_ms,
+					$signed_pct,
+					$count
+				);
+			case 'difference_observed':
+				$direction = ( $delta_ms >= 0 ) ? 'slower' : 'faster';
+				return sprintf(
+					'Difference observed: %s (%s) median, %s — not enough to call a regression.',
+					$signed_ms,
+					$signed_pct,
+					$direction
+				);
+			case 'within_noise':
+				return 'Within noise — no meaningful difference in server request duration.';
+			case 'insufficient_data':
+			default:
+				return 'Not enough matched requests yet to compare.';
+		}
+	}
+
+	/**
 	 * Integer median of a list of values.
 	 *
 	 * @param int[] $values Values.

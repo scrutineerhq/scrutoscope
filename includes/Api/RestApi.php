@@ -12,6 +12,7 @@
 namespace Scrutinizer\Api;
 
 use Scrutinizer\Profiler\Storage;
+use Scrutinizer\Profiler\Report;
 
 /**
  * Registers and handles REST API routes.
@@ -64,6 +65,22 @@ class RestApi {
 				'methods'             => 'GET',
 				'callback'            => array( __CLASS__, 'handle_routes' ),
 				'permission_callback' => array( __CLASS__, 'check_permission' ),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/regression',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( __CLASS__, 'handle_regression' ),
+				'permission_callback' => array( __CLASS__, 'check_permission' ),
+				'args'                => array(
+					'route' => array(
+						'required'          => true,
+						'sanitize_callback' => 'sanitize_text_field',
+					),
+				),
 			)
 		);
 
@@ -575,6 +592,44 @@ class RestApi {
 		}
 
 		return new \WP_REST_Response( Sanitizer::sanitize( array( 'routes' => $routes ) ), 200 );
+	}
+
+	/**
+	 * Handle GET /v1/regression.
+	 *
+	 * Compares a route's recent window of profiles against an older baseline
+	 * window and returns the classifier verdict plus a human-readable,
+	 * constitution-compliant message.
+	 *
+	 * @param \WP_REST_Request $request  Request object.
+	 * @return \WP_REST_Response
+	 */
+	public static function handle_regression( $request ) {
+		self::log_access( '/v1/regression' );
+
+		$route_key = (string) $request->get_param( 'route' );
+		$current   = (int) $request->get_param( 'current' );
+		$baseline  = (int) $request->get_param( 'baseline' );
+		$current   = $current > 0 ? $current : 10;
+		$baseline  = $baseline > 0 ? $baseline : 10;
+
+		$samples = Storage::get_route_comparison_samples( $route_key, $current, $baseline );
+		$result  = Report::compare_route( $samples['baseline'], $samples['current'] );
+
+		$delta_ns = isset( $result['delta_ns'] ) ? (int) $result['delta_ns'] : 0;
+
+		$data = array(
+			'route'        => $route_key,
+			'fingerprint'  => isset( $result['fingerprint'] ) ? $result['fingerprint'] : '',
+			'verdict'      => isset( $result['verdict'] ) ? $result['verdict'] : 'insufficient_data',
+			'message'      => Report::describe_change( $result ),
+			'delta_ns'     => $delta_ns,
+			'delta_ms'     => round( $delta_ns / 1e6, 1 ),
+			'pct_change'   => isset( $result['pct_change'] ) ? $result['pct_change'] : 0,
+			'sample_count' => isset( $result['sample_count'] ) ? $result['sample_count'] : array(),
+		);
+
+		return new \WP_REST_Response( Sanitizer::sanitize( $data ), 200 );
 	}
 
 	/**

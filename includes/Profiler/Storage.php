@@ -1082,6 +1082,75 @@ class Storage {
 	}
 
 	/**
+	 * Pull recent profiles for a route split into a current window and an older
+	 * baseline window, as lightweight pseudo-profiles ready for
+	 * Report::compare_route().
+	 *
+	 * Only the columns the route fingerprint and classifier need are read
+	 * (route_class, user_role, duration_ns) — the heavy profile_data blob is
+	 * never decoded, so this stays cheap to call on demand.
+	 *
+	 * @param string $route_key      Route grouping key.
+	 * @param int    $current_limit  Size of the recent window (newest rows).
+	 * @param int    $baseline_limit Size of the older baseline window.
+	 * @return array{current: array<int, array>, baseline: array<int, array>}
+	 */
+	public static function get_route_comparison_samples( $route_key, $current_limit = 10, $baseline_limit = 10 ) {
+		global $wpdb;
+
+		$current_limit  = max( 0, (int) $current_limit );
+		$baseline_limit = max( 0, (int) $baseline_limit );
+		$total          = $current_limit + $baseline_limit;
+		$empty          = array(
+			'current'  => array(),
+			'baseline' => array(),
+		);
+
+		if ( '' === (string) $route_key || $total <= 0 ) {
+			return $empty;
+		}
+
+		$table = self::table_name();
+
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT route_class, user_role, duration_ns FROM {$table} WHERE route_key = %s ORDER BY captured_at DESC LIMIT %d",
+				$route_key,
+				$total
+			),
+			ARRAY_A
+		);
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		if ( ! is_array( $rows ) ) {
+			return $empty;
+		}
+
+		$profiles = array_map(
+			function ( $row ) {
+				return array(
+					'request' => array(
+						'route_class' => isset( $row['route_class'] ) ? $row['route_class'] : '',
+						'user_role'   => isset( $row['user_role'] ) ? $row['user_role'] : 'anonymous',
+					),
+					'summary' => array(
+						'duration_ns' => isset( $row['duration_ns'] ) ? (int) $row['duration_ns'] : 0,
+					),
+				);
+			},
+			$rows
+		);
+
+		// Rows are newest-first: the recent window is the head, the baseline is
+		// the older tail.
+		return array(
+			'current'  => array_slice( $profiles, 0, $current_limit ),
+			'baseline' => array_slice( $profiles, $current_limit, $baseline_limit ),
+		);
+	}
+
+	/**
 	 * Delete all profiles, optionally keeping pinned ones.
 	 *
 	 * @param bool $keep_pinned  Whether to preserve pinned profiles.
