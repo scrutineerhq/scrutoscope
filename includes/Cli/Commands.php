@@ -289,7 +289,7 @@ class Commands {
 				$id,
 				$profile['request_method'],
 				$profile['request_url'],
-				round( $profile['profile_data']['summary']['duration_ms'], 1 )
+				round( isset( $profile['profile_data']['summary']['duration_ms'] ) ? $profile['profile_data']['summary']['duration_ms'] : 0, 1 )
 			),
 			$assoc_args
 		);

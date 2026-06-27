@@ -963,7 +963,7 @@ class Ajax {
 			array_filter(
 				$shares,
 				function ( $s ) use ( $share_id ) {
-					return $s['id'] !== $share_id;
+					return ! isset( $s['id'] ) || $s['id'] !== $share_id;
 				}
 			)
 		);

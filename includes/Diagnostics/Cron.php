@@ -206,8 +206,8 @@ class Cron {
 		foreach ( $schedules as $name => $data ) {
 			$out[] = array(
 				'name'     => $name,
-				'interval' => (int) $data['interval'],
-				'display'  => $data['display'],
+				'interval' => isset( $data['interval'] ) ? (int) $data['interval'] : 0,
+				'display'  => isset( $data['display'] ) ? $data['display'] : $name,
 			);
 		}
 		usort(

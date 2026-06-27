@@ -1054,7 +1054,7 @@ class Storage {
 			);
 		}
 
-		return $results;
+		return is_array( $results ) ? $results : array();
 	}
 
 	/**
