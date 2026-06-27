@@ -452,6 +452,9 @@ class Profiler {
 			'ajax_action'        => ( defined( 'DOING_AJAX' ) && DOING_AJAX && isset( $_REQUEST['action'] ) ) ? sanitize_text_field( wp_unslash( $_REQUEST['action'] ) ) : '',
 			'response_status'    => (int) $response_status,
 			'label'              => self::generate_route_label(),
+			// True when the per-invocation cap was hit on a very heavy request;
+			// the captured detail is then partial (guards against OOM).
+			'truncated'          => $this->instrumentor->is_truncated(),
 		);
 
 		try {
