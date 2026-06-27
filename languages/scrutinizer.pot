@@ -1,24 +1,503 @@
 # Copyright (C) 2026 The Scrutineer Project
-# This file is distributed under the GPL-2.0-or-later license.
-#
-# Translation template for the Scrutinizer plugin.
-#
-# Regenerate (extracts both PHP __() and JS wp.i18n.__() strings):
-#   wp i18n make-pot . languages/scrutinizer.pot
-#
-# Then compile per-locale catalogs, including the JS .json files that
-# wp_set_script_translations() loads:
-#   wp i18n make-json languages/ --no-purge
-#
+# This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Scrutinizer\n"
-"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/scrutinizer\n"
+"Project-Id-Version: Scrutinizer 1.0.3\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/app\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-06-26T00:00:00+00:00\n"
+"POT-Creation-Date: 2026-06-27T07:06:31+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: scrutinizer\n"
+
+#. Plugin Name of the plugin
+#: scrutinizer.php
+#: includes/Admin/Dashboard.php:32
+#: includes/Admin/Dashboard.php:33
+#: includes/Admin/Dashboard.php:161
+msgid "Scrutinizer"
+msgstr ""
+
+#. Plugin URI of the plugin
+#: scrutinizer.php
+msgid "https://scrutineer.dev/scrutinizer"
+msgstr ""
+
+#. Description of the plugin
+#: scrutinizer.php
+msgid "WordPress Performance Profiler — See where your server request duration is spent."
+msgstr ""
+
+#. Author of the plugin
+#: scrutinizer.php
+msgid "The Scrutineer Project"
+msgstr ""
+
+#. Author URI of the plugin
+#: scrutinizer.php
+msgid "https://scrutineer.dev"
+msgstr ""
+
+#: includes/Admin/Ajax.php:110
+msgid "Permission denied."
+msgstr ""
+
+#: includes/Admin/Ajax.php:130
+msgid "Profiling session created. Visit the activation URL to begin capturing."
+msgstr ""
+
+#: includes/Admin/Ajax.php:152
+msgid "Profiling session stopped."
+msgstr ""
+
+#: includes/Admin/Ajax.php:216
+msgid "No route specified."
+msgstr ""
+
+#: includes/Admin/Ajax.php:247
+msgid "Background profiling enabled."
+msgstr ""
+
+#: includes/Admin/Ajax.php:248
+msgid "Background profiling disabled."
+msgstr ""
+
+#: includes/Admin/Ajax.php:264
+msgid "Only capturing successful (200) requests."
+msgstr ""
+
+#: includes/Admin/Ajax.php:265
+msgid "Capturing all requests regardless of status."
+msgstr ""
+
+#: includes/Admin/Ajax.php:279
+msgid "Query profiling is managed by wp-config.php and cannot be toggled here."
+msgstr ""
+
+#: includes/Admin/Ajax.php:290
+msgid "Query profiling enabled. New captures will include SQL timing."
+msgstr ""
+
+#: includes/Admin/Ajax.php:291
+msgid "Query profiling disabled. New captures will skip SQL timing."
+msgstr ""
+
+#: includes/Admin/Ajax.php:307
+#: includes/Admin/Ajax.php:354
+#: includes/Admin/Ajax.php:385
+#: includes/Admin/Ajax.php:424
+#: includes/Admin/Ajax.php:489
+#: includes/Admin/Ajax.php:563
+#: includes/Admin/Ajax.php:627
+msgid "No profile ID specified."
+msgstr ""
+
+#: includes/Admin/Ajax.php:316
+#: includes/Admin/Ajax.php:363
+#: includes/Admin/Ajax.php:394
+#: includes/Api/RestApi.php:594
+msgid "Profile not found."
+msgstr ""
+
+#: includes/Admin/Ajax.php:433
+msgid "Failed to delete profile."
+msgstr ""
+
+#: includes/Admin/Ajax.php:439
+msgid "Profile deleted."
+msgstr ""
+
+#: includes/Admin/Ajax.php:452
+#: includes/Admin/Ajax.php:527
+#: includes/Admin/Ajax.php:591
+msgid "No profile IDs specified."
+msgstr ""
+
+#: includes/Admin/Ajax.php:461
+msgid "Failed to delete profiles."
+msgstr ""
+
+#. translators: %d: number of deleted profiles
+#: includes/Admin/Ajax.php:470
+#, php-format
+msgid "%d profile(s) deleted."
+msgstr ""
+
+#: includes/Admin/Ajax.php:508
+msgid "Failed to pin profile."
+msgstr ""
+
+#: includes/Admin/Ajax.php:514
+msgid "Profile pinned."
+msgstr ""
+
+#: includes/Admin/Ajax.php:536
+msgid "Failed to pin profiles."
+msgstr ""
+
+#. translators: %d: number of pinned profiles
+#: includes/Admin/Ajax.php:545
+#, php-format
+msgid "%d profile(s) pinned."
+msgstr ""
+
+#: includes/Admin/Ajax.php:572
+msgid "Failed to unpin profile."
+msgstr ""
+
+#: includes/Admin/Ajax.php:578
+msgid "Profile unpinned."
+msgstr ""
+
+#: includes/Admin/Ajax.php:600
+msgid "Failed to unpin profiles."
+msgstr ""
+
+#. translators: %d: number of unpinned profiles
+#: includes/Admin/Ajax.php:609
+#, php-format
+msgid "%d profile(s) unpinned."
+msgstr ""
+
+#: includes/Admin/Ajax.php:646
+msgid "Failed to update annotation."
+msgstr ""
+
+#: includes/Admin/Ajax.php:652
+msgid "Annotation updated."
+msgstr ""
+
+#: includes/Admin/Ajax.php:671
+msgid "Two profile IDs required."
+msgstr ""
+
+#: includes/Admin/Ajax.php:680
+#: includes/Api/RestApi.php:715
+msgid "One or both profiles not found."
+msgstr ""
+
+#: includes/Admin/Ajax.php:884
+#: includes/Admin/Ajax.php:956
+msgid "Missing share ID."
+msgstr ""
+
+#: includes/Admin/Ajax.php:974
+msgid "Share record removed."
+msgstr ""
+
+#: includes/Admin/Ajax.php:996
+msgid "Profile retention disabled — profiles kept indefinitely."
+msgstr ""
+
+#. translators: %d: number of days
+#: includes/Admin/Ajax.php:999
+#, php-format
+msgid "Profiles will auto-expire after %d days."
+msgstr ""
+
+#: includes/Admin/Ajax.php:1017
+msgid "Proxy headers will be trusted for client IP detection."
+msgstr ""
+
+#: includes/Admin/Ajax.php:1018
+msgid "Only REMOTE_ADDR will be used for client IP detection."
+msgstr ""
+
+#: includes/Admin/Ajax.php:1047
+msgid "Background profiling filters saved."
+msgstr ""
+
+#: includes/Admin/Dashboard.php:116
+msgid "Start Profiling"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:117
+#: includes/Admin/Dashboard.php:315
+msgid "Stop Profiling"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:118
+msgid "Profiling active…"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:119
+msgid "No profiles captured yet. Browse your site to capture requests."
+msgstr ""
+
+#: includes/Admin/Dashboard.php:120
+msgid "Activation URL copied to clipboard."
+msgstr ""
+
+#: includes/Admin/Dashboard.php:121
+msgid "An error occurred. Please try again."
+msgstr ""
+
+#: includes/Admin/Dashboard.php:122
+msgid "Delete this profile?"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:123
+msgid "Server Request Duration"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:124
+msgid "Exclusive Callback Time"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:125
+msgid "Inclusive Callback Time"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:126
+msgid "Call Count"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:127
+msgid "Unattributed / Bootstrap"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:128
+#: includes/Admin/Dashboard.php:266
+msgid "← Back to profiles"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:129
+msgid "Pin"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:130
+msgid "Unpin"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:131
+msgid "Note"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:132
+msgid "Tags"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:133
+msgid "History"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:134
+#: includes/Admin/Dashboard.php:257
+msgid "Routes"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:135
+msgid "Compare"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:136
+msgid "Pinned"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:137
+msgid "All Profiles"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:138
+msgid "All routes"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:139
+msgid "Filter by tag…"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:140
+msgid "No profiles match the current filters."
+msgstr ""
+
+#: includes/Admin/Dashboard.php:141
+msgid "Compare Selected"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:142
+msgid "← Back to history"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:143
+msgid "faster"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:144
+msgid "slower"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:145
+msgid "no change"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:163
+#: includes/Admin/Dashboard.php:195
+#: includes/Admin/Dashboard.php:276
+msgid "Settings"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:170
+msgid "Activation URL"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:171
+msgid "Visit this URL to start capturing profiles. The link expires in 5 minutes."
+msgstr ""
+
+#: includes/Admin/Dashboard.php:175
+msgid "Copy"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:185
+#: includes/Admin/Dashboard.php:230
+msgid "Capture Profile"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:186
+msgid "Measure a page and see where time goes"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:190
+msgid "View Profiles"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:191
+msgid "Browse captured measurements"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:196
+msgid "Background measurement, sample rate, query profiling"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:201
+msgid "Will this slow down my site?"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:202
+msgid "Non-profiled requests add under 2 ms. Profiled requests record full traces. The sample rate controls how often the full cost is paid."
+msgstr ""
+
+#: includes/Admin/Dashboard.php:205
+msgid "Does any data leave my server?"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:206
+msgid "No. All profiling data stays in your WordPress database. Sharing a report is optional and end-to-end encrypted — the relay server cannot read your data."
+msgstr ""
+
+#: includes/Admin/Dashboard.php:209
+msgid "Who can see this?"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:210
+msgid "Only administrators. Scrutinizer is invisible to logged-out visitors and non-admin users."
+msgstr ""
+
+#: includes/Admin/Dashboard.php:213
+msgid "Need help?"
+msgstr ""
+
+#. translators: %s: GitHub Issues URL
+#: includes/Admin/Dashboard.php:218
+#, php-format
+msgid "File an issue at %s — bug reports, feature requests, and questions are all welcome."
+msgstr ""
+
+#: includes/Admin/Dashboard.php:228
+msgid "← Back"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:231
+msgid "Choose what to measure. The target page opens in a new tab — browse around, then come back to this window and click Stop Profiling when done."
+msgstr ""
+
+#: includes/Admin/Dashboard.php:235
+msgid "Admin Dashboard"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:236
+msgid "Measure admin page performance"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:237
+#: includes/Admin/Dashboard.php:243
+msgid "Opens in new tab"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:241
+msgid "Logged-in Frontend"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:242
+msgid "Measure pages while logged in"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:247
+msgid "Visitor View"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:248
+msgid "Measure what visitors experience"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:249
+msgid "Requires incognito window"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:259
+msgid "Loading…"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:274
+msgid "← Back to dashboard"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:281
+msgid "Profiling"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:285
+msgid "Session Status"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:291
+msgid "Profiling active"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:293
+msgid "Profiling inactive"
+msgstr ""
+
+#. translators: %s: session ID
+#: includes/Admin/Dashboard.php:304
+#, php-format
+msgid "Session: %s"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:324
+msgid "Storage"
+msgstr ""
+
+#: includes/Admin/Dashboard.php:330
+msgid "Network"
+msgstr ""
+
+#: includes/Api/ApplicationPassword.php:201
+msgid "This Scrutineer API key has expired. Please generate a new one from the Scrutineer dashboard."
+msgstr ""
+
+#: includes/Api/ApplicationPassword.php:211
+msgid "This API key is scoped to Scrutineer endpoints only."
+msgstr ""
+
+#: includes/Api/RestApi.php:135
+msgid "You do not have permission to access Scrutineer data."
+msgstr ""
+
+#: scrutinizer.php:186
+msgid "Profiling active — click to view dashboard"
+msgstr ""
