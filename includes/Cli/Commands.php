@@ -9,6 +9,7 @@ namespace Scrutinizer\Cli;
 
 use Scrutinizer\Profiler\Storage;
 use Scrutinizer\Profiler\Session;
+use Scrutinizer\Api\Sanitizer;
 use WP_CLI;
 use WP_CLI\Utils;
 
@@ -328,6 +329,18 @@ class Commands {
 
 		if ( ! $profile ) {
 			WP_CLI::error( "Profile {$id} not found." );
+		}
+
+		// An export is the artifact people attach to public bug reports, so it
+		// must run the same read-time hard sanitization (D26) as the share/REST
+		// paths — including the free-text note/tags columns.
+		if ( isset( $profile['profile_data'] ) ) {
+			$profile['profile_data'] = Sanitizer::sanitize( $profile['profile_data'] );
+		}
+		foreach ( array( 'note', 'tags', 'request_url' ) as $field ) {
+			if ( isset( $profile[ $field ] ) ) {
+				$profile[ $field ] = Sanitizer::sanitize( $profile[ $field ] );
+			}
 		}
 
 		$json = wp_json_encode( $profile, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES );

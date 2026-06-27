@@ -87,7 +87,15 @@ spl_autoload_register(
 		}
 
 		$relative = substr( $class_name, $len );
-		$file     = SCRUTINIZER_DIR . 'includes/' . str_replace( '\\', '/', $relative ) . '.php';
+
+		// Only plain namespaced class paths (letters, digits, underscore,
+		// backslash). Reject anything with '.' or '/' that a crafted class name
+		// could use to escape the includes/ directory.
+		if ( ! preg_match( '/^[A-Za-z0-9_\\\\]+$/', $relative ) ) {
+			return;
+		}
+
+		$file = SCRUTINIZER_DIR . 'includes/' . str_replace( '\\', '/', $relative ) . '.php';
 
 		if ( file_exists( $file ) ) {
 			require $file;
@@ -130,6 +138,16 @@ function scrutinizer_deactivate() {
 	\Scrutinizer\Profiler\Session::stop_session();
 	\Scrutinizer\Api\ApplicationPassword::deactivate();
 	wp_clear_scheduled_hook( 'scrutinizer_cleanup_profiles' );
+
+	// Remove the early-boot mu-plugin so no Scrutineer code keeps running on
+	// every request while the plugin is deactivated. It is opt-in and can be
+	// reinstalled after reactivation.
+	if ( defined( 'WPMU_PLUGIN_DIR' ) ) {
+		$mu_file = WPMU_PLUGIN_DIR . '/scrutinizer-early.php';
+		if ( file_exists( $mu_file ) ) {
+			wp_delete_file( $mu_file );
+		}
+	}
 }
 register_deactivation_hook( __FILE__, 'scrutinizer_deactivate' );
 

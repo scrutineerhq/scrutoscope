@@ -112,7 +112,14 @@ class Sanitizer {
 		if ( is_array( $data ) ) {
 			$clean = array();
 			foreach ( $data as $key => $value ) {
-				$clean[ $key ] = self::sanitize( $value );
+				// Defense-in-depth: reduce any "sql" string to verb + table on
+				// every output path (write-time reduction has regressed twice),
+				// so a residual full query can never leak through a share/export.
+				if ( 'sql' === $key && is_string( $value ) ) {
+					$clean[ $key ] = QueryReducer::reduce( $value );
+				} else {
+					$clean[ $key ] = self::sanitize( $value );
+				}
 			}
 			return $clean;
 		}

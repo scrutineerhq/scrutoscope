@@ -56,6 +56,11 @@ class ApplicationPassword {
 		// Capture the app password item when WP authenticates via one.
 		add_action( 'application_password_did_authenticate', array( __CLASS__, 'capture_authenticated_password' ), 10, 2 );
 		add_action( 'rest_api_init', array( __CLASS__, 'enforce_scope' ) );
+		// A Scrutineer credential is REST-only. Reject any non-REST use at both
+		// auth entry points — registered UNCONDITIONALLY (not on rest_api_init,
+		// which never fires for XML-RPC), so the XML-RPC/login paths are covered.
+		add_filter( 'authenticate', array( __CLASS__, 'reject_non_rest_use' ), 30 );
+		add_filter( 'determine_current_user', array( __CLASS__, 'reject_non_rest_user_id' ), 30 );
 		add_action( 'scrutinizer_cleanup_passwords', array( __CLASS__, 'garbage_collect' ) );
 
 		// Schedule garbage collection — only check on admin/cron to avoid
@@ -164,7 +169,54 @@ class ApplicationPassword {
 	 * 2. Check route — only allow scrutinizer/v1/* endpoints.
 	 */
 	public static function enforce_scope() {
+		// REST scope + TTL. The non-REST block (XML-RPC etc.) is registered
+		// unconditionally in register(); see reject_non_rest_use() / _user_id().
 		add_filter( 'rest_pre_dispatch', array( __CLASS__, 'check_scope_and_ttl' ), 10, 3 );
+	}
+
+	/**
+	 * Block non-REST use of a Scrutineer credential on the `authenticate` path.
+	 *
+	 * @param mixed $user Authenticated WP_User, WP_Error, or null.
+	 * @return mixed The user, or a WP_Error for non-REST Scrutineer auth.
+	 */
+	public static function reject_non_rest_use( $user ) {
+		if ( ! ( $user instanceof \WP_User ) || ! self::is_non_rest_scrutineer_auth() ) {
+			return $user;
+		}
+
+		return new \WP_Error(
+			'scrutinizer_rest_only',
+			__( 'This Scrutineer API key is restricted to the Scrutineer REST API.', 'scrutinizer' ),
+			array( 'status' => 403 )
+		);
+	}
+
+	/**
+	 * Block non-REST use of a Scrutineer credential on the
+	 * `determine_current_user` path (Basic-Auth header via XML-RPC etc.).
+	 *
+	 * @param int|false $user_id Resolved user ID, or false.
+	 * @return int|false Unchanged, or false to drop the auth.
+	 */
+	public static function reject_non_rest_user_id( $user_id ) {
+		if ( ! $user_id || ! self::is_non_rest_scrutineer_auth() ) {
+			return $user_id;
+		}
+		return false;
+	}
+
+	/**
+	 * Whether the current auth is a Scrutineer credential being used outside
+	 * the REST API.
+	 *
+	 * @return bool
+	 */
+	private static function is_non_rest_scrutineer_auth() {
+		if ( defined( 'REST_REQUEST' ) && REST_REQUEST ) {
+			return false;
+		}
+		return self::is_scrutineer_auth();
 	}
 
 	/**
