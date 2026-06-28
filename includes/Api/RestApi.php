@@ -397,8 +397,17 @@ class RestApi {
 	/**
 	 * Handle GET /v1/manifest.
 	 *
-	 * Returns a machine-readable API manifest for AI agent auto-discovery.
-	 * Public endpoint — no authentication required.
+	 * Returns a machine-readable API manifest for AI agent auto-discovery. This
+	 * is the ONLY public (unauthenticated) REST route, and intentionally so: it
+	 * lets an agent discover the API shape before it has a credential.
+	 *
+	 * It exposes only non-sensitive, static API metadata — the schema version,
+	 * the name/description, the auth scheme, the base URL, and the list of
+	 * tools/endpoints with their parameters. It deliberately does NOT expose any
+	 * site data, environment details, or the exact patch version (only the major
+	 * series, to limit targeted fingerprinting). Keep it this sparse: any new
+	 * field must be static, public-safe API metadata, never anything derived
+	 * from the site's content, config, or profiling data.
 	 *
 	 * @param \WP_REST_Request $request  Request object.
 	 * @return \WP_REST_Response
