@@ -130,3 +130,39 @@ The warnings were the visible symptom, but the real problem is deeper: even with
 
 **Don't:** Bind multiple delegated handlers to the same CSS class selector when they handle different concerns.
 **Do:** Use attribute selectors to namespace: `[data-sort-table]` for detail-view tables, `[data-sort]` for list-view tables. The CSS class stays shared for styling, but event delegation targets only the relevant elements.
+
+---
+
+### Triggering WP-Cron manually needs the right lock — or no lock
+
+**What happened:** Testing cron profiling, I curled `wp-cron.php?doing_wp_cron=<random>` to fire due events. Nothing ran. `wp-cron.php` compares the `doing_wp_cron` GET param against the `doing_cron` transient lock; a mismatched value makes it exit early without running anything. And `wp cron event run` (WP-CLI) defines `WP_CLI`, which the profiler excludes from sampling — so that path is never profiled either.
+
+**Don't:** Pass an arbitrary `doing_wp_cron` value, and don't expect `wp cron event run` to produce a profiled cron request.
+**Do:** Clear any held lock (`wp transient delete doing_cron`), then hit `wp-cron.php` with **no** `doing_wp_cron` param — it sets the lock itself and runs due events. That's a real `DOING_CRON` web request the profiler can sample.
+
+---
+
+### Single cron events vanish from `_get_cron_array()` once they fire
+
+**What happened:** Cron profiling aggregates per-hook cost and filters to scheduled cron hooks via `_get_cron_array()`. Reading the array at the **end** of the request missed single events entirely — `wp_schedule_single_event()` entries are removed from the cron array the moment they run, so by `stop()` they're gone. Recurring hooks survived (they get rescheduled), so the bug only showed for one-shot events.
+
+**Don't:** Read `_get_cron_array()` at request end to decide which hooks were cron events.
+**Do:** Snapshot the scheduled hook names at profiler **start** (before they fire) and use that snapshot at the end. `Profiler::$cron_hooks` captures it in `start()` when `DOING_CRON`.
+
+---
+
+### Regex backslashes inside the relay's `VIEWER_HTML` template literal need doubling
+
+**What happened:** The relay's entire client SPA lives inside one big template-literal string (`VIEWER_HTML = ` + backticks). A trace-cleanup `replace(/#\d+/g, '')` silently did nothing — the template literal evaluates `\d` to `d` (an unrecognized escape drops the backslash), so the **served** regex became `/#d+/g` and never matched. Standalone the regex was fine; only inside the template literal did it break.
+
+**Don't:** Write `\d`, `\s`, `\b`, `\w` (etc.) in a regex literal that sits inside the `VIEWER_HTML` template string.
+**Do:** Double-escape so the served code is right: `/#\\d+/g` in source → `/#\d+/g` at runtime. Existing viewer regexes (e.g. `/\\b\\w/g`) already do this — match the convention.
+
+---
+
+### Synthetic test fixtures can hide real data-shape mismatches
+
+**What happened:** The relay's Trace tab showed everything under "other" with no names. The fix read `item._hook` / `item._callback` — and an e2e test with a fixture that *had* those fields passed green. But the real trace item has no such fields: it carries one composite id, `"callback@hook:priority"` (e.g. `wp_initialize_theme_preview_hooks@plugins_loaded:1`). The made-up fixture matched the *wrong* code instead of reality, so the test "passed" while production was broken.
+
+**Don't:** Hand-author fixtures from what the code expects. A green test against an invented shape proves nothing.
+**Do:** Capture a real profile (`wp eval` a stored one on the host) to learn the actual field shape, then build fixtures from that. The relay parses the composite `id` (split on the last `@`, then the last `:`) — there are no separate hook/callback fields.
