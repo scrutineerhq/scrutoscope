@@ -2067,6 +2067,8 @@
 		html += '<div class="scrutinizer-tab-content" id="scrutinizer-tab-metadata" style="display:none">';
 		html += renderMetadata( request, summary );
 		html += renderDevSignals( data.dev_signals || [] );
+		html += renderTextdomainJit( data.textdomain_jit || [] );
+		html += renderBootPhases( data.boot_phases || [] );
 		html += '</div>';
 
 		$( '#scrutinizer-detail-content' ).html( html );
@@ -2809,6 +2811,65 @@
 				'<td>' + esc( s.version || '—' ) + '</td>' +
 				'<td>' + esc( s.source || '—' ) + '</td>' +
 				'<td class="num">' + ( s.count || 0 ).toLocaleString() + '</td>' +
+				'</tr>';
+		}
+		html += '</tbody></table></div>';
+		return html;
+	}
+
+	// Surface textdomains WordPress had to load just-in-time (a translation ran
+	// before the textdomain was registered), and the hook each fired on.
+	function renderTextdomainJit( loads ) {
+		if ( ! loads || 0 === loads.length ) {
+			return '';
+		}
+		var html = '<div class="scrutinizer-dev-signals">';
+		html += '<h4>' + esc( __( 'Just-in-time translations', 'scrutinizer' ) ) + '</h4>';
+		html += '<p class="description">' + esc( __( 'Textdomains WordPress loaded on demand because a translation function ran before the textdomain was registered. Loading translations on the right hook avoids this.', 'scrutinizer' ) ) + '</p>';
+		html += '<table class="scrutinizer-subsystem-table"><thead><tr>' +
+			'<th>' + esc( __( 'Textdomain', 'scrutinizer' ) ) + '</th>' +
+			'<th>' + esc( __( 'Loaded on hook', 'scrutinizer' ) ) + '</th>' +
+			'<th class="num">' + esc( __( 'Count', 'scrutinizer' ) ) + '</th></tr></thead><tbody>';
+		for ( var i = 0; i < loads.length; i++ ) {
+			var l = loads[ i ];
+			html += '<tr>' +
+				'<td><code>' + esc( l.domain ) + '</code></td>' +
+				'<td><code>' + esc( l.hook || '—' ) + '</code></td>' +
+				'<td class="num">' + ( l.count || 0 ).toLocaleString() + '</td>' +
+				'</tr>';
+		}
+		html += '</tbody></table></div>';
+		return html;
+	}
+
+	// Split the pre-plugin bootstrap into the phases we can hook (must-use vs.
+	// active-plugin loading). Time before the early boot timer isn't measurable.
+	function renderBootPhases( phases ) {
+		if ( ! phases || 0 === phases.length ) {
+			return '';
+		}
+		var totalNs = 0;
+		var i;
+		for ( i = 0; i < phases.length; i++ ) {
+			totalNs += phases[ i ].ns || 0;
+		}
+		if ( totalNs <= 0 ) {
+			return '';
+		}
+		var html = '<div class="scrutinizer-dev-signals">';
+		html += '<h4>' + esc( __( 'Boot sequence', 'scrutinizer' ) ) + '</h4>';
+		html += '<p class="description">' + esc( __( 'The pre-plugin bootstrap, split at the points we can hook. Time before the early boot timer (SAPI start, drop-ins) is not measurable.', 'scrutinizer' ) ) + '</p>';
+		html += '<table class="scrutinizer-subsystem-table"><thead><tr>' +
+			'<th>' + esc( __( 'Phase', 'scrutinizer' ) ) + '</th>' +
+			'<th class="num">' + esc( __( 'Time', 'scrutinizer' ) ) + '</th>' +
+			'<th class="num">%</th></tr></thead><tbody>';
+		for ( i = 0; i < phases.length; i++ ) {
+			var p   = phases[ i ];
+			var pct = ( ( p.ns || 0 ) / totalNs ) * 100;
+			html += '<tr>' +
+				'<td>' + esc( p.phase ) + '</td>' +
+				'<td class="num">' + ( ( p.ns || 0 ) / 1e6 ).toFixed( 2 ) + ' ms</td>' +
+				'<td class="num">' + pct.toFixed( 1 ) + '%</td>' +
 				'</tr>';
 		}
 		html += '</tbody></table></div>';
