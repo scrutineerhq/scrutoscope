@@ -189,6 +189,7 @@
 		initEarlyBootControls();
 		initEarlyBootBanner();
 		initLightweightControls();
+		initCronProfilingControls();
 		initRetentionControls();
 		initProxySettings();
 	}
@@ -627,6 +628,7 @@
 		$( document ).on( 'change', '#scrutinizer-qp-toggle', toggleQueryProfiling );
 		$( document ).on( 'change', '#scrutinizer-eb-toggle', toggleEarlyBoot );
 		$( document ).on( 'change', '#scrutinizer-lw-toggle', toggleLightweightMode );
+		$( document ).on( 'change', '#scrutinizer-cron-toggle', toggleProfileCron );
 		$( document ).on( 'click', '#scrutinizer-eb-banner-enable', function() {
 			setEarlyBoot( true );
 		} );
@@ -1227,6 +1229,40 @@
 		}, function( response ) {
 			if ( response.success ) {
 				scrutinizerAdmin.lightweightMode = response.data.enabled;
+				showNotice( response.data.message, 'success' );
+			}
+		} );
+	}
+
+	// Cron profiling — sample WP-Cron runs so the Cron tab shows per-hook cost.
+	function initCronProfilingControls() {
+		var isOn = !! scrutinizerAdmin.profileCron;
+
+		var html = '<div class="scrutinizer-qp-controls scrutinizer-cron-controls">';
+		html += '<div class="scrutinizer-qp-header">';
+		html += '<h3>' + __( 'Profile Cron Jobs', 'scrutinizer' ) + '</h3>';
+		html += '<label class="scrutinizer-switch">';
+		html += '<input type="checkbox" id="scrutinizer-cron-toggle" aria-label="' + esc( __( 'Enable cron profiling', 'scrutinizer' ) ) + '"' + ( isOn ? ' checked' : '' ) + '>';
+		html += '<span class="scrutinizer-switch-slider"></span>';
+		html += '</label>';
+		html += '</div>';
+
+		html += '<p class="scrutinizer-qp-desc">';
+		html += __( 'Sample WP-Cron runs (normally skipped) so the Cron tab can show measured per-hook cost and flag the worst run. Uses your background sample rate.', 'scrutinizer' );
+		html += '</p>';
+
+		$( '.scrutinizer-lw-controls' ).after( html );
+	}
+
+	function toggleProfileCron() {
+		var enabled = $( '#scrutinizer-cron-toggle' ).is( ':checked' );
+		$.post( scrutinizerAdmin.ajaxUrl, {
+			action:  'scrutinizer_toggle_profile_cron',
+			nonce:   scrutinizerAdmin.nonce,
+			enabled: enabled ? 1 : 0
+		}, function( response ) {
+			if ( response.success ) {
+				scrutinizerAdmin.profileCron = response.data.enabled;
 				showNotice( response.data.message, 'success' );
 			}
 		} );
@@ -4052,6 +4088,12 @@
 		html += renderMetricCard( String( summary.overdue || 0 ), __( 'Overdue', 'scrutinizer' ), summary.overdue > 0 ? 'warning' : 'default' );
 		html += '</div>';
 
+		// Cost column is measured from profiled cron runs — nudge if it's off.
+		if ( ! data.profiling_enabled ) {
+			html += '<p style="color:#646970;font-size:13px;margin:0.75rem 0;">' +
+				esc( __( 'Per-hook cost is measured from profiled cron runs. Turn on "Profile cron jobs" in Settings to start measuring.', 'scrutinizer' ) ) + '</p>';
+		}
+
 		// Warnings.
 		if ( warnings.length > 0 ) {
 			html += '<div class="scrutinizer-cron-warnings">';
@@ -4088,6 +4130,7 @@
 		html += sortHeader( __( 'Hook', 'scrutinizer' ), 'hook' );
 		html += sortHeader( __( 'Next Run', 'scrutinizer' ), 'timestamp' );
 		html += '<th>' + __( 'Schedule', 'scrutinizer' ) + '</th>';
+		html += '<th class="numeric">' + __( 'Cost (last run)', 'scrutinizer' ) + '</th>';
 		html += '<th>' + __( 'Source', 'scrutinizer' ) + '</th>';
 		html += '<th>' + __( 'Status', 'scrutinizer' ) + '</th>';
 		html += '</tr></thead>';
@@ -4121,6 +4164,18 @@
 				if ( ev.interval ) {
 					html += ' <span class="scrutinizer-muted">(' + humanInterval( ev.interval ) + ')</span>';
 				}
+			}
+			html += '</td>';
+
+			// Cost — measured exclusive time from profiled cron runs.
+			html += '<td class="numeric">';
+			if ( ev.cost ) {
+				html += esc( String( ev.cost.last_ms ) ) + ' ms';
+				if ( ev.cost.max_ms > ev.cost.last_ms ) {
+					html += ' <span class="scrutinizer-muted" title="' + esc( __( 'Worst measured run', 'scrutinizer' ) ) + '">(peak ' + esc( String( ev.cost.max_ms ) ) + ')</span>';
+				}
+			} else {
+				html += '<span class="scrutinizer-muted">—</span>';
 			}
 			html += '</td>';
 

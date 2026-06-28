@@ -61,6 +61,7 @@ class Ajax {
 		'toggle_query_profiling',
 		'toggle_early_boot',
 		'toggle_lightweight_mode',
+		'toggle_profile_cron',
 		'dismiss_early_boot_banner',
 		'get_api_log',
 		'clear_api_log',
@@ -373,6 +374,23 @@ class Ajax {
 				'message' => $enabled
 					? __( 'Lightweight mode on. New captures record source totals only — no timeline or per-callback trace — for much smaller profiles, safe for always-on production sampling.', 'scrutinizer' )
 					: __( 'Lightweight mode off. New captures include the full timeline and trace.', 'scrutinizer' ),
+			)
+		);
+	}
+
+	/**
+	 * Toggle cron profiling — whether WP-Cron runs are sampled.
+	 */
+	public static function toggle_profile_cron() {
+		$enabled = ! empty( $_POST['enabled'] );
+		update_option( 'scrutinizer_profile_cron', $enabled, true );
+
+		wp_send_json_success(
+			array(
+				'enabled' => $enabled,
+				'message' => $enabled
+					? __( 'Cron profiling on. WP-Cron runs are now sampled (at your background sample rate), so the Cron tab can show per-hook cost.', 'scrutinizer' )
+					: __( 'Cron profiling off. WP-Cron runs are no longer sampled.', 'scrutinizer' ),
 			)
 		);
 	}
@@ -870,6 +888,23 @@ class Ajax {
 	 */
 	public static function get_cron_inventory() {
 		$inventory = \Scrutinizer\Diagnostics\Cron::collect();
+
+		// Attach measured per-hook cost (from profiled cron runs) to each event.
+		$costs = get_option( 'scrutinizer_cron_hook_costs', array() );
+		if ( is_array( $costs ) && ! empty( $inventory['events'] ) && is_array( $inventory['events'] ) ) {
+			foreach ( $inventory['events'] as &$event ) {
+				$hook = isset( $event['hook'] ) ? $event['hook'] : '';
+				if ( $hook && isset( $costs[ $hook ] ) ) {
+					$event['cost'] = array(
+						'last_ms' => round( $costs[ $hook ]['last_ns'] / 1e6, 1 ),
+						'max_ms'  => round( $costs[ $hook ]['max_ns'] / 1e6, 1 ),
+						'runs'    => (int) $costs[ $hook ]['runs'],
+					);
+				}
+			}
+			unset( $event );
+		}
+		$inventory['profiling_enabled'] = (bool) get_option( 'scrutinizer_profile_cron', false );
 
 		wp_send_json_success( $inventory );
 	}

@@ -123,6 +123,7 @@ class Dashboard {
 				'diagnosticsOptIn'     => \Scrutinizer\Api\Diagnostics::OPT_IN_FIELDS,
 				'queryProfiling'       => scrutinizer_query_profiling_state(),
 				'lightweightMode'      => (bool) get_option( 'scrutinizer_lightweight_mode', false ),
+				'profileCron'          => (bool) get_option( 'scrutinizer_profile_cron', false ),
 				'earlyBoot'            => array(
 					'installed' => EarlyBoot::is_installed(),
 					'enabled'   => (bool) get_option( EarlyBoot::OPTION, false ),

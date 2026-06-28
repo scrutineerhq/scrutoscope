@@ -204,8 +204,13 @@ class Profiler {
 			return false;
 		}
 
-		// Don't background-profile WP-CLI, cron, or XML-RPC.
-		if ( defined( 'WP_CLI' ) || defined( 'DOING_CRON' ) || defined( 'XMLRPC_REQUEST' ) ) {
+		// Don't background-profile WP-CLI or XML-RPC.
+		if ( defined( 'WP_CLI' ) || defined( 'XMLRPC_REQUEST' ) ) {
+			return false;
+		}
+
+		// Cron is excluded by default; profile it only when explicitly enabled.
+		if ( defined( 'DOING_CRON' ) && DOING_CRON && ! get_option( 'scrutinizer_profile_cron', false ) ) {
 			return false;
 		}
 
@@ -262,6 +267,86 @@ class Profiler {
 		// Escape regex special chars, then convert * to .* wildcard.
 		$regex = str_replace( '\*', '.*', preg_quote( $pattern, '#' ) );
 		return (bool) preg_match( '#^' . $regex . '$#i', $path );
+	}
+
+	/**
+	 * Record per-hook cost for a profiled WP-Cron run.
+	 *
+	 * Sums the request's exclusive time by hook, keeps only hooks that are real
+	 * scheduled cron events, and updates a small bounded option so the Cron view
+	 * can show per-hook cost and flag the worst run. Aggregate only.
+	 *
+	 * @param array $raw_timings Timing entries from the Instrumentor.
+	 */
+	private static function record_cron_hook_costs( $raw_timings ) {
+		if ( ! function_exists( '_get_cron_array' ) ) {
+			return;
+		}
+		$cron = _get_cron_array();
+		if ( ! is_array( $cron ) ) {
+			return;
+		}
+
+		// Names of all currently scheduled cron hooks.
+		$cron_hooks = array();
+		foreach ( $cron as $events ) {
+			foreach ( array_keys( (array) $events ) as $hook ) {
+				$cron_hooks[ $hook ] = true;
+			}
+		}
+		if ( empty( $cron_hooks ) ) {
+			return;
+		}
+
+		// Exclusive time per cron hook fired this run.
+		$by_hook = array();
+		foreach ( $raw_timings as $t ) {
+			$tag = isset( $t['tag'] ) ? $t['tag'] : '';
+			if ( '' === $tag || ! isset( $cron_hooks[ $tag ] ) ) {
+				continue;
+			}
+			if ( ! isset( $by_hook[ $tag ] ) ) {
+				$by_hook[ $tag ] = array(
+					'ns'    => 0,
+					'calls' => 0,
+				);
+			}
+			$by_hook[ $tag ]['ns']    += (int) $t['exclusive_ns'];
+			$by_hook[ $tag ]['calls'] += 1;
+		}
+		if ( empty( $by_hook ) ) {
+			return;
+		}
+
+		$store = get_option( 'scrutinizer_cron_hook_costs', array() );
+		if ( ! is_array( $store ) ) {
+			$store = array();
+		}
+		$now = time();
+		foreach ( $by_hook as $hook => $data ) {
+			$prev_max       = isset( $store[ $hook ]['max_ns'] ) ? (int) $store[ $hook ]['max_ns'] : 0;
+			$prev_runs      = isset( $store[ $hook ]['runs'] ) ? (int) $store[ $hook ]['runs'] : 0;
+			$store[ $hook ] = array(
+				'last_ns'     => $data['ns'],
+				'last_calls'  => $data['calls'],
+				'max_ns'      => max( $prev_max, $data['ns'] ),
+				'runs'        => $prev_runs + 1,
+				'measured_at' => $now,
+			);
+		}
+
+		// Keep the option bounded — the 50 most recently measured hooks.
+		if ( count( $store ) > 50 ) {
+			uasort(
+				$store,
+				function ( $a, $b ) {
+					return $b['measured_at'] <=> $a['measured_at'];
+				}
+			);
+			$store = array_slice( $store, 0, 50, true );
+		}
+
+		update_option( 'scrutinizer_cron_hook_costs', $store, false );
 	}
 
 	/**
@@ -521,6 +606,10 @@ class Profiler {
 			$raw_timings = $this->instrumentor->get_timings();
 			$trace       = $this->call_stack->get_trace();
 			$report      = Report::compile( $raw_timings, $trace, $metadata );
+
+			if ( defined( 'DOING_CRON' ) && DOING_CRON ) {
+				self::record_cron_hook_costs( $raw_timings );
+			}
 
 			$profile_type = $this->is_background ? 'background' : 'session';
 			Storage::save_profile( $session_id, $report, $profile_type, (int) $response_status );
