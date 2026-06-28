@@ -44,6 +44,24 @@ class CallStack {
 	private $trace = array();
 
 	/**
+	 * Lightweight mode: keep the active stack (so exclusive time is still
+	 * computed for source attribution) but do NOT accumulate the full trace
+	 * tree — the single biggest contributor to stored profile size.
+	 *
+	 * @var bool
+	 */
+	private $lightweight = false;
+
+	/**
+	 * Enable lightweight mode (no trace accumulation).
+	 *
+	 * @param bool $on Whether to skip building the trace.
+	 */
+	public function set_lightweight( $on ) {
+		$this->lightweight = (bool) $on;
+	}
+
+	/**
 	 * Push a new frame onto the stack.
 	 *
 	 * @param string $frame_id  Unique callback identifier.
@@ -109,7 +127,10 @@ class CallStack {
 			'exclusive_mem' => $exclusive_mem,
 		);
 
-		if ( count( $this->trace ) < self::MAX_TRACE ) {
+		// Lightweight mode: the active stack above still ran (so exclusive time
+		// is attributed for source totals), but skip accumulating the trace —
+		// the per-callback tree is ~45% of stored profile size.
+		if ( ! $this->lightweight && count( $this->trace ) < self::MAX_TRACE ) {
 			$this->trace[] = $result;
 		}
 

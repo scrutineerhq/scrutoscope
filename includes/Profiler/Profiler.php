@@ -150,6 +150,14 @@ class Profiler {
 	private $is_background = false;
 
 	/**
+	 * Lightweight capture: skip the per-callback trace tree and the timeline
+	 * (together ~95% of stored profile size), keeping source/attribution totals.
+	 *
+	 * @var bool
+	 */
+	private $lightweight = false;
+
+	/**
 	 * Initialize the profiler. Called early on `plugins_loaded` priority 0.
 	 *
 	 * Checks for a valid profiling session or background sampling.
@@ -278,7 +286,9 @@ class Profiler {
 		$this->phase_markers['profiler_start'] = $this->request_start_ns;
 		$this->phase_memory['profiler_start']  = memory_get_usage();
 
-		$this->call_stack   = new CallStack();
+		$this->call_stack  = new CallStack();
+		$this->lightweight = (bool) get_option( 'scrutinizer_lightweight_mode', false );
+		$this->call_stack->set_lightweight( $this->lightweight );
 		$this->instrumentor = new Instrumentor( $this->call_stack );
 
 		// Instrument all currently registered hooks.
@@ -475,6 +485,7 @@ class Profiler {
 			'url'                => $request_url,
 			'method'             => $request_method,
 			'duration_ns'        => $duration_ns,
+			'lightweight'        => $this->lightweight,
 			'bootstrap_ns'       => ( $this->boot_ns > 0 ) ? max( 0, $this->request_start_ns - $this->boot_ns ) : 0,
 			'boot_phases'        => $this->build_boot_phases(),
 			'route_class'        => $this->route_class,

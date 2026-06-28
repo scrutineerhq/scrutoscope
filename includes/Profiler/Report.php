@@ -22,6 +22,7 @@ class Report {
 	 */
 	public static function compile( $raw_timings, $call_stack_trace, $request_metadata ) {
 		$duration_ns = isset( $request_metadata['duration_ns'] ) ? $request_metadata['duration_ns'] : 0;
+		$lightweight = ! empty( $request_metadata['lightweight'] );
 
 		// Group timings by attribution.
 		$by_source           = array();
@@ -165,6 +166,7 @@ class Report {
 				'breakdown'          => $breakdown,
 				'callback_count'     => count( $raw_timings ),
 				'truncated'          => ! empty( $request_metadata['truncated'] ),
+				'lightweight'        => $lightweight,
 				'source_count'       => count( $by_source ),
 				'query_count'        => isset( $request_metadata['query_count'] ) ? (int) $request_metadata['query_count'] : 0,
 				'http_call_count'    => count( $http_calls ),
@@ -202,7 +204,7 @@ class Report {
 			'boot_phases'        => isset( $request_metadata['boot_phases'] ) ? $request_metadata['boot_phases'] : array(),
 			'autoloaded_options' => isset( $request_metadata['autoloaded_options'] ) ? $request_metadata['autoloaded_options'] : array(),
 			'enqueued_assets'    => isset( $request_metadata['enqueued_assets'] ) ? $request_metadata['enqueued_assets'] : array(),
-			'timeline'           => self::build_timeline( $raw_timings, $duration_ns ),
+			'timeline'           => $lightweight ? array() : self::build_timeline( $raw_timings, $duration_ns ),
 		);
 	}
 

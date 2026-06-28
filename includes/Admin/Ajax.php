@@ -60,6 +60,7 @@ class Ajax {
 		'revoke_api_password',
 		'toggle_query_profiling',
 		'toggle_early_boot',
+		'toggle_lightweight_mode',
 		'dismiss_early_boot_banner',
 		'get_api_log',
 		'clear_api_log',
@@ -357,6 +358,23 @@ class Ajax {
 	public static function dismiss_early_boot_banner() {
 		update_user_meta( get_current_user_id(), 'scrutinizer_early_boot_banner_dismissed', 1 );
 		wp_send_json_success();
+	}
+
+	/**
+	 * Toggle lightweight capture mode (source totals only — no timeline/trace).
+	 */
+	public static function toggle_lightweight_mode() {
+		$enabled = ! empty( $_POST['enabled'] );
+		update_option( 'scrutinizer_lightweight_mode', $enabled, true );
+
+		wp_send_json_success(
+			array(
+				'enabled' => $enabled,
+				'message' => $enabled
+					? __( 'Lightweight mode on. New captures record source totals only — no timeline or per-callback trace — for much smaller profiles, safe for always-on production sampling.', 'scrutinizer' )
+					: __( 'Lightweight mode off. New captures include the full timeline and trace.', 'scrutinizer' ),
+			)
+		);
 	}
 
 	/**
