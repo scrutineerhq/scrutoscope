@@ -158,6 +158,15 @@ class Profiler {
 	private $lightweight = false;
 
 	/**
+	 * Snapshot of scheduled cron hook names, taken at start (when DOING_CRON).
+	 * Single events are removed from the cron array once they fire, so we must
+	 * capture the set before they run to attribute their cost.
+	 *
+	 * @var array<string, bool>
+	 */
+	private $cron_hooks = array();
+
+	/**
 	 * Initialize the profiler. Called early on `plugins_loaded` priority 0.
 	 *
 	 * Checks for a valid profiling session or background sampling.
@@ -278,22 +287,8 @@ class Profiler {
 	 *
 	 * @param array $raw_timings Timing entries from the Instrumentor.
 	 */
-	private static function record_cron_hook_costs( $raw_timings ) {
-		if ( ! function_exists( '_get_cron_array' ) ) {
-			return;
-		}
-		$cron = _get_cron_array();
-		if ( ! is_array( $cron ) ) {
-			return;
-		}
-
-		// Names of all currently scheduled cron hooks.
-		$cron_hooks = array();
-		foreach ( $cron as $events ) {
-			foreach ( array_keys( (array) $events ) as $hook ) {
-				$cron_hooks[ $hook ] = true;
-			}
-		}
+	private function record_cron_hook_costs( $raw_timings ) {
+		$cron_hooks = $this->cron_hooks;
 		if ( empty( $cron_hooks ) ) {
 			return;
 		}
@@ -375,6 +370,19 @@ class Profiler {
 		$this->lightweight = (bool) get_option( 'scrutinizer_lightweight_mode', false );
 		$this->call_stack->set_lightweight( $this->lightweight );
 		$this->instrumentor = new Instrumentor( $this->call_stack );
+
+		// Snapshot scheduled cron hook names before they fire — single events are
+		// removed from the cron array once run, so we capture the set up front.
+		if ( defined( 'DOING_CRON' ) && DOING_CRON && function_exists( '_get_cron_array' ) ) {
+			$cron = _get_cron_array();
+			if ( is_array( $cron ) ) {
+				foreach ( $cron as $events ) {
+					foreach ( array_keys( (array) $events ) as $hook ) {
+						$this->cron_hooks[ $hook ] = true;
+					}
+				}
+			}
+		}
 
 		// Instrument all currently registered hooks.
 		$this->instrumentor->instrument_all();
@@ -608,7 +616,7 @@ class Profiler {
 			$report      = Report::compile( $raw_timings, $trace, $metadata );
 
 			if ( defined( 'DOING_CRON' ) && DOING_CRON ) {
-				self::record_cron_hook_costs( $raw_timings );
+				$this->record_cron_hook_costs( $raw_timings );
 			}
 
 			$profile_type = $this->is_background ? 'background' : 'session';
