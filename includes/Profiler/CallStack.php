@@ -127,7 +127,10 @@ class CallStack {
 			'exclusive_mem' => $exclusive_mem,
 		);
 
-		if ( count( $this->trace ) < self::MAX_TRACE ) {
+		// Lightweight mode: the active stack above still ran (so exclusive time
+		// is attributed for source totals), but skip accumulating the trace —
+		// the per-callback tree is ~45% of stored profile size.
+		if ( ! $this->lightweight && count( $this->trace ) < self::MAX_TRACE ) {
 			$this->trace[] = $result;
 		}
 
