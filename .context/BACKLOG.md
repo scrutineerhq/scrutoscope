@@ -47,8 +47,9 @@ Connect the cron inventory to actual profiler data. The profiler already capture
 ### i18n
 - [x] Generate `.pot` file + `languages/` directory
 - [x] Set up `wp_set_script_translations()` loading; dashboard reads `scrutinizerAdmin.i18n.*`
-- [ ] **Move remaining hard-coded JS dashboard strings into the `scrutinizerAdmin.i18n` localization** (the big remaining sweep — many strings still inline, e.g. "← Back to routes", verdict labels). Best done with review; large mechanical surface.
-- [ ] Wrap any remaining PHP strings in `__()` / `esc_html__()` (templates mostly done)
+- [x] **JS dashboard strings wrapped for translation** — all user-facing JS strings now go through `wp.i18n` `__()`/`sprintf()` (swept incrementally during the timeline/dashboard work; the last block, the Query Profiling details panel, wrapped in the 1.1.0 release prep). Verified: 0 unwrapped inline UI strings remain.
+- [x] PHP strings wrapped in `__()` / `esc_html__()`.
+- [x] `.pot` regenerated (510 msgids, no warnings). JS translation JSON is left to WordPress.org language packs post-release (the standard path) rather than shipping generated `-js.json` files.
 
 ### a11y
 - [x] Escape key closes settings (verified — already works)

@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-06-28T00:10:43+00:00\n"
+"POT-Creation-Date: 2026-06-28T03:32:36+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: scrutinizer\n"
@@ -18,8 +18,8 @@ msgstr ""
 #: scrutinizer.php
 #: includes/Admin/Dashboard.php:32
 #: includes/Admin/Dashboard.php:33
-#: includes/Admin/Dashboard.php:171
-#: assets/js/dashboard.js:2765
+#: includes/Admin/Dashboard.php:177
+#: assets/js/dashboard.js:2847
 msgid "Scrutinizer"
 msgstr ""
 
@@ -43,472 +43,496 @@ msgstr ""
 msgid "https://scrutineer.dev"
 msgstr ""
 
-#: includes/Admin/Ajax.php:113
+#: includes/Admin/Ajax.php:115
 msgid "Permission denied."
 msgstr ""
 
-#: includes/Admin/Ajax.php:133
+#: includes/Admin/Ajax.php:135
 msgid "Profiling session created. Visit the activation URL to begin capturing."
 msgstr ""
 
-#: includes/Admin/Ajax.php:155
+#: includes/Admin/Ajax.php:157
 msgid "Profiling session stopped."
 msgstr ""
 
-#: includes/Admin/Ajax.php:219
-#: includes/Admin/Ajax.php:240
+#: includes/Admin/Ajax.php:221
+#: includes/Admin/Ajax.php:242
 msgid "No route specified."
 msgstr ""
 
-#: includes/Admin/Ajax.php:269
+#: includes/Admin/Ajax.php:271
 msgid "Background profiling enabled."
 msgstr ""
 
-#: includes/Admin/Ajax.php:270
+#: includes/Admin/Ajax.php:272
 msgid "Background profiling disabled."
 msgstr ""
 
-#: includes/Admin/Ajax.php:286
+#: includes/Admin/Ajax.php:288
 msgid "Only capturing successful (200) requests."
 msgstr ""
 
-#: includes/Admin/Ajax.php:287
+#: includes/Admin/Ajax.php:289
 msgid "Capturing all requests regardless of status."
 msgstr ""
 
-#: includes/Admin/Ajax.php:301
+#: includes/Admin/Ajax.php:303
 msgid "Query profiling is managed by wp-config.php and cannot be toggled here."
 msgstr ""
 
-#: includes/Admin/Ajax.php:312
+#: includes/Admin/Ajax.php:314
 msgid "Query profiling enabled. New captures will include SQL timing."
 msgstr ""
 
-#: includes/Admin/Ajax.php:313
+#: includes/Admin/Ajax.php:315
 msgid "Query profiling disabled. New captures will skip SQL timing."
 msgstr ""
 
-#: includes/Admin/Ajax.php:329
-#: includes/Admin/Ajax.php:376
-#: includes/Admin/Ajax.php:407
-#: includes/Admin/Ajax.php:446
-#: includes/Admin/Ajax.php:511
-#: includes/Admin/Ajax.php:585
-#: includes/Admin/Ajax.php:649
+#: includes/Admin/Ajax.php:339
+msgid "Early-boot timing enabled. The next profiled request will include the pre-plugin bootstrap."
+msgstr ""
+
+#: includes/Admin/Ajax.php:349
+msgid "Early-boot timing disabled and the must-use plugin removed."
+msgstr ""
+
+#: includes/Admin/Ajax.php:373
+#: includes/Admin/Ajax.php:420
+#: includes/Admin/Ajax.php:451
+#: includes/Admin/Ajax.php:490
+#: includes/Admin/Ajax.php:555
+#: includes/Admin/Ajax.php:629
+#: includes/Admin/Ajax.php:693
 msgid "No profile ID specified."
 msgstr ""
 
-#: includes/Admin/Ajax.php:338
-#: includes/Admin/Ajax.php:385
-#: includes/Admin/Ajax.php:416
-#: includes/Api/RestApi.php:631
+#: includes/Admin/Ajax.php:382
+#: includes/Admin/Ajax.php:429
+#: includes/Admin/Ajax.php:460
+#: includes/Api/RestApi.php:640
 msgid "Profile not found."
 msgstr ""
 
-#: includes/Admin/Ajax.php:455
+#: includes/Admin/Ajax.php:499
 msgid "Failed to delete profile."
 msgstr ""
 
-#: includes/Admin/Ajax.php:461
+#: includes/Admin/Ajax.php:505
 msgid "Profile deleted."
 msgstr ""
 
-#: includes/Admin/Ajax.php:474
-#: includes/Admin/Ajax.php:549
-#: includes/Admin/Ajax.php:613
+#: includes/Admin/Ajax.php:518
+#: includes/Admin/Ajax.php:593
+#: includes/Admin/Ajax.php:657
 msgid "No profile IDs specified."
 msgstr ""
 
-#: includes/Admin/Ajax.php:483
-#: assets/js/dashboard.js:786
+#: includes/Admin/Ajax.php:527
+#: assets/js/dashboard.js:794
 msgid "Failed to delete profiles."
 msgstr ""
 
 #. translators: %d: number of deleted profiles
-#: includes/Admin/Ajax.php:492
+#: includes/Admin/Ajax.php:536
 #, php-format
 msgid "%d profile(s) deleted."
 msgstr ""
 
-#: includes/Admin/Ajax.php:530
+#: includes/Admin/Ajax.php:574
 msgid "Failed to pin profile."
 msgstr ""
 
-#: includes/Admin/Ajax.php:536
+#: includes/Admin/Ajax.php:580
 msgid "Profile pinned."
 msgstr ""
 
-#: includes/Admin/Ajax.php:558
-#: assets/js/dashboard.js:808
+#: includes/Admin/Ajax.php:602
+#: assets/js/dashboard.js:816
 msgid "Failed to pin profiles."
 msgstr ""
 
 #. translators: %d: number of pinned profiles
-#: includes/Admin/Ajax.php:567
+#: includes/Admin/Ajax.php:611
 #, php-format
 msgid "%d profile(s) pinned."
 msgstr ""
 
-#: includes/Admin/Ajax.php:594
+#: includes/Admin/Ajax.php:638
 msgid "Failed to unpin profile."
 msgstr ""
 
-#: includes/Admin/Ajax.php:600
+#: includes/Admin/Ajax.php:644
 msgid "Profile unpinned."
 msgstr ""
 
-#: includes/Admin/Ajax.php:622
-#: assets/js/dashboard.js:830
+#: includes/Admin/Ajax.php:666
+#: assets/js/dashboard.js:838
 msgid "Failed to unpin profiles."
 msgstr ""
 
 #. translators: %d: number of unpinned profiles
-#: includes/Admin/Ajax.php:631
+#: includes/Admin/Ajax.php:675
 #, php-format
 msgid "%d profile(s) unpinned."
 msgstr ""
 
-#: includes/Admin/Ajax.php:668
+#: includes/Admin/Ajax.php:712
 msgid "Failed to update annotation."
 msgstr ""
 
-#: includes/Admin/Ajax.php:674
+#: includes/Admin/Ajax.php:718
 msgid "Annotation updated."
 msgstr ""
 
-#: includes/Admin/Ajax.php:693
+#: includes/Admin/Ajax.php:737
 msgid "Two profile IDs required."
 msgstr ""
 
-#: includes/Admin/Ajax.php:702
-#: includes/Api/RestApi.php:752
+#: includes/Admin/Ajax.php:746
+#: includes/Api/RestApi.php:764
 msgid "One or both profiles not found."
 msgstr ""
 
-#: includes/Admin/Ajax.php:906
-#: includes/Admin/Ajax.php:978
+#: includes/Admin/Ajax.php:950
+#: includes/Admin/Ajax.php:1022
 msgid "Missing share ID."
 msgstr ""
 
-#: includes/Admin/Ajax.php:996
+#: includes/Admin/Ajax.php:1040
 msgid "Share record removed."
 msgstr ""
 
-#: includes/Admin/Ajax.php:1018
+#: includes/Admin/Ajax.php:1062
 msgid "Profile retention disabled — profiles kept indefinitely."
 msgstr ""
 
 #. translators: %d: number of days
-#: includes/Admin/Ajax.php:1021
+#: includes/Admin/Ajax.php:1065
 #, php-format
 msgid "Profiles will auto-expire after %d days."
 msgstr ""
 
-#: includes/Admin/Ajax.php:1039
+#: includes/Admin/Ajax.php:1083
 msgid "Proxy headers will be trusted for client IP detection."
 msgstr ""
 
-#: includes/Admin/Ajax.php:1040
+#: includes/Admin/Ajax.php:1084
 msgid "Only REMOTE_ADDR will be used for client IP detection."
 msgstr ""
 
-#: includes/Admin/Ajax.php:1069
+#: includes/Admin/Ajax.php:1113
 msgid "Background profiling filters saved."
 msgstr ""
 
-#: includes/Admin/Dashboard.php:126
+#: includes/Admin/Dashboard.php:132
 msgid "Start Profiling"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:127
-#: includes/Admin/Dashboard.php:325
-#: assets/js/dashboard.js:1316
+#: includes/Admin/Dashboard.php:133
+#: includes/Admin/Dashboard.php:331
+#: assets/js/dashboard.js:1398
 msgid "Stop Profiling"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:128
+#: includes/Admin/Dashboard.php:134
 msgid "Profiling active…"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:129
+#: includes/Admin/Dashboard.php:135
 msgid "No profiles captured yet. Browse your site to capture requests."
 msgstr ""
 
-#: includes/Admin/Dashboard.php:130
+#: includes/Admin/Dashboard.php:136
 msgid "Activation URL copied to clipboard."
 msgstr ""
 
-#: includes/Admin/Dashboard.php:131
+#: includes/Admin/Dashboard.php:137
 msgid "An error occurred. Please try again."
 msgstr ""
 
-#: includes/Admin/Dashboard.php:132
+#: includes/Admin/Dashboard.php:138
 msgid "Delete this profile?"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:133
-#: assets/js/dashboard.js:4203
-#: assets/js/dashboard.js:4382
+#: includes/Admin/Dashboard.php:139
+#: assets/js/dashboard.js:4290
+#: assets/js/dashboard.js:4469
 msgid "Server Request Duration"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:134
+#: includes/Admin/Dashboard.php:140
 msgid "Exclusive Callback Time"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:135
+#: includes/Admin/Dashboard.php:141
 msgid "Inclusive Callback Time"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:136
+#: includes/Admin/Dashboard.php:142
 msgid "Call Count"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:137
+#: includes/Admin/Dashboard.php:143
 msgid "Unattributed / Bootstrap"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:138
-#: includes/Admin/Dashboard.php:276
+#: includes/Admin/Dashboard.php:144
+#: includes/Admin/Dashboard.php:282
 msgid "← Back to profiles"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:139
-#: assets/js/dashboard.js:3677
+#: includes/Admin/Dashboard.php:145
+#: assets/js/dashboard.js:3764
 msgid "Pin"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:140
-#: assets/js/dashboard.js:3678
+#: includes/Admin/Dashboard.php:146
+#: assets/js/dashboard.js:3765
 msgid "Unpin"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:141
-#: assets/js/dashboard.js:3748
+#: includes/Admin/Dashboard.php:147
+#: assets/js/dashboard.js:3835
 msgid "Note"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:142
-#: assets/js/dashboard.js:3749
+#: includes/Admin/Dashboard.php:148
+#: assets/js/dashboard.js:3836
 msgid "Tags"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:143
-#: assets/js/dashboard.js:4712
+#: includes/Admin/Dashboard.php:149
+#: assets/js/dashboard.js:4799
 msgid "History"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:144
-#: includes/Admin/Dashboard.php:267
+#: includes/Admin/Dashboard.php:150
+#: includes/Admin/Dashboard.php:273
 msgid "Routes"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:145
-#: assets/js/dashboard.js:1948
+#: includes/Admin/Dashboard.php:151
+#: assets/js/dashboard.js:2030
 msgid "Compare"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:146
-#: assets/js/dashboard.js:3747
+#: includes/Admin/Dashboard.php:152
+#: assets/js/dashboard.js:3834
 msgid "Pinned"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:147
+#: includes/Admin/Dashboard.php:153
 msgid "All Profiles"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:148
+#: includes/Admin/Dashboard.php:154
 msgid "All routes"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:149
+#: includes/Admin/Dashboard.php:155
 msgid "Filter by tag…"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:150
+#: includes/Admin/Dashboard.php:156
 msgid "No profiles match the current filters."
 msgstr ""
 
-#: includes/Admin/Dashboard.php:151
+#: includes/Admin/Dashboard.php:157
 msgid "Compare Selected"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:152
+#: includes/Admin/Dashboard.php:158
 msgid "← Back to history"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:153
-#: assets/js/dashboard.js:4531
+#: includes/Admin/Dashboard.php:159
+#: assets/js/dashboard.js:4618
 msgid "faster"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:154
-#: assets/js/dashboard.js:4531
+#: includes/Admin/Dashboard.php:160
+#: assets/js/dashboard.js:4618
 msgid "slower"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:155
-#: assets/js/dashboard.js:4488
-#: assets/js/dashboard.js:4500
-#: assets/js/dashboard.js:4513
+#: includes/Admin/Dashboard.php:161
+#: assets/js/dashboard.js:4575
+#: assets/js/dashboard.js:4587
+#: assets/js/dashboard.js:4600
 msgid "no change"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:173
-#: includes/Admin/Dashboard.php:205
-#: includes/Admin/Dashboard.php:286
+#: includes/Admin/Dashboard.php:179
+#: includes/Admin/Dashboard.php:211
+#: includes/Admin/Dashboard.php:292
 msgid "Settings"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:180
+#: includes/Admin/Dashboard.php:186
 msgid "Activation URL"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:181
+#: includes/Admin/Dashboard.php:187
 msgid "Visit this URL to start capturing profiles. The link expires in 5 minutes."
 msgstr ""
 
-#: includes/Admin/Dashboard.php:185
-#: assets/js/dashboard.js:5461
-#: assets/js/dashboard.js:5477
+#: includes/Admin/Dashboard.php:191
+#: assets/js/dashboard.js:5551
+#: assets/js/dashboard.js:5567
 msgid "Copy"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:195
-#: includes/Admin/Dashboard.php:240
-#: assets/js/dashboard.js:1519
+#: includes/Admin/Dashboard.php:201
+#: includes/Admin/Dashboard.php:246
+#: assets/js/dashboard.js:1601
 msgid "Capture Profile"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:196
+#: includes/Admin/Dashboard.php:202
 msgid "Measure a page and see where time goes"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:200
+#: includes/Admin/Dashboard.php:206
 msgid "View Profiles"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:201
+#: includes/Admin/Dashboard.php:207
 msgid "Browse captured measurements"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:206
+#: includes/Admin/Dashboard.php:212
 msgid "Background measurement, sample rate, query profiling"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:211
+#: includes/Admin/Dashboard.php:217
 msgid "Will this slow down my site?"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:212
+#: includes/Admin/Dashboard.php:218
 msgid "Non-profiled requests add under 2 ms. Profiled requests record full traces. The sample rate controls how often the full cost is paid."
 msgstr ""
 
-#: includes/Admin/Dashboard.php:215
+#: includes/Admin/Dashboard.php:221
 msgid "Does any data leave my server?"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:216
+#: includes/Admin/Dashboard.php:222
 msgid "No. All profiling data stays in your WordPress database. Sharing a report is optional and end-to-end encrypted — the relay server cannot read your data."
 msgstr ""
 
-#: includes/Admin/Dashboard.php:219
+#: includes/Admin/Dashboard.php:225
 msgid "Who can see this?"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:220
+#: includes/Admin/Dashboard.php:226
 msgid "Only administrators. Scrutinizer is invisible to logged-out visitors and non-admin users."
 msgstr ""
 
-#: includes/Admin/Dashboard.php:223
+#: includes/Admin/Dashboard.php:229
 msgid "Need help?"
 msgstr ""
 
 #. translators: %s: GitHub Issues URL
-#: includes/Admin/Dashboard.php:228
+#: includes/Admin/Dashboard.php:234
 #, php-format
 msgid "File an issue at %s — bug reports, feature requests, and questions are all welcome."
 msgstr ""
 
-#: includes/Admin/Dashboard.php:238
+#: includes/Admin/Dashboard.php:244
 msgid "← Back"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:241
+#: includes/Admin/Dashboard.php:247
 msgid "Choose what to measure. The target page opens in a new tab — browse around, then come back to this window and click Stop Profiling when done."
 msgstr ""
 
-#: includes/Admin/Dashboard.php:245
+#: includes/Admin/Dashboard.php:251
 msgid "Admin Dashboard"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:246
+#: includes/Admin/Dashboard.php:252
 msgid "Measure admin page performance"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:247
 #: includes/Admin/Dashboard.php:253
+#: includes/Admin/Dashboard.php:259
 msgid "Opens in new tab"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:251
+#: includes/Admin/Dashboard.php:257
 msgid "Logged-in Frontend"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:252
+#: includes/Admin/Dashboard.php:258
 msgid "Measure pages while logged in"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:257
+#: includes/Admin/Dashboard.php:263
 msgid "Visitor View"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:258
+#: includes/Admin/Dashboard.php:264
 msgid "Measure what visitors experience"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:259
+#: includes/Admin/Dashboard.php:265
 msgid "Requires incognito window"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:269
-#: assets/js/dashboard.js:4713
+#: includes/Admin/Dashboard.php:275
+#: assets/js/dashboard.js:4800
 msgid "Loading…"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:284
+#: includes/Admin/Dashboard.php:290
 msgid "← Back to dashboard"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:291
+#: includes/Admin/Dashboard.php:297
 msgid "Profiling"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:295
+#: includes/Admin/Dashboard.php:301
 msgid "Session Status"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:301
-#: assets/js/dashboard.js:1364
+#: includes/Admin/Dashboard.php:307
+#: assets/js/dashboard.js:1446
 msgid "Profiling active"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:303
+#: includes/Admin/Dashboard.php:309
 msgid "Profiling inactive"
 msgstr ""
 
 #. translators: %s: session ID
-#: includes/Admin/Dashboard.php:314
+#: includes/Admin/Dashboard.php:320
 #, php-format
 msgid "Session: %s"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:334
+#: includes/Admin/Dashboard.php:340
 msgid "Storage"
 msgstr ""
 
-#: includes/Admin/Dashboard.php:340
+#: includes/Admin/Dashboard.php:346
 msgid "Network"
+msgstr ""
+
+#: includes/Admin/EarlyBoot.php:66
+msgid "The early-boot plugin file is missing from the Scrutineer plugin."
+msgstr ""
+
+#: includes/Admin/EarlyBoot.php:74
+msgid "Could not create the mu-plugins directory. Your host may restrict filesystem writes."
+msgstr ""
+
+#: includes/Admin/EarlyBoot.php:77
+msgid "The mu-plugins directory is not writable. Your host may restrict filesystem writes."
+msgstr ""
+
+#: includes/Admin/EarlyBoot.php:80
+msgid "Could not write the early-boot plugin to mu-plugins. Your host may restrict filesystem writes."
 msgstr ""
 
 #: includes/Api/ApplicationPassword.php:190
@@ -527,7 +551,7 @@ msgstr ""
 msgid "You do not have permission to access Scrutineer data."
 msgstr ""
 
-#: scrutinizer.php:204
+#: scrutinizer.php:199
 msgid "Profiling active — click to view dashboard"
 msgstr ""
 
@@ -563,1678 +587,1732 @@ msgstr ""
 msgid "👤 anonymous"
 msgstr ""
 
-#: assets/js/dashboard.js:497
+#: assets/js/dashboard.js:499
 msgid "Name this saved search:"
 msgstr ""
 
-#: assets/js/dashboard.js:578
-#: assets/js/dashboard.js:4747
+#: assets/js/dashboard.js:580
+#: assets/js/dashboard.js:4834
 msgid "Saving…"
 msgstr ""
 
-#: assets/js/dashboard.js:585
-#: assets/js/dashboard.js:592
-#: assets/js/dashboard.js:966
+#: assets/js/dashboard.js:587
+#: assets/js/dashboard.js:594
+#: assets/js/dashboard.js:974
 msgid "Save filters"
 msgstr ""
 
-#: assets/js/dashboard.js:615
-#: assets/js/dashboard.js:1055
+#: assets/js/dashboard.js:623
+#: assets/js/dashboard.js:1063
+#: assets/js/dashboard.js:1116
 msgid "Details"
 msgstr ""
 
-#: assets/js/dashboard.js:618
+#: assets/js/dashboard.js:626
 msgid "Less"
 msgstr ""
 
 #. translators: %d is the number of selected profiles to delete.
-#: assets/js/dashboard.js:772
+#: assets/js/dashboard.js:780
 #, js-format
 msgid "Delete %d profile(s)?"
 msgstr ""
 
-#: assets/js/dashboard.js:928
+#: assets/js/dashboard.js:936
 msgid "light"
 msgstr ""
 
-#: assets/js/dashboard.js:929
+#: assets/js/dashboard.js:937
 msgid "moderate"
 msgstr ""
 
-#: assets/js/dashboard.js:930
+#: assets/js/dashboard.js:938
 msgid "detailed"
 msgstr ""
 
-#: assets/js/dashboard.js:931
+#: assets/js/dashboard.js:939
 msgid "every request"
 msgstr ""
 
-#: assets/js/dashboard.js:935
+#: assets/js/dashboard.js:943
 msgid "Background Measurement"
 msgstr ""
 
-#: assets/js/dashboard.js:938
+#: assets/js/dashboard.js:946
 msgid "Automatically measure requests in the background"
 msgstr ""
 
-#: assets/js/dashboard.js:940
+#: assets/js/dashboard.js:948
 msgid "Capture rate"
 msgstr ""
 
-#: assets/js/dashboard.js:948
+#: assets/js/dashboard.js:956
 msgid "or"
 msgstr ""
 
-#: assets/js/dashboard.js:955
+#: assets/js/dashboard.js:963
 msgid "Measure requests from"
 msgstr ""
 
-#: assets/js/dashboard.js:957
+#: assets/js/dashboard.js:965
 msgid "All users"
 msgstr ""
 
-#: assets/js/dashboard.js:958
+#: assets/js/dashboard.js:966
 msgid "Anonymous visitors only"
 msgstr ""
 
-#: assets/js/dashboard.js:959
+#: assets/js/dashboard.js:967
 msgid "Logged-in users only"
 msgstr ""
 
-#: assets/js/dashboard.js:964
+#: assets/js/dashboard.js:972
 msgid "Exclude paths"
 msgstr ""
 
-#: assets/js/dashboard.js:964
+#: assets/js/dashboard.js:972
 msgid "(one per line, * wildcard)"
 msgstr ""
 
-#: assets/js/dashboard.js:970
+#: assets/js/dashboard.js:978
 msgid "Only capture successful requests (HTTP 200)"
 msgstr ""
 
-#: assets/js/dashboard.js:973
+#: assets/js/dashboard.js:981
 msgid "Non-profiled requests add about 2 ms or less. A profiled request brings up full hook instrumentation and trace storage — around 250 ms in our benchmarks, though it varies widely with your plugins, hardware, and load. Unattributed time in each profile includes this cost."
 msgstr ""
 
-#: assets/js/dashboard.js:975
+#: assets/js/dashboard.js:983
 msgid "⚠ High capture rate. Each profile generates 2–10 MB of trace data. Not recommended for production sites or servers with limited disk/memory."
 msgstr ""
 
-#: assets/js/dashboard.js:1027
+#: assets/js/dashboard.js:1035
 msgid "Query Profiling"
 msgstr ""
 
-#: assets/js/dashboard.js:1031
+#: assets/js/dashboard.js:1039
 msgid "Enable query profiling"
 msgstr ""
 
-#: assets/js/dashboard.js:1042
+#: assets/js/dashboard.js:1050
 msgid "Record individual SQL query timing for the density heatmap and Queries tab."
 msgstr ""
 
-#: assets/js/dashboard.js:1045
+#: assets/js/dashboard.js:1053
 msgid "SAVEQUERIES is enabled in your configuration. Full query coverage from boot."
 msgstr ""
 
 #. translators: %s is the SAVEQUERIES constant value (e.g. false).
-#: assets/js/dashboard.js:1049
+#: assets/js/dashboard.js:1057
 #, js-format
 msgid "SAVEQUERIES is set to %s — Scrutineer can't override a defined constant."
 msgstr ""
 
-#: assets/js/dashboard.js:1102
-#: assets/js/dashboard.js:5139
-msgid "7 days"
+#: assets/js/dashboard.js:1067
+msgid "Sets PHP's <code>SAVEQUERIES</code> constant so WordPress logs every query with its execution time. Typical overhead is 1–2% per request."
 msgstr ""
 
-#: assets/js/dashboard.js:1103
-#: assets/js/dashboard.js:5140
-msgid "14 days"
+#: assets/js/dashboard.js:1068
+msgid "Queries that run before plugin load (options autoload, core bootstrap) aren't captured — usually less than 10% of total. For full coverage from boot, add to wp-config.php:"
+msgstr ""
+
+#: assets/js/dashboard.js:1071
+msgid "<code>SAVEQUERIES</code> is defined as <code>true</code> before plugins load, so every query from boot is captured. To let Scrutineer manage this toggle instead, remove the <code>define()</code> line from wp-config.php."
+msgstr ""
+
+#: assets/js/dashboard.js:1073
+msgid "<code>define( 'SAVEQUERIES', false )</code> in wp-config.php prevents redefinition — PHP constants are immutable once set."
+msgstr ""
+
+#: assets/js/dashboard.js:1074
+msgid "To enable: change <code>false</code> to <code>true</code>, or remove the line entirely to let Scrutineer manage it via this toggle."
 msgstr ""
 
 #: assets/js/dashboard.js:1104
-#: assets/js/dashboard.js:5141
-msgid "30 days"
+msgid "Early Boot Timing"
 msgstr ""
 
-#: assets/js/dashboard.js:1105
-msgid "Never (keep all)"
-msgstr ""
-
-#: assets/js/dashboard.js:1109
-msgid "Profile Retention"
-msgstr ""
-
-#: assets/js/dashboard.js:1110
-msgid "Unpinned profiles older than this are automatically deleted. Pinned and shared profiles are kept regardless."
+#: assets/js/dashboard.js:1106
+msgid "Enable early boot timing"
 msgstr ""
 
 #: assets/js/dashboard.js:1112
-msgid "Auto-expire after"
+msgid "Measure time spent before plugins load. Optional and off by default."
+msgstr ""
+
+#: assets/js/dashboard.js:1118
+msgid "Enabling this writes a small must-use plugin to your site:"
 msgstr ""
 
 #: assets/js/dashboard.js:1120
-#: assets/js/dashboard.js:1176
-#: assets/js/dashboard.js:4684
+msgid "It records a timestamp at the very start of each request so the pre-plugin bootstrap can be timed — nothing else. Remove it anytime with this toggle, or via WP-CLI: wp scrutinizer mu-plugin remove."
+msgstr ""
+
+#: assets/js/dashboard.js:1135
+msgid "Early-boot timing is off. Enable it to measure time spent before plugins load — it adds a small must-use plugin you can remove anytime."
+msgstr ""
+
+#: assets/js/dashboard.js:1137
+msgid "Enable"
+msgstr ""
+
+#: assets/js/dashboard.js:1138
+#: assets/js/dashboard.js:4282
+msgid "Dismiss"
+msgstr ""
+
+#: assets/js/dashboard.js:1163
+msgid "Could not enable early-boot timing."
+msgstr ""
+
+#: assets/js/dashboard.js:1184
+#: assets/js/dashboard.js:5226
+msgid "7 days"
+msgstr ""
+
+#: assets/js/dashboard.js:1185
+#: assets/js/dashboard.js:5227
+msgid "14 days"
+msgstr ""
+
+#: assets/js/dashboard.js:1186
+#: assets/js/dashboard.js:5228
+msgid "30 days"
+msgstr ""
+
+#: assets/js/dashboard.js:1187
+msgid "Never (keep all)"
+msgstr ""
+
+#: assets/js/dashboard.js:1191
+msgid "Profile Retention"
+msgstr ""
+
+#: assets/js/dashboard.js:1192
+msgid "Unpinned profiles older than this are automatically deleted. Pinned and shared profiles are kept regardless."
+msgstr ""
+
+#: assets/js/dashboard.js:1194
+msgid "Auto-expire after"
+msgstr ""
+
+#: assets/js/dashboard.js:1202
+#: assets/js/dashboard.js:1258
+#: assets/js/dashboard.js:4771
 msgid "Saved"
 msgstr ""
 
-#: assets/js/dashboard.js:1154
+#: assets/js/dashboard.js:1236
 msgid "Client IP Detection"
 msgstr ""
 
-#: assets/js/dashboard.js:1157
+#: assets/js/dashboard.js:1239
 msgid "Trust proxy headers for client IP"
 msgstr ""
 
 #. translators: %s is the list of detected proxy headers or services.
-#: assets/js/dashboard.js:1165
+#: assets/js/dashboard.js:1247
 #, js-format
 msgid "Detected: %s."
 msgstr ""
 
-#: assets/js/dashboard.js:1166
+#: assets/js/dashboard.js:1248
 msgid "Your site appears to be behind a proxy."
 msgstr ""
 
-#: assets/js/dashboard.js:1166
+#: assets/js/dashboard.js:1248
 msgid "Recommended: enable."
 msgstr ""
 
-#: assets/js/dashboard.js:1171
+#: assets/js/dashboard.js:1253
 msgid "No proxy headers detected on this request."
 msgstr ""
 
-#: assets/js/dashboard.js:1172
+#: assets/js/dashboard.js:1254
 msgid "If you are not behind a proxy or CDN,"
 msgstr ""
 
-#: assets/js/dashboard.js:1172
+#: assets/js/dashboard.js:1254
 msgid "leave this disabled."
 msgstr ""
 
-#: assets/js/dashboard.js:1283
+#: assets/js/dashboard.js:1365
 msgid "Profiling started — measuring in the new tab. Results will appear here."
 msgstr ""
 
-#: assets/js/dashboard.js:1313
+#: assets/js/dashboard.js:1395
 msgid "URL copied to clipboard"
 msgstr ""
 
 #. translators: 1: the "incognito window" label, 2: a keyboard shortcut, 3: the "Stop Profiling" button label.
-#: assets/js/dashboard.js:1316
+#: assets/js/dashboard.js:1398
 #, js-format
 msgid "Open an %1$s (%2$s), paste the URL, and browse your site. Come back here and click %3$s when done."
 msgstr ""
 
-#: assets/js/dashboard.js:1316
+#: assets/js/dashboard.js:1398
 msgid "incognito window"
 msgstr ""
 
-#: assets/js/dashboard.js:1319
+#: assets/js/dashboard.js:1401
 msgid "Copy again"
 msgstr ""
 
-#: assets/js/dashboard.js:1366
+#: assets/js/dashboard.js:1448
 msgid "Browse pages in the other tab. When done, click Stop Profiling below."
 msgstr ""
 
-#: assets/js/dashboard.js:1493
+#: assets/js/dashboard.js:1575
 msgid "Failed to load routes. Try refreshing the page."
 msgstr ""
 
-#: assets/js/dashboard.js:1497
+#: assets/js/dashboard.js:1579
 msgid "Could not load routes."
 msgstr ""
 
 #. translators: 1: opening link tag, 2: closing link tag.
-#: assets/js/dashboard.js:1500
+#: assets/js/dashboard.js:1582
 #, js-format
 msgid "Session expired. Please %1$sreload the page%2$s."
 msgstr ""
 
-#: assets/js/dashboard.js:1516
+#: assets/js/dashboard.js:1598
 msgid "No measurements yet"
 msgstr ""
 
-#: assets/js/dashboard.js:1517
+#: assets/js/dashboard.js:1599
 msgid "Start a profiling session to see where your server time goes, or turn on background measurement to capture requests automatically."
 msgstr ""
 
-#: assets/js/dashboard.js:1557
+#: assets/js/dashboard.js:1639
 msgid "Showing:"
 msgstr ""
 
-#: assets/js/dashboard.js:1558
+#: assets/js/dashboard.js:1640
 msgid "Pages that loaded"
 msgstr ""
 
-#: assets/js/dashboard.js:1559
+#: assets/js/dashboard.js:1641
 msgid "Other responses"
 msgstr ""
 
-#: assets/js/dashboard.js:1560
+#: assets/js/dashboard.js:1642
 msgid "All requests"
 msgstr ""
 
-#: assets/js/dashboard.js:1562
+#: assets/js/dashboard.js:1644
 msgid "Search routes…"
 msgstr ""
 
-#: assets/js/dashboard.js:1566
+#: assets/js/dashboard.js:1648
 msgid "No routes match the current filter."
 msgstr ""
 
-#: assets/js/dashboard.js:1573
-#: assets/js/dashboard.js:1817
-#: assets/js/dashboard.js:2755
-#: assets/js/dashboard.js:3745
-#: assets/js/dashboard.js:4883
+#: assets/js/dashboard.js:1655
+#: assets/js/dashboard.js:1899
+#: assets/js/dashboard.js:2837
+#: assets/js/dashboard.js:3832
+#: assets/js/dashboard.js:4970
 msgid "Route"
 msgstr ""
 
-#: assets/js/dashboard.js:1574
-#: assets/js/dashboard.js:1816
-#: assets/js/dashboard.js:2565
-#: assets/js/dashboard.js:4692
+#: assets/js/dashboard.js:1656
+#: assets/js/dashboard.js:1898
+#: assets/js/dashboard.js:2647
+#: assets/js/dashboard.js:4779
 msgid "Method"
 msgstr ""
 
-#: assets/js/dashboard.js:1575
+#: assets/js/dashboard.js:1657
 msgid "Requests"
 msgstr ""
 
-#: assets/js/dashboard.js:1576
+#: assets/js/dashboard.js:1658
 msgid "Avg Duration"
 msgstr ""
 
-#: assets/js/dashboard.js:1577
-#: assets/js/dashboard.js:1793
+#: assets/js/dashboard.js:1659
+#: assets/js/dashboard.js:1875
 msgid "Min"
 msgstr ""
 
-#: assets/js/dashboard.js:1578
-#: assets/js/dashboard.js:1794
+#: assets/js/dashboard.js:1660
+#: assets/js/dashboard.js:1876
 msgid "Max"
 msgstr ""
 
-#: assets/js/dashboard.js:1579
+#: assets/js/dashboard.js:1661
 msgid "Last Captured"
 msgstr ""
 
-#: assets/js/dashboard.js:1580
-#: assets/js/dashboard.js:1820
-#: assets/js/dashboard.js:2140
+#: assets/js/dashboard.js:1662
+#: assets/js/dashboard.js:1902
+#: assets/js/dashboard.js:2222
 msgid "Type"
 msgstr ""
 
-#: assets/js/dashboard.js:1589
+#: assets/js/dashboard.js:1671
 msgid "(unknown)"
 msgstr ""
 
-#: assets/js/dashboard.js:1662
-#: assets/js/dashboard.js:3446
+#: assets/js/dashboard.js:1744
+#: assets/js/dashboard.js:3528
 msgid "← Back to routes"
 msgstr ""
 
-#: assets/js/dashboard.js:1705
+#: assets/js/dashboard.js:1787
 msgid "Likely Regression"
 msgstr ""
 
-#: assets/js/dashboard.js:1706
+#: assets/js/dashboard.js:1788
 msgid "Difference observed"
 msgstr ""
 
-#: assets/js/dashboard.js:1707
+#: assets/js/dashboard.js:1789
 msgid "Within noise"
 msgstr ""
 
-#: assets/js/dashboard.js:1791
+#: assets/js/dashboard.js:1873
 msgid "Latest"
 msgstr ""
 
-#: assets/js/dashboard.js:1792
+#: assets/js/dashboard.js:1874
 msgid "Average"
 msgstr ""
 
-#: assets/js/dashboard.js:1795
+#: assets/js/dashboard.js:1877
 msgid "Trend"
 msgstr ""
 
-#: assets/js/dashboard.js:1806
+#: assets/js/dashboard.js:1888
 msgid "No profiles for this route."
 msgstr ""
 
-#: assets/js/dashboard.js:1815
-#: assets/js/dashboard.js:2566
+#: assets/js/dashboard.js:1897
+#: assets/js/dashboard.js:2648
 msgid "URL"
 msgstr ""
 
-#: assets/js/dashboard.js:1818
+#: assets/js/dashboard.js:1900
 msgid "Role"
 msgstr ""
 
-#: assets/js/dashboard.js:1819
-#: assets/js/dashboard.js:3744
+#: assets/js/dashboard.js:1901
+#: assets/js/dashboard.js:3831
 msgid "Captured"
 msgstr ""
 
-#: assets/js/dashboard.js:1821
-#: assets/js/dashboard.js:3750
-#: assets/js/dashboard.js:4883
+#: assets/js/dashboard.js:1903
+#: assets/js/dashboard.js:3837
+#: assets/js/dashboard.js:4970
 msgid "Actions"
 msgstr ""
 
-#: assets/js/dashboard.js:1839
-#: assets/js/dashboard.js:3792
+#: assets/js/dashboard.js:1921
+#: assets/js/dashboard.js:3879
 msgid "View"
 msgstr ""
 
-#: assets/js/dashboard.js:1841
-#: assets/js/dashboard.js:3679
+#: assets/js/dashboard.js:1923
+#: assets/js/dashboard.js:3766
 msgid "Delete"
 msgstr ""
 
-#: assets/js/dashboard.js:1851
+#: assets/js/dashboard.js:1933
 msgid "&laquo; Previous"
 msgstr ""
 
 #. translators: 1: current page number, 2: total number of pages, 3: total profile count.
-#: assets/js/dashboard.js:1853
+#: assets/js/dashboard.js:1935
 #, js-format
 msgid "Page %1$d of %2$d (%3$d profiles)"
 msgstr ""
 
-#: assets/js/dashboard.js:1854
+#: assets/js/dashboard.js:1936
 msgid "Next &raquo;"
 msgstr ""
 
 #. translators: %d is the total number of profiles.
-#: assets/js/dashboard.js:1859
+#: assets/js/dashboard.js:1941
 #, js-format
 msgid "%d profiles"
 msgstr ""
 
-#: assets/js/dashboard.js:1943
+#: assets/js/dashboard.js:2025
 msgid "Why did you take this measurement?"
 msgstr ""
 
-#: assets/js/dashboard.js:1946
+#: assets/js/dashboard.js:2028
 msgid "Share this report"
 msgstr ""
 
-#: assets/js/dashboard.js:1946
-#: assets/js/dashboard.js:4712
+#: assets/js/dashboard.js:2028
+#: assets/js/dashboard.js:4799
 msgid "Share"
 msgstr ""
 
-#: assets/js/dashboard.js:1947
+#: assets/js/dashboard.js:2029
 msgid "Download raw profile as JSON"
 msgstr ""
 
-#: assets/js/dashboard.js:1947
+#: assets/js/dashboard.js:2029
 msgid "Export"
 msgstr ""
 
-#: assets/js/dashboard.js:1948
+#: assets/js/dashboard.js:2030
 msgid "Compare with another profile"
 msgstr ""
 
 #. translators: %s is the referring URL (referer).
-#: assets/js/dashboard.js:1962
+#: assets/js/dashboard.js:2044
 #, js-format
 msgid "↩ triggered from %s"
 msgstr ""
 
-#: assets/js/dashboard.js:1969
-#: assets/js/dashboard.js:2766
-#: assets/js/dashboard.js:4230
-#: assets/js/dashboard.js:4409
+#: assets/js/dashboard.js:2051
+#: assets/js/dashboard.js:2848
+#: assets/js/dashboard.js:4317
+#: assets/js/dashboard.js:4496
 msgid "Peak Memory"
 msgstr ""
 
-#: assets/js/dashboard.js:1970
-#: assets/js/dashboard.js:2767
+#: assets/js/dashboard.js:2052
+#: assets/js/dashboard.js:2849
 msgid "Memory Used"
 msgstr ""
 
-#: assets/js/dashboard.js:1971
-#: assets/js/dashboard.js:2768
-#: assets/js/dashboard.js:4215
-#: assets/js/dashboard.js:4394
+#: assets/js/dashboard.js:2053
+#: assets/js/dashboard.js:2850
+#: assets/js/dashboard.js:4302
+#: assets/js/dashboard.js:4481
 msgid "DB Queries"
 msgstr ""
 
-#: assets/js/dashboard.js:1972
-#: assets/js/dashboard.js:2769
-#: assets/js/dashboard.js:3127
-#: assets/js/dashboard.js:4254
-#: assets/js/dashboard.js:5167
+#: assets/js/dashboard.js:2054
+#: assets/js/dashboard.js:2851
+#: assets/js/dashboard.js:3209
+#: assets/js/dashboard.js:4341
+#: assets/js/dashboard.js:5254
 msgid "HTTP Calls"
 msgstr ""
 
-#: assets/js/dashboard.js:1973
-#: assets/js/dashboard.js:4246
-#: assets/js/dashboard.js:4425
+#: assets/js/dashboard.js:2055
+#: assets/js/dashboard.js:4333
+#: assets/js/dashboard.js:4512
 msgid "Callbacks"
 msgstr ""
 
-#: assets/js/dashboard.js:1978
-#: assets/js/dashboard.js:5165
+#: assets/js/dashboard.js:2060
+#: assets/js/dashboard.js:5252
 msgid "Timeline"
 msgstr ""
 
-#: assets/js/dashboard.js:1979
-#: assets/js/dashboard.js:2400
-#: assets/js/dashboard.js:5163
+#: assets/js/dashboard.js:2061
+#: assets/js/dashboard.js:2482
+#: assets/js/dashboard.js:5250
 msgid "Sources"
 msgstr ""
 
 #. translators: %d is the number of database queries.
-#: assets/js/dashboard.js:1982
+#: assets/js/dashboard.js:2064
 #, js-format
 msgid "Queries (%d)"
 msgstr ""
 
 #. translators: %d is the number of HTTP calls.
-#: assets/js/dashboard.js:1986
+#: assets/js/dashboard.js:2068
 #, js-format
 msgid "HTTP Calls (%d)"
 msgstr ""
 
 #. translators: %d is the number of assets (scripts and styles).
-#: assets/js/dashboard.js:1990
+#: assets/js/dashboard.js:2072
 #, js-format
 msgid "Assets (%d)"
 msgstr ""
 
 #. translators: %d is the number of autoloaded options.
-#: assets/js/dashboard.js:1994
+#: assets/js/dashboard.js:2076
 #, js-format
 msgid "Options (%d)"
 msgstr ""
 
 #. translators: %s is the number of trace callbacks.
-#: assets/js/dashboard.js:1998
+#: assets/js/dashboard.js:2080
 #, js-format
 msgid "Trace (%s)"
 msgstr ""
 
-#: assets/js/dashboard.js:2000
+#: assets/js/dashboard.js:2082
 msgid "Metadata"
 msgstr ""
 
-#: assets/js/dashboard.js:2007
+#: assets/js/dashboard.js:2089
 msgid "Loading timeline…"
 msgstr ""
 
-#: assets/js/dashboard.js:2009
+#: assets/js/dashboard.js:2091
 msgid "No timeline data available."
 msgstr ""
 
 #. translators: %s is the number of callbacks being loaded.
-#: assets/js/dashboard.js:2060
+#: assets/js/dashboard.js:2142
 #, js-format
 msgid "Loading %s callbacks…"
 msgstr ""
 
-#: assets/js/dashboard.js:2109
+#: assets/js/dashboard.js:2191
 msgid "No source data."
 msgstr ""
 
-#: assets/js/dashboard.js:2131
+#: assets/js/dashboard.js:2213
 msgid "Unattributed + Bootstrap"
 msgstr ""
 
-#: assets/js/dashboard.js:2136
+#: assets/js/dashboard.js:2218
 msgid "Each plugin and theme’s contribution to server request duration, sorted by the time spent in their own callbacks."
 msgstr ""
 
-#: assets/js/dashboard.js:2139
-#: assets/js/dashboard.js:2457
-#: assets/js/dashboard.js:2482
-#: assets/js/dashboard.js:2569
-#: assets/js/dashboard.js:2650
-#: assets/js/dashboard.js:3161
-#: assets/js/dashboard.js:3183
-#: assets/js/dashboard.js:3937
-#: assets/js/dashboard.js:4269
-#: assets/js/dashboard.js:4440
+#: assets/js/dashboard.js:2221
+#: assets/js/dashboard.js:2539
+#: assets/js/dashboard.js:2564
+#: assets/js/dashboard.js:2651
+#: assets/js/dashboard.js:2732
+#: assets/js/dashboard.js:3243
+#: assets/js/dashboard.js:3265
+#: assets/js/dashboard.js:4024
+#: assets/js/dashboard.js:4356
+#: assets/js/dashboard.js:4527
 msgid "Source"
 msgstr ""
 
-#: assets/js/dashboard.js:2141
+#: assets/js/dashboard.js:2223
 msgid "What is exclusive time?"
 msgstr ""
 
-#: assets/js/dashboard.js:2141
+#: assets/js/dashboard.js:2223
 msgid "Time spent directly in this source’s own callbacks, excluding time in callbacks it triggers from other sources. This is the most useful number for identifying what’s slow."
 msgstr ""
 
-#: assets/js/dashboard.js:2142
+#: assets/js/dashboard.js:2224
 msgid "Weight"
 msgstr ""
 
-#: assets/js/dashboard.js:2143
+#: assets/js/dashboard.js:2225
 msgid "Memory"
 msgstr ""
 
-#: assets/js/dashboard.js:2143
+#: assets/js/dashboard.js:2225
 msgid "What is memory?"
 msgstr ""
 
-#: assets/js/dashboard.js:2143
+#: assets/js/dashboard.js:2225
 msgid "Net heap change measured during this source’s callbacks (memory_get_usage delta). Positive = allocated, negative = freed. Reflects what happened during execution, not total responsibility."
 msgstr ""
 
-#: assets/js/dashboard.js:2144
+#: assets/js/dashboard.js:2226
 msgid "What is inclusive time?"
 msgstr ""
 
-#: assets/js/dashboard.js:2144
+#: assets/js/dashboard.js:2226
 msgid "Total time spent in this source’s callbacks including any nested callbacks from other sources that it triggers."
 msgstr ""
 
 #. translators: %d is the number of callbacks.
-#: assets/js/dashboard.js:2162
+#: assets/js/dashboard.js:2244
 #, js-format
 msgid "(%d callbacks)"
 msgstr ""
 
 #. translators: %d is the number of times the callback was called.
-#: assets/js/dashboard.js:2168
+#: assets/js/dashboard.js:2250
 #, js-format
 msgid "%d calls"
 msgstr ""
 
-#: assets/js/dashboard.js:2223
+#: assets/js/dashboard.js:2305
 msgid "WordPress Core — subsystem breakdown"
 msgstr ""
 
-#: assets/js/dashboard.js:2224
+#: assets/js/dashboard.js:2306
 msgid "Where the time inside the single \"core\" bucket goes. Aggregate only — labels and totals, never file paths."
 msgstr ""
 
-#: assets/js/dashboard.js:2238
+#: assets/js/dashboard.js:2320
 msgid "Subsystem"
 msgstr ""
 
-#: assets/js/dashboard.js:2239
+#: assets/js/dashboard.js:2321
 msgid "Exclusive"
 msgstr ""
 
-#: assets/js/dashboard.js:2240
+#: assets/js/dashboard.js:2322
 msgid "Calls"
 msgstr ""
 
-#: assets/js/dashboard.js:2269
+#: assets/js/dashboard.js:2351
 msgid "No query data captured for this profile."
 msgstr ""
 
-#: assets/js/dashboard.js:2271
+#: assets/js/dashboard.js:2353
 msgid "Query profiling is off. Enable the toggle above, then capture a new profile."
 msgstr ""
 
-#: assets/js/dashboard.js:2273
+#: assets/js/dashboard.js:2355
 msgid "SAVEQUERIES is disabled in wp-config.php. Enable it to capture query timing."
 msgstr ""
 
-#: assets/js/dashboard.js:2275
+#: assets/js/dashboard.js:2357
 msgid "No query data — this profile was captured before query profiling was enabled."
 msgstr ""
 
 #. translators: %d is the number of queries.
-#: assets/js/dashboard.js:2337
+#: assets/js/dashboard.js:2419
 #, js-format
 msgid "%d queries"
 msgstr ""
 
 #. translators: 1: a count label, 2: a total (time or size).
-#: assets/js/dashboard.js:2339
-#: assets/js/dashboard.js:2554
-#: assets/js/dashboard.js:2707
+#: assets/js/dashboard.js:2421
+#: assets/js/dashboard.js:2636
+#: assets/js/dashboard.js:2789
 #, js-format
 msgid "%1$s totaling %2$s"
 msgstr ""
 
 #. translators: %d is the number of duplicate query patterns.
-#: assets/js/dashboard.js:2342
+#: assets/js/dashboard.js:2424
 #, js-format
 msgid "%d duplicate patterns"
 msgstr ""
 
-#: assets/js/dashboard.js:2359
+#: assets/js/dashboard.js:2441
 msgid "Grouped"
 msgstr ""
 
-#: assets/js/dashboard.js:2360
+#: assets/js/dashboard.js:2442
 msgid "Individual"
 msgstr ""
 
-#: assets/js/dashboard.js:2367
+#: assets/js/dashboard.js:2449
 msgid "Showing queries from"
 msgstr ""
 
-#: assets/js/dashboard.js:2368
+#: assets/js/dashboard.js:2450
 msgid "Clear"
 msgstr ""
 
-#: assets/js/dashboard.js:2396
+#: assets/js/dashboard.js:2478
 msgid "SQL Pattern"
 msgstr ""
 
-#: assets/js/dashboard.js:2397
-#: assets/js/dashboard.js:2804
-#: assets/js/dashboard.js:2832
+#: assets/js/dashboard.js:2479
+#: assets/js/dashboard.js:2886
+#: assets/js/dashboard.js:2914
 msgid "Count"
 msgstr ""
 
-#: assets/js/dashboard.js:2398
+#: assets/js/dashboard.js:2480
 msgid "Total Time"
 msgstr ""
 
-#: assets/js/dashboard.js:2399
+#: assets/js/dashboard.js:2481
 msgid "Avg"
 msgstr ""
 
-#: assets/js/dashboard.js:2424
-#: assets/js/dashboard.js:2508
+#: assets/js/dashboard.js:2506
+#: assets/js/dashboard.js:2590
 msgid "Click to expand"
 msgstr ""
 
-#: assets/js/dashboard.js:2457
-#: assets/js/dashboard.js:2484
-#: assets/js/dashboard.js:2864
+#: assets/js/dashboard.js:2539
+#: assets/js/dashboard.js:2566
+#: assets/js/dashboard.js:2946
 msgid "Time"
 msgstr ""
 
-#: assets/js/dashboard.js:2457
-#: assets/js/dashboard.js:2485
-#: assets/js/dashboard.js:2570
+#: assets/js/dashboard.js:2539
+#: assets/js/dashboard.js:2567
+#: assets/js/dashboard.js:2652
 msgid "Caller"
 msgstr ""
 
-#: assets/js/dashboard.js:2483
+#: assets/js/dashboard.js:2565
 msgid "SQL"
 msgstr ""
 
-#: assets/js/dashboard.js:2504
-#: assets/js/dashboard.js:3165
+#: assets/js/dashboard.js:2586
+#: assets/js/dashboard.js:3247
 msgid "Core"
 msgstr ""
 
-#: assets/js/dashboard.js:2541
+#: assets/js/dashboard.js:2623
 msgid "No external HTTP calls detected."
 msgstr ""
 
 #. translators: %d is the number of external HTTP calls.
-#: assets/js/dashboard.js:2552
+#: assets/js/dashboard.js:2634
 #, js-format
 msgid "%d external HTTP calls"
 msgstr ""
 
-#: assets/js/dashboard.js:2567
-#: assets/js/dashboard.js:3938
+#: assets/js/dashboard.js:2649
+#: assets/js/dashboard.js:4025
 msgid "Status"
 msgstr ""
 
-#: assets/js/dashboard.js:2568
-#: assets/js/dashboard.js:3169
-#: assets/js/dashboard.js:3180
-#: assets/js/dashboard.js:3746
+#: assets/js/dashboard.js:2650
+#: assets/js/dashboard.js:3251
+#: assets/js/dashboard.js:3262
+#: assets/js/dashboard.js:3833
 msgid "Duration"
 msgstr ""
 
-#: assets/js/dashboard.js:2577
+#: assets/js/dashboard.js:2659
 msgid "Error"
 msgstr ""
 
 #. translators: %d is the number of scripts.
-#: assets/js/dashboard.js:2624
+#: assets/js/dashboard.js:2706
 #, js-format
 msgid "%d scripts"
 msgstr ""
 
 #. translators: %d is the number of stylesheets.
-#: assets/js/dashboard.js:2626
+#: assets/js/dashboard.js:2708
 #, js-format
 msgid "%d stylesheets"
 msgstr ""
 
 #. translators: %s is the total asset size on disk.
-#: assets/js/dashboard.js:2629
+#: assets/js/dashboard.js:2711
 #, js-format
 msgid "totaling %s on disk"
 msgstr ""
 
-#: assets/js/dashboard.js:2634
+#: assets/js/dashboard.js:2716
 msgid "Scripts"
 msgstr ""
 
-#: assets/js/dashboard.js:2638
+#: assets/js/dashboard.js:2720
 msgid "Stylesheets"
 msgstr ""
 
-#: assets/js/dashboard.js:2649
+#: assets/js/dashboard.js:2731
 msgid "Handle"
 msgstr ""
 
-#: assets/js/dashboard.js:2651
-#: assets/js/dashboard.js:2719
+#: assets/js/dashboard.js:2733
+#: assets/js/dashboard.js:2801
 msgid "Size"
 msgstr ""
 
-#: assets/js/dashboard.js:2652
+#: assets/js/dashboard.js:2734
 msgid "Location"
 msgstr ""
 
-#: assets/js/dashboard.js:2653
+#: assets/js/dashboard.js:2735
 msgid "Dependencies"
 msgstr ""
 
-#: assets/js/dashboard.js:2654
+#: assets/js/dashboard.js:2736
 msgid "Version"
 msgstr ""
 
-#: assets/js/dashboard.js:2673
+#: assets/js/dashboard.js:2755
 msgid "external"
 msgstr ""
 
-#: assets/js/dashboard.js:2700
+#: assets/js/dashboard.js:2782
 msgid "No autoloaded options data."
 msgstr ""
 
 #. translators: %d is the number of autoloaded options.
-#: assets/js/dashboard.js:2705
+#: assets/js/dashboard.js:2787
 #, js-format
 msgid "%d autoloaded options"
 msgstr ""
 
-#: assets/js/dashboard.js:2709
+#: assets/js/dashboard.js:2791
 msgid "⚠ Over 1 MB — this adds latency to every request"
 msgstr ""
 
-#: assets/js/dashboard.js:2711
+#: assets/js/dashboard.js:2793
 msgid "⚡ Over 512 KB — worth reviewing"
 msgstr ""
 
-#: assets/js/dashboard.js:2718
+#: assets/js/dashboard.js:2800
 msgid "Option Name"
 msgstr ""
 
-#: assets/js/dashboard.js:2720
+#: assets/js/dashboard.js:2802
 msgid "% of Total"
 msgstr ""
 
-#: assets/js/dashboard.js:2757
+#: assets/js/dashboard.js:2839
 msgid "AJAX Action"
 msgstr ""
 
-#: assets/js/dashboard.js:2760
+#: assets/js/dashboard.js:2842
 msgid "Referer"
 msgstr ""
 
-#: assets/js/dashboard.js:2762
+#: assets/js/dashboard.js:2844
 msgid "User Role"
 msgstr ""
 
-#: assets/js/dashboard.js:2763
+#: assets/js/dashboard.js:2845
 msgid "PHP"
 msgstr ""
 
-#: assets/js/dashboard.js:2764
+#: assets/js/dashboard.js:2846
 msgid "WordPress"
 msgstr ""
 
-#: assets/js/dashboard.js:2770
+#: assets/js/dashboard.js:2852
 msgid "Callbacks Observed"
 msgstr ""
 
-#: assets/js/dashboard.js:2771
+#: assets/js/dashboard.js:2853
 msgid "Sources Identified"
 msgstr ""
 
-#: assets/js/dashboard.js:2773
+#: assets/js/dashboard.js:2855
 msgid "Enqueued Assets"
 msgstr ""
 
-#: assets/js/dashboard.js:2790
+#: assets/js/dashboard.js:2872
 msgid "Deprecated function"
 msgstr ""
 
-#: assets/js/dashboard.js:2791
+#: assets/js/dashboard.js:2873
 msgid "Deprecated hook"
 msgstr ""
 
-#: assets/js/dashboard.js:2792
+#: assets/js/dashboard.js:2874
 msgid "Deprecated argument"
 msgstr ""
 
-#: assets/js/dashboard.js:2793
+#: assets/js/dashboard.js:2875
 msgid "Deprecated file"
 msgstr ""
 
-#: assets/js/dashboard.js:2794
+#: assets/js/dashboard.js:2876
 msgid "Doing it wrong"
 msgstr ""
 
-#: assets/js/dashboard.js:2797
+#: assets/js/dashboard.js:2879
 msgid "Developer signals"
 msgstr ""
 
-#: assets/js/dashboard.js:2798
+#: assets/js/dashboard.js:2880
 msgid "Deprecations and _doing_it_wrong() notices triggered during this request, and which source triggered each. Counts only — no argument values."
 msgstr ""
 
-#: assets/js/dashboard.js:2800
+#: assets/js/dashboard.js:2882
 msgid "Signal"
 msgstr ""
 
-#: assets/js/dashboard.js:2801
+#: assets/js/dashboard.js:2883
 msgid "API"
 msgstr ""
 
-#: assets/js/dashboard.js:2802
+#: assets/js/dashboard.js:2884
 msgid "Since"
 msgstr ""
 
-#: assets/js/dashboard.js:2803
+#: assets/js/dashboard.js:2885
 msgid "Triggered by"
 msgstr ""
 
-#: assets/js/dashboard.js:2827
+#: assets/js/dashboard.js:2909
 msgid "Just-in-time translations"
 msgstr ""
 
-#: assets/js/dashboard.js:2828
+#: assets/js/dashboard.js:2910
 msgid "Textdomains WordPress loaded on demand because a translation function ran before the textdomain was registered. Loading translations on the right hook avoids this."
 msgstr ""
 
-#: assets/js/dashboard.js:2830
+#: assets/js/dashboard.js:2912
 msgid "Textdomain"
 msgstr ""
 
-#: assets/js/dashboard.js:2831
+#: assets/js/dashboard.js:2913
 msgid "Loaded on hook"
 msgstr ""
 
-#: assets/js/dashboard.js:2860
+#: assets/js/dashboard.js:2942
 msgid "Boot sequence"
 msgstr ""
 
-#: assets/js/dashboard.js:2861
+#: assets/js/dashboard.js:2943
 msgid "The pre-plugin bootstrap, split at the points we can hook. Time before the early boot timer (SAPI start, drop-ins) is not measurable."
 msgstr ""
 
-#: assets/js/dashboard.js:2863
+#: assets/js/dashboard.js:2945
 msgid "Phase"
 msgstr ""
 
-#: assets/js/dashboard.js:2952
-#: assets/js/dashboard.js:2957
+#: assets/js/dashboard.js:3034
+#: assets/js/dashboard.js:3039
 msgid "Failed to load trace data."
 msgstr ""
 
-#: assets/js/dashboard.js:2987
-#: assets/js/dashboard.js:2992
+#: assets/js/dashboard.js:3069
+#: assets/js/dashboard.js:3074
 msgid "Failed to load timeline data."
 msgstr ""
 
-#: assets/js/dashboard.js:3120
+#: assets/js/dashboard.js:3202
 msgid "Search callbacks, hooks, sources…"
 msgstr ""
 
-#: assets/js/dashboard.js:3125
+#: assets/js/dashboard.js:3207
 msgid "Top 10 Slowest"
 msgstr ""
 
-#: assets/js/dashboard.js:3126
+#: assets/js/dashboard.js:3208
 msgid "DB Heavy (&gt;10)"
 msgstr ""
 
-#: assets/js/dashboard.js:3142
-#: assets/js/dashboard.js:3655
+#: assets/js/dashboard.js:3224
+#: assets/js/dashboard.js:3742
 msgid "AJAX"
 msgstr ""
 
-#: assets/js/dashboard.js:3145
+#: assets/js/dashboard.js:3227
 msgid "Checkout"
 msgstr ""
 
-#: assets/js/dashboard.js:3148
+#: assets/js/dashboard.js:3230
 msgid "Login/Auth"
 msgstr ""
 
-#: assets/js/dashboard.js:3151
+#: assets/js/dashboard.js:3233
 msgid "Memory Heavy"
 msgstr ""
 
-#: assets/js/dashboard.js:3156
+#: assets/js/dashboard.js:3238
 msgid "Save current filters as a pill"
 msgstr ""
 
-#: assets/js/dashboard.js:3156
+#: assets/js/dashboard.js:3238
 msgid "+ Save"
 msgstr ""
 
-#: assets/js/dashboard.js:3162
+#: assets/js/dashboard.js:3244
 msgid "All"
 msgstr ""
 
-#: assets/js/dashboard.js:3163
+#: assets/js/dashboard.js:3245
 msgid "Plugin"
 msgstr ""
 
-#: assets/js/dashboard.js:3164
+#: assets/js/dashboard.js:3246
 msgid "Theme"
 msgstr ""
 
-#: assets/js/dashboard.js:3166
+#: assets/js/dashboard.js:3248
 msgid "MU-Plugin"
 msgstr ""
 
-#: assets/js/dashboard.js:3167
+#: assets/js/dashboard.js:3249
 msgid "Unknown"
 msgstr ""
 
-#: assets/js/dashboard.js:3170
-#: assets/js/dashboard.js:5164
+#: assets/js/dashboard.js:3252
+#: assets/js/dashboard.js:5251
 msgid "Queries"
 msgstr ""
 
-#: assets/js/dashboard.js:3171
+#: assets/js/dashboard.js:3253
 msgid "Clear filters"
 msgstr ""
 
-#: assets/js/dashboard.js:3181
+#: assets/js/dashboard.js:3263
 msgid "Callback"
 msgstr ""
 
-#: assets/js/dashboard.js:3182
-#: assets/js/dashboard.js:3934
+#: assets/js/dashboard.js:3264
+#: assets/js/dashboard.js:4021
 msgid "Hook"
 msgstr ""
 
-#: assets/js/dashboard.js:3184
+#: assets/js/dashboard.js:3266
 msgid "Qry"
 msgstr ""
 
-#: assets/js/dashboard.js:3185
+#: assets/js/dashboard.js:3267
 msgid "HTTP"
 msgstr ""
 
 #. translators: %d is the number of additional rows to show.
-#: assets/js/dashboard.js:3193
+#: assets/js/dashboard.js:3275
 #, js-format
 msgid "Show %d more"
 msgstr ""
 
 #. translators: 1: number of callbacks shown, 2: total number of callbacks.
-#: assets/js/dashboard.js:3349
+#: assets/js/dashboard.js:3431
 #, js-format
 msgid "Showing %1$s of %2$s callbacks"
 msgstr ""
 
 #. translators: %s is the total number of callbacks before filtering.
-#: assets/js/dashboard.js:3352
+#: assets/js/dashboard.js:3434
 #, js-format
 msgid "(filtered from %s)"
 msgstr ""
 
 #. translators: %d is the number of active filters.
-#: assets/js/dashboard.js:3356
+#: assets/js/dashboard.js:3438
 #, js-format
 msgid "%d filters active"
 msgstr ""
 
-#: assets/js/dashboard.js:3379
-#: assets/js/dashboard.js:4923
+#: assets/js/dashboard.js:3461
+#: assets/js/dashboard.js:5010
 msgid "Remove"
 msgstr ""
 
 #. translators: %s is the route name.
-#: assets/js/dashboard.js:3444
+#: assets/js/dashboard.js:3526
 #, js-format
 msgid "← Back to %s"
 msgstr ""
 
-#: assets/js/dashboard.js:3653
+#: assets/js/dashboard.js:3740
 msgid "Frontend"
 msgstr ""
 
-#: assets/js/dashboard.js:3654
+#: assets/js/dashboard.js:3741
 msgid "Admin"
 msgstr ""
 
-#: assets/js/dashboard.js:3656
+#: assets/js/dashboard.js:3743
 msgid "REST API"
 msgstr ""
 
-#: assets/js/dashboard.js:3657
+#: assets/js/dashboard.js:3744
 msgid "Cron"
 msgstr ""
 
-#: assets/js/dashboard.js:3670
+#: assets/js/dashboard.js:3757
 msgid "From date"
 msgstr ""
 
-#: assets/js/dashboard.js:3672
+#: assets/js/dashboard.js:3759
 msgid "To date"
 msgstr ""
 
-#: assets/js/dashboard.js:3677
+#: assets/js/dashboard.js:3764
 msgid "Pin selected profiles"
 msgstr ""
 
-#: assets/js/dashboard.js:3678
+#: assets/js/dashboard.js:3765
 msgid "Unpin selected profiles"
 msgstr ""
 
-#: assets/js/dashboard.js:3679
+#: assets/js/dashboard.js:3766
 msgid "Delete selected profiles"
 msgstr ""
 
-#: assets/js/dashboard.js:3743
+#: assets/js/dashboard.js:3830
 msgid "Select all"
 msgstr ""
 
-#: assets/js/dashboard.js:3769
+#: assets/js/dashboard.js:3856
 msgid "expired"
 msgstr ""
 
 #. translators: %d is the number of selected profiles.
-#: assets/js/dashboard.js:3821
+#: assets/js/dashboard.js:3908
 #, js-format
 msgid "%d selected"
 msgstr ""
 
-#: assets/js/dashboard.js:3862
+#: assets/js/dashboard.js:3949
 msgid "Loading cron inventory…"
 msgstr ""
 
-#: assets/js/dashboard.js:3879
+#: assets/js/dashboard.js:3966
 msgid "Failed to load cron data."
 msgstr ""
 
-#: assets/js/dashboard.js:3895
+#: assets/js/dashboard.js:3982
 msgid "Events"
 msgstr ""
 
-#: assets/js/dashboard.js:3896
+#: assets/js/dashboard.js:3983
 msgid "Recurring"
 msgstr ""
 
-#: assets/js/dashboard.js:3897
+#: assets/js/dashboard.js:3984
 msgid "One-Shot"
 msgstr ""
 
-#: assets/js/dashboard.js:3898
+#: assets/js/dashboard.js:3985
 msgid "Overdue"
 msgstr ""
 
-#: assets/js/dashboard.js:3917
+#: assets/js/dashboard.js:4004
 msgid "By Source"
 msgstr ""
 
-#: assets/js/dashboard.js:3935
+#: assets/js/dashboard.js:4022
 msgid "Next Run"
 msgstr ""
 
-#: assets/js/dashboard.js:3936
+#: assets/js/dashboard.js:4023
 msgid "Schedule"
 msgstr ""
 
 #. translators: %d is the number of cron event arguments.
-#: assets/js/dashboard.js:3954
+#: assets/js/dashboard.js:4041
 #, js-format
 msgid "(%d args)"
 msgstr ""
 
-#: assets/js/dashboard.js:3964
+#: assets/js/dashboard.js:4051
 msgid "one-shot"
 msgstr ""
 
-#: assets/js/dashboard.js:3981
+#: assets/js/dashboard.js:4068
 msgid "overdue"
 msgstr ""
 
-#: assets/js/dashboard.js:3983
+#: assets/js/dashboard.js:4070
 msgid "scheduled"
 msgstr ""
 
 #. translators: %d is the number of registered cron schedules.
-#: assets/js/dashboard.js:3996
+#: assets/js/dashboard.js:4083
 #, js-format
 msgid "Registered Schedules (%d)"
 msgstr ""
 
-#: assets/js/dashboard.js:3997
+#: assets/js/dashboard.js:4084
 msgid "Name"
 msgstr ""
 
-#: assets/js/dashboard.js:3997
+#: assets/js/dashboard.js:4084
 msgid "Interval"
 msgstr ""
 
-#: assets/js/dashboard.js:3997
+#: assets/js/dashboard.js:4084
 msgid "Display"
 msgstr ""
 
-#: assets/js/dashboard.js:4010
-#: assets/js/dashboard.js:4724
+#: assets/js/dashboard.js:4097
+#: assets/js/dashboard.js:4811
 msgid "Refresh"
 msgstr ""
 
 #. translators: %s is a human-readable time interval (e.g. "5 minutes").
-#: assets/js/dashboard.js:4033
+#: assets/js/dashboard.js:4120
 #, js-format
 msgid "%s ago"
 msgstr ""
 
 #. translators: %s is a human-readable time interval (e.g. "5 minutes").
-#: assets/js/dashboard.js:4036
+#: assets/js/dashboard.js:4123
 #, js-format
 msgid "in %s"
 msgstr ""
 
-#: assets/js/dashboard.js:4070
+#: assets/js/dashboard.js:4157
 msgid "Compare with&hellip;"
 msgstr ""
 
-#: assets/js/dashboard.js:4071
+#: assets/js/dashboard.js:4158
 msgid "Close"
 msgstr ""
 
-#: assets/js/dashboard.js:4073
+#: assets/js/dashboard.js:4160
 msgid "Loading pinned profiles&hellip;"
 msgstr ""
 
-#: assets/js/dashboard.js:4092
+#: assets/js/dashboard.js:4179
 msgid "No targets found."
 msgstr ""
 
-#: assets/js/dashboard.js:4101
+#: assets/js/dashboard.js:4188
 msgid "No pinned profiles to compare with. Pin some profiles first."
 msgstr ""
 
-#: assets/js/dashboard.js:4105
+#: assets/js/dashboard.js:4192
 msgid "Same route"
 msgstr ""
 
-#: assets/js/dashboard.js:4111
+#: assets/js/dashboard.js:4198
 msgid "Other pinned profiles"
 msgstr ""
 
-#: assets/js/dashboard.js:4152
+#: assets/js/dashboard.js:4239
 msgid "Loading comparison&hellip;"
 msgstr ""
 
-#: assets/js/dashboard.js:4166
+#: assets/js/dashboard.js:4253
 msgid "Compare failed."
 msgstr ""
 
 #. translators: %s is the method and URL of the profile being compared against.
-#: assets/js/dashboard.js:4192
+#: assets/js/dashboard.js:4279
 #, js-format
 msgid "Compared to %s"
 msgstr ""
 
-#: assets/js/dashboard.js:4195
-msgid "Dismiss"
-msgstr ""
-
-#: assets/js/dashboard.js:4200
-#: assets/js/dashboard.js:4379
+#: assets/js/dashboard.js:4287
+#: assets/js/dashboard.js:4466
 msgid "Metric"
 msgstr ""
 
-#: assets/js/dashboard.js:4200
-#: assets/js/dashboard.js:4269
+#: assets/js/dashboard.js:4287
+#: assets/js/dashboard.js:4356
 msgid "This Profile"
 msgstr ""
 
-#: assets/js/dashboard.js:4200
-#: assets/js/dashboard.js:4269
+#: assets/js/dashboard.js:4287
+#: assets/js/dashboard.js:4356
 msgid "Reference"
 msgstr ""
 
-#: assets/js/dashboard.js:4200
-#: assets/js/dashboard.js:4269
-#: assets/js/dashboard.js:4379
-#: assets/js/dashboard.js:4440
+#: assets/js/dashboard.js:4287
+#: assets/js/dashboard.js:4356
+#: assets/js/dashboard.js:4466
+#: assets/js/dashboard.js:4527
 msgid "Change"
 msgstr ""
 
-#: assets/js/dashboard.js:4209
-#: assets/js/dashboard.js:4388
+#: assets/js/dashboard.js:4296
+#: assets/js/dashboard.js:4475
 msgid "Unattributed Time"
 msgstr ""
 
-#: assets/js/dashboard.js:4222
-#: assets/js/dashboard.js:4401
+#: assets/js/dashboard.js:4309
+#: assets/js/dashboard.js:4488
 msgid "Query Time"
 msgstr ""
 
-#: assets/js/dashboard.js:4238
-#: assets/js/dashboard.js:4417
+#: assets/js/dashboard.js:4325
+#: assets/js/dashboard.js:4504
 msgid "Memory Used by Hooks"
 msgstr ""
 
-#: assets/js/dashboard.js:4267
-#: assets/js/dashboard.js:4438
+#: assets/js/dashboard.js:4354
+#: assets/js/dashboard.js:4525
 msgid "Per-Source Changes"
 msgstr ""
 
-#: assets/js/dashboard.js:4313
+#: assets/js/dashboard.js:4400
 msgid "≈ Within noise"
 msgstr ""
 
-#: assets/js/dashboard.js:4316
+#: assets/js/dashboard.js:4403
 msgid "↑ Difference observed (slower)"
 msgstr ""
 
-#: assets/js/dashboard.js:4319
+#: assets/js/dashboard.js:4406
 msgid "↓ Difference observed (faster)"
 msgstr ""
 
-#: assets/js/dashboard.js:4322
+#: assets/js/dashboard.js:4409
 msgid "↑ Slower"
 msgstr ""
 
-#: assets/js/dashboard.js:4325
+#: assets/js/dashboard.js:4412
 msgid "↓ Faster"
 msgstr ""
 
-#: assets/js/dashboard.js:4327
+#: assets/js/dashboard.js:4414
 msgid "≈ No change"
 msgstr ""
 
-#: assets/js/dashboard.js:4373
+#: assets/js/dashboard.js:4460
 msgid "vs"
 msgstr ""
 
-#: assets/js/dashboard.js:4379
-#: assets/js/dashboard.js:4440
+#: assets/js/dashboard.js:4466
+#: assets/js/dashboard.js:4527
 msgid "Profile A"
 msgstr ""
 
-#: assets/js/dashboard.js:4379
-#: assets/js/dashboard.js:4440
+#: assets/js/dashboard.js:4466
+#: assets/js/dashboard.js:4527
 msgid "Profile B"
 msgstr ""
 
-#: assets/js/dashboard.js:4519
+#: assets/js/dashboard.js:4606
 msgid "within noise"
 msgstr ""
 
-#: assets/js/dashboard.js:4529
+#: assets/js/dashboard.js:4616
 msgid "difference observed"
 msgstr ""
 
-#: assets/js/dashboard.js:4649
+#: assets/js/dashboard.js:4736
 msgid "Send to Agent"
 msgstr ""
 
-#: assets/js/dashboard.js:4650
+#: assets/js/dashboard.js:4737
 msgid "Generate a one-time prompt that gives an AI agent read-only access to your profiling data."
 msgstr ""
 
-#: assets/js/dashboard.js:4651
+#: assets/js/dashboard.js:4738
 msgid "The credential auto-expires and is scoped to Scrutineer endpoints only."
 msgstr ""
 
-#: assets/js/dashboard.js:4654
-#: assets/js/dashboard.js:4811
-#: assets/js/dashboard.js:4815
-#: assets/js/dashboard.js:4842
+#: assets/js/dashboard.js:4741
+#: assets/js/dashboard.js:4898
+#: assets/js/dashboard.js:4902
+#: assets/js/dashboard.js:4929
 msgid "Copy Prompt to Clipboard"
 msgstr ""
 
-#: assets/js/dashboard.js:4656
+#: assets/js/dashboard.js:4743
 msgid "Revoke Access"
 msgstr ""
 
-#: assets/js/dashboard.js:4658
+#: assets/js/dashboard.js:4745
 msgid "This prompt includes your site URL and a short-lived credential. Paste it into a private AI conversation — not a public or shared chat."
 msgstr ""
 
-#: assets/js/dashboard.js:4664
+#: assets/js/dashboard.js:4751
 msgid "Diagnostics Sharing"
 msgstr ""
 
 #. translators: %s is the diagnostics endpoint path.
-#: assets/js/dashboard.js:4666
+#: assets/js/dashboard.js:4753
 #, js-format
 msgid "Choose which server environment details to include when an agent reads %s."
 msgstr ""
 
-#: assets/js/dashboard.js:4667
+#: assets/js/dashboard.js:4754
 msgid "These fields are opt-in — nothing is shared unless you check it."
 msgstr ""
 
-#: assets/js/dashboard.js:4683
-#: assets/js/dashboard.js:4754
-#: assets/js/dashboard.js:4760
+#: assets/js/dashboard.js:4770
+#: assets/js/dashboard.js:4841
+#: assets/js/dashboard.js:4847
 msgid "Save Preferences"
 msgstr ""
 
-#: assets/js/dashboard.js:4690
+#: assets/js/dashboard.js:4777
 msgid "Endpoints"
 msgstr ""
 
-#: assets/js/dashboard.js:4692
-#: assets/js/dashboard.js:5019
+#: assets/js/dashboard.js:4779
+#: assets/js/dashboard.js:5106
 msgid "Endpoint"
 msgstr ""
 
-#: assets/js/dashboard.js:4692
+#: assets/js/dashboard.js:4779
 msgid "Description"
 msgstr ""
 
-#: assets/js/dashboard.js:4694
+#: assets/js/dashboard.js:4781
 msgid "System prompt (text/plain) — the API contract"
 msgstr ""
 
-#: assets/js/dashboard.js:4695
+#: assets/js/dashboard.js:4782
 msgid "Server environment details (opt-in fields only)"
 msgstr ""
 
-#: assets/js/dashboard.js:4696
+#: assets/js/dashboard.js:4783
 msgid "All profiled routes with summary statistics"
 msgstr ""
 
-#: assets/js/dashboard.js:4697
+#: assets/js/dashboard.js:4784
 msgid "Full profile detail for one request"
 msgstr ""
 
-#: assets/js/dashboard.js:4698
+#: assets/js/dashboard.js:4785
 msgid "Side-by-side comparison of two profiles"
 msgstr ""
 
-#: assets/js/dashboard.js:4699
+#: assets/js/dashboard.js:4786
 msgid "Machine-readable API manifest for AI agent discovery (public)"
 msgstr ""
 
 #. translators: %s is the API base URL.
-#: assets/js/dashboard.js:4703
+#: assets/js/dashboard.js:4790
 #, js-format
 msgid "Base URL: %s"
 msgstr ""
 
-#: assets/js/dashboard.js:4709
+#: assets/js/dashboard.js:4796
 msgid "Shared Reports"
 msgstr ""
 
-#: assets/js/dashboard.js:4710
+#: assets/js/dashboard.js:4797
 msgid "Encrypted, self-destructing links you’ve shared. Data is encrypted in your browser before upload &mdash; the relay server never sees your report contents."
 msgstr ""
 
 #. translators: 1: the "History" tab label, 2: the "Share" button label.
-#: assets/js/dashboard.js:4712
+#: assets/js/dashboard.js:4799
 #, js-format
 msgid "To share: open a profile from the %1$s tab, then click %2$s in the toolbar."
 msgstr ""
 
 #. translators: %s is the relay service name.
-#: assets/js/dashboard.js:4715
+#: assets/js/dashboard.js:4802
 #, js-format
 msgid "Powered by %s &mdash; zero-knowledge encrypted relay."
 msgstr ""
 
-#: assets/js/dashboard.js:4720
+#: assets/js/dashboard.js:4807
 msgid "Access Log"
 msgstr ""
 
-#: assets/js/dashboard.js:4721
+#: assets/js/dashboard.js:4808
 msgid "Recent API credential usage. Shows when endpoints were accessed, from which IP, and by which user agent."
 msgstr ""
 
-#: assets/js/dashboard.js:4722
-#: assets/js/dashboard.js:5050
+#: assets/js/dashboard.js:4809
+#: assets/js/dashboard.js:5137
 msgid "Loading..."
 msgstr ""
 
-#: assets/js/dashboard.js:4725
+#: assets/js/dashboard.js:4812
 msgid "Clear Log"
 msgstr ""
 
-#: assets/js/dashboard.js:4767
+#: assets/js/dashboard.js:4854
 msgid "Generating…"
 msgstr ""
 
-#: assets/js/dashboard.js:4782
+#: assets/js/dashboard.js:4869
 msgid "1 hour"
 msgstr ""
 
 #. translators: %d is the number of hours until access expires.
-#: assets/js/dashboard.js:4785
+#: assets/js/dashboard.js:4872
 #, js-format
 msgid "%d hours"
 msgstr ""
 
-#: assets/js/dashboard.js:4791
+#: assets/js/dashboard.js:4878
 msgid "Prompt copied to clipboard."
 msgstr ""
 
 #. translators: %s is the time until access expires (e.g. "2 hours").
-#: assets/js/dashboard.js:4793
+#: assets/js/dashboard.js:4880
 #, js-format
 msgid "Paste it into your AI agent. Access expires in %s."
 msgstr ""
 
-#: assets/js/dashboard.js:4799
+#: assets/js/dashboard.js:4886
 msgid "Regenerate &amp; Copy"
 msgstr ""
 
-#: assets/js/dashboard.js:4806
+#: assets/js/dashboard.js:4893
 msgid "Failed to create access key."
 msgstr ""
 
-#: assets/js/dashboard.js:4834
+#: assets/js/dashboard.js:4921
 msgid "Access revoked."
 msgstr ""
 
-#: assets/js/dashboard.js:4867
+#: assets/js/dashboard.js:4954
 msgid "Failed to load shared reports."
 msgstr ""
 
-#: assets/js/dashboard.js:4877
+#: assets/js/dashboard.js:4964
 msgid "No shared reports yet. Share a profile to see it here."
 msgstr ""
 
-#: assets/js/dashboard.js:4883
+#: assets/js/dashboard.js:4970
 msgid "Shared"
 msgstr ""
 
-#: assets/js/dashboard.js:4883
+#: assets/js/dashboard.js:4970
 msgid "Expires"
 msgstr ""
 
-#: assets/js/dashboard.js:4896
+#: assets/js/dashboard.js:4983
 msgid "Expired"
 msgstr ""
 
 #. translators: %d is the number of hours remaining.
-#: assets/js/dashboard.js:4902
+#: assets/js/dashboard.js:4989
 #, js-format
 msgid "%dh remaining"
 msgstr ""
 
 #. translators: %d is the number of days remaining.
-#: assets/js/dashboard.js:4905
+#: assets/js/dashboard.js:4992
 #, js-format
 msgid "%dd remaining"
 msgstr ""
 
-#: assets/js/dashboard.js:4920
-#: assets/js/dashboard.js:4939
+#: assets/js/dashboard.js:5007
+#: assets/js/dashboard.js:5026
 msgid "Copy Link"
 msgstr ""
 
-#: assets/js/dashboard.js:4921
-#: assets/js/dashboard.js:5466
+#: assets/js/dashboard.js:5008
+#: assets/js/dashboard.js:5556
 msgid "Revoke"
 msgstr ""
 
-#: assets/js/dashboard.js:4937
-#: assets/js/dashboard.js:5475
+#: assets/js/dashboard.js:5024
+#: assets/js/dashboard.js:5565
 msgid "Copied"
 msgstr ""
 
-#: assets/js/dashboard.js:4948
+#: assets/js/dashboard.js:5035
 msgid "Revoking…"
 msgstr ""
 
-#: assets/js/dashboard.js:4999
-#: assets/js/dashboard.js:5004
+#: assets/js/dashboard.js:5086
+#: assets/js/dashboard.js:5091
 msgid "Failed to load access log."
 msgstr ""
 
-#: assets/js/dashboard.js:5013
-#: assets/js/dashboard.js:5064
+#: assets/js/dashboard.js:5100
+#: assets/js/dashboard.js:5151
 msgid "No API access recorded yet."
 msgstr ""
 
-#: assets/js/dashboard.js:5020
+#: assets/js/dashboard.js:5107
 msgid "IP"
 msgstr ""
 
-#: assets/js/dashboard.js:5021
+#: assets/js/dashboard.js:5108
 msgid "User Agent"
 msgstr ""
 
-#: assets/js/dashboard.js:5022
+#: assets/js/dashboard.js:5109
 msgid "When"
 msgstr ""
 
 #. translators: %d is the total number of log entries.
-#: assets/js/dashboard.js:5043
+#: assets/js/dashboard.js:5130
 #, js-format
 msgid "Showing 50 of %d entries."
 msgstr ""
 
-#: assets/js/dashboard.js:5055
+#: assets/js/dashboard.js:5142
 msgid "Clear the entire API access log?"
 msgstr ""
 
-#: assets/js/dashboard.js:5130
+#: assets/js/dashboard.js:5217
 msgid "Share Report"
 msgstr ""
 
-#: assets/js/dashboard.js:5131
+#: assets/js/dashboard.js:5218
 msgid "Create an encrypted, self-destructing link. The relay server never sees your data."
 msgstr ""
 
-#: assets/js/dashboard.js:5136
+#: assets/js/dashboard.js:5223
 msgid "Expires after"
 msgstr ""
 
-#: assets/js/dashboard.js:5138
+#: assets/js/dashboard.js:5225
 msgid "1 day"
 msgstr ""
 
-#: assets/js/dashboard.js:5146
+#: assets/js/dashboard.js:5233
 msgid "Expire after first view"
 msgstr ""
 
-#: assets/js/dashboard.js:5150
+#: assets/js/dashboard.js:5237
 msgid "Add passphrase"
 msgstr ""
 
-#: assets/js/dashboard.js:5153
+#: assets/js/dashboard.js:5240
 msgid "Passphrase (share separately)"
 msgstr ""
 
-#: assets/js/dashboard.js:5160
+#: assets/js/dashboard.js:5247
 msgid "Sections to include"
 msgstr ""
 
-#: assets/js/dashboard.js:5162
+#: assets/js/dashboard.js:5249
 msgid "Summary"
 msgstr ""
 
-#: assets/js/dashboard.js:5166
+#: assets/js/dashboard.js:5253
 msgid "Trace"
 msgstr ""
 
-#: assets/js/dashboard.js:5168
+#: assets/js/dashboard.js:5255
 msgid "Options"
 msgstr ""
 
-#: assets/js/dashboard.js:5169
+#: assets/js/dashboard.js:5256
 msgid "Assets"
 msgstr ""
 
-#: assets/js/dashboard.js:5170
+#: assets/js/dashboard.js:5257
 msgid "Diagnostics"
 msgstr ""
 
-#: assets/js/dashboard.js:5175
-#: assets/js/dashboard.js:5228
-#: assets/js/dashboard.js:5398
-#: assets/js/dashboard.js:5503
+#: assets/js/dashboard.js:5262
+#: assets/js/dashboard.js:5315
+#: assets/js/dashboard.js:5488
+#: assets/js/dashboard.js:5593
 msgid "Encrypt &amp; Share"
 msgstr ""
 
-#: assets/js/dashboard.js:5176
+#: assets/js/dashboard.js:5263
 msgid "Cancel"
 msgstr ""
 
-#: assets/js/dashboard.js:5207
-#: assets/js/dashboard.js:5416
+#: assets/js/dashboard.js:5294
+#: assets/js/dashboard.js:5506
 msgid "Encrypting…"
 msgstr ""
 
-#: assets/js/dashboard.js:5229
+#: assets/js/dashboard.js:5316
 msgid "Failed to load profile data."
 msgstr ""
 
-#: assets/js/dashboard.js:5399
+#: assets/js/dashboard.js:5489
 msgid "Request failed. Please try again."
 msgstr ""
 
-#: assets/js/dashboard.js:5410
+#: assets/js/dashboard.js:5500
 msgid "Compressing…"
 msgstr ""
 
-#: assets/js/dashboard.js:5458
+#: assets/js/dashboard.js:5548
 msgid "Report encrypted and shared."
 msgstr ""
 
 #. translators: %s is the expiration date and time.
-#: assets/js/dashboard.js:5464
+#: assets/js/dashboard.js:5554
 #, js-format
 msgid "Expires: %s"
 msgstr ""
 
 #. translators: %s is the error message.
-#: assets/js/dashboard.js:5505
+#: assets/js/dashboard.js:5595
 #, js-format
 msgid "Encryption failed: %s"
 msgstr ""
 
-#: assets/js/dashboard.js:5505
-#: assets/js/dashboard.js:5629
+#: assets/js/dashboard.js:5595
+#: assets/js/dashboard.js:5719
 msgid "Unknown error"
 msgstr ""
 
 #. translators: %s is the report size in megabytes.
-#: assets/js/dashboard.js:5536
+#: assets/js/dashboard.js:5626
 #, js-format
 msgid "Report too large (%s MB). Try unchecking Trace and Timeline."
 msgstr ""
 
-#: assets/js/dashboard.js:5548
+#: assets/js/dashboard.js:5638
 msgid "Upload failed"
 msgstr ""
 
-#: assets/js/dashboard.js:5623
+#: assets/js/dashboard.js:5713
 msgid "Report revoked. The link will no longer work."
 msgstr ""
 
 #. translators: %s is the error message.
-#: assets/js/dashboard.js:5629
+#: assets/js/dashboard.js:5719
 #, js-format
 msgid "Revocation failed: %s"
 msgstr ""

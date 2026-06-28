@@ -1064,20 +1064,14 @@
 		html += '<div class="scrutinizer-qp-detail-content" style="display:none;">';
 
 		if ( canToggle ) {
-			html += '<p>Sets PHP\'s <code>SAVEQUERIES</code> constant so WordPress logs every query ';
-			html += 'with its execution time. Typical overhead is 1\u20132% per request.</p>';
-			html += '<p>Queries that run before plugin load (options autoload, core bootstrap) aren\'t captured \u2014 ';
-			html += 'usually &lt;10% of total. For full coverage from boot, add to wp-config.php:</p>';
+			html += '<p>' + __( 'Sets PHP\'s <code>SAVEQUERIES</code> constant so WordPress logs every query with its execution time. Typical overhead is 1\u20132% per request.', 'scrutinizer' ) + '</p>';
+			html += '<p>' + __( 'Queries that run before plugin load (options autoload, core bootstrap) aren\'t captured \u2014 usually less than 10% of total. For full coverage from boot, add to wp-config.php:', 'scrutinizer' ) + '</p>';
 			html += '<code class="scrutinizer-qp-code">define( \'SAVEQUERIES\', true );</code>';
 		} else if ( isOn ) {
-			html += '<p><code>SAVEQUERIES</code> is defined as <code>true</code> before plugins load, ';
-			html += 'so every query from boot is captured. To let Scrutineer manage this toggle instead, ';
-			html += 'remove the <code>define()</code> line from wp-config.php.</p>';
+			html += '<p>' + __( '<code>SAVEQUERIES</code> is defined as <code>true</code> before plugins load, so every query from boot is captured. To let Scrutineer manage this toggle instead, remove the <code>define()</code> line from wp-config.php.', 'scrutinizer' ) + '</p>';
 		} else {
-			html += '<p><code>define( \'SAVEQUERIES\', false )</code> in wp-config.php prevents redefinition \u2014 ';
-			html += 'PHP constants are immutable once set.</p>';
-			html += '<p>To enable: change <code>false</code> to <code>true</code>, or remove the line entirely ';
-			html += 'to let Scrutineer manage it via this toggle.</p>';
+			html += '<p>' + __( '<code>define( \'SAVEQUERIES\', false )</code> in wp-config.php prevents redefinition \u2014 PHP constants are immutable once set.', 'scrutinizer' ) + '</p>';
+			html += '<p>' + __( 'To enable: change <code>false</code> to <code>true</code>, or remove the line entirely to let Scrutineer manage it via this toggle.', 'scrutinizer' ) + '</p>';
 		}
 
 		html += '</div></div>';
