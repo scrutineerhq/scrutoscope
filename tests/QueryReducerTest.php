@@ -136,6 +136,13 @@ class QueryReducerTest extends TestCase {
 			// INTO OUTFILE/DUMPFILE path and @vars are never treated as tables.
 			array( "SELECT * FROM wp_x INTO OUTFILE '/tmp/secret.csv'", 'SELECT wp_x' ),
 			array( 'SELECT id INTO @myvar FROM wp_posts', 'SELECT wp_posts' ),
+			// Idempotency — reduce() must be a no-op on its own output so the
+			// defensive read-time re-reduction (D26) keeps the table name.
+			array( 'SELECT wp_posts', 'SELECT wp_posts' ),
+			array( 'DELETE wp_postmeta', 'DELETE wp_postmeta' ),
+			array( 'SELECT wp_posts, wp_postmeta', 'SELECT wp_posts, wp_postmeta' ),
+			array( 'UPDATE wp_options', 'UPDATE wp_options' ),
+			array( 'SHOW wp_users', 'SHOW wp_users' ),
 		);
 	}
 }
