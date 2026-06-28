@@ -430,19 +430,6 @@
   /* ------------------------------------------------------------------ *
    * Renderer                                                            *
    * ------------------------------------------------------------------ */
-  function ensureDeutFilter() {
-    if (document.getElementById('scrut-deut')) return;
-    var svg = svgEl('svg', { width: '0', height: '0', 'aria-hidden': 'true' });
-    setStyle(svg, { position: 'absolute', width: '0', height: '0' });
-    var filt = svgEl('filter', { id: 'scrut-deut' });
-    filt.appendChild(svgEl('feColorMatrix', {
-      type: 'matrix',
-      values: '0.625 0.375 0 0 0  0.7 0.3 0 0 0  0 0.3 0.7 0 0  0 0 0 1 0'
-    }));
-    svg.appendChild(filt);
-    document.body.appendChild(svg);
-  }
-
   function ticksFor(T) {
     var target = T / 6 || 1;
     var pow = Math.pow(10, Math.floor(Math.log10(target)));
@@ -461,13 +448,12 @@
     TH = THEMES[opts.scheme === 'dark' ? 'dark' : 'fresh'];
     var model = deriveModel(profileData);
     RANK_COLORS = model.pluginColors || {};
-    ensureDeutFilter();
 
     var optShowMemory = opts.showMemory !== false;
     var optShowQueries = opts.showQueries !== false;
 
     var state = {
-      zoom: 1, panFrac: 0, cbSim: false,
+      zoom: 1, panFrac: 0,
       hoveredId: null, selectedId: null, vpFocused: false,
       drag: null, tipX: 0, tipY: 0
     };
@@ -793,15 +779,6 @@
       grp.appendChild(resetBtn);
       row.appendChild(grp);
 
-      // Deuteranopia toggle
-      var cbBtn = el('button', {
-        border: '1px solid ' + (state.cbSim ? TH.accent : TH.ctlBorder),
-        background: state.cbSim ? TH.accent : TH.btnBg, color: state.cbSim ? TH.accentText : TH.btnText,
-        padding: '6px 10px', fontSize: '12px', borderRadius: '4px', cursor: 'pointer', fontWeight: state.cbSim ? 600 : 400
-      }, { type: 'button', text: state.cbSim ? 'Deuteranopia ✓' : 'Deuteranopia sim' });
-      cbBtn.addEventListener('click', function () { state.cbSim = !state.cbSim; paint(); });
-      row.appendChild(cbBtn);
-
       row.appendChild(el('div', { flex: '1', minWidth: '10px' }));
       row.appendChild(el('span', { fontSize: '11px', color: TH.faint, whiteSpace: 'nowrap' },
         { text: 'Scroll to zoom · drag to pan · ←/→ to step' }));
@@ -816,7 +793,7 @@
       head.appendChild(el('span', { fontSize: '11px', color: TH.faint }, { text: 'share of ' + fmtMs(T) + ' ms · sorted by cost' }));
       box.appendChild(head);
 
-      var filterWrap = el('div', { filter: state.cbSim ? 'url(#scrut-deut)' : 'none' });
+      var filterWrap = el('div', {});
       var bar = el('div', { display: 'flex', width: '100%', height: '34px', borderRadius: '4px', overflow: 'hidden', border: '1px solid ' + TH.line });
       var selKey = state.selectedId ? grpKeyOfSpan(spanById(state.selectedId)) : null;
       var hovKey = state.hoveredId ? grpKeyOfSpan(spanById(state.hoveredId)) : null;
@@ -871,7 +848,7 @@
       vp.addEventListener('blur', function () { state.vpFocused = false; });
       refs.viewport = vp;
 
-      var filterWrap = el('div', { filter: state.cbSim ? 'url(#scrut-deut)' : 'none' });
+      var filterWrap = el('div', {});
       vp.appendChild(filterWrap);
 
       var track = el('div', {
@@ -1130,7 +1107,7 @@
 
     /* ---------- legend ---------- */
     function buildLegend() {
-      var filterWrap = el('div', { filter: state.cbSim ? 'url(#scrut-deut)' : 'none' });
+      var filterWrap = el('div', {});
       var wrap = el('div', { display: 'flex', flexWrap: 'wrap', gap: '6px 18px', marginTop: '18px', paddingTop: '16px', borderTop: '1px solid ' + TH.lineSoft });
       model.sources.forEach(function (a) {
         var isU = a.type === 'unattributed';
