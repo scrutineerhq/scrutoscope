@@ -64,6 +64,16 @@ class QueryReducer {
 			return 'SELECT FOUND_ROWS()';
 		}
 
+		// Idempotency: an already-reduced query ("SELECT wp_posts",
+		// "UPDATE wp_a, wp_b") has no FROM/UPDATE keyword for extract_tables() to
+		// find, so a second pass would drop the table and leave only the verb.
+		// Read paths re-reduce defensively (D26), so reduce() must be a no-op on
+		// its own output. A known verb followed only by a comma-separated table
+		// list is already shape-only (no values), so passing it through is safe.
+		if ( preg_match( '/^(SELECT|INSERT|UPDATE|DELETE|REPLACE|SHOW|CREATE|DROP|ALTER|TRUNCATE)(\s+[A-Za-z0-9_$]+(\s*,\s*[A-Za-z0-9_$]+)*)?$/', $sql ) ) {
+			return $sql;
+		}
+
 		$tokens = self::tokenize( $sql );
 		if ( empty( $tokens ) ) {
 			return '(query)';
