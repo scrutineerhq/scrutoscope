@@ -3501,9 +3501,14 @@
 			var va = a[ sortField ];
 			var vb = b[ sortField ];
 
-			// Numeric comparison for anything that looks like a number.
-			var na = parseFloat( va );
-			var nb = parseFloat( vb );
+			// Numeric comparison only when BOTH values are fully numeric.
+			// parseFloat() is too lenient: it reads 2026 out of a
+			// "2026-06-27 14:30:00" datetime, so every same-year capture compared
+			// as equal and the Last Captured column wouldn't sort. Number() is
+			// strict (whole string), so datetimes fall through to the string
+			// comparison below — MySQL datetime sorts chronologically as text.
+			var na = ( '' === String( va ).trim() ) ? NaN : Number( va );
+			var nb = ( '' === String( vb ).trim() ) ? NaN : Number( vb );
 			if ( ! isNaN( na ) && ! isNaN( nb ) ) {
 				return ( 'asc' === sortDir ) ? na - nb : nb - na;
 			}
