@@ -849,6 +849,9 @@ class Ajax {
 	public static function get_history() {
 		$args = array();
 
+		if ( ! empty( $_GET['profile_type'] ) ) {
+			$args['profile_type'] = sanitize_text_field( wp_unslash( $_GET['profile_type'] ) );
+		}
 		if ( ! empty( $_GET['route_key'] ) ) {
 			$args['route_key'] = sanitize_text_field( wp_unslash( $_GET['route_key'] ) );
 		}

@@ -4288,6 +4288,12 @@
 			html += '</tbody></table></details>';
 		}
 
+		// Recent cron profiles.
+		html += '<div id="scrutinizer-cron-profiles">';
+		html += '<h4>' + __( 'Recent Cron Profiles', 'scrutinizer' ) + '</h4>';
+		html += '<p class="scrutinizer-empty">' + __( 'Loading\u2026', 'scrutinizer' ) + '</p>';
+		html += '</div>';
+
 		// Refresh button.
 		html += '<div class="scrutinizer-cron-actions">';
 		html += '<button class="button" id="scrutinizer-cron-refresh">↻ ' + __( 'Refresh', 'scrutinizer' ) + '</button>';
@@ -4297,11 +4303,72 @@
 
 		$( '#scrutinizer-history-view' ).html( html );
 
+		// Fetch recent cron profiles.
+		fetchCronProfiles();
+
 		// Bind refresh.
 		$( '#scrutinizer-cron-refresh' ).on( 'click', function() {
 			cronData = null;
 			fetchCronInventory();
+			fetchCronProfiles();
 		} );
+	}
+
+	function fetchCronProfiles() {
+		$.get( scrutinizerAdmin.ajaxUrl, {
+			action:       'scrutinizer_get_history',
+			nonce:        scrutinizerAdmin.nonce,
+			profile_type: 'background',
+			per_page:     20,
+			paged:        1
+		} ).done( function( response ) {
+			if ( ! response.success ) {
+				return;
+			}
+			var profiles = response.data.profiles || [];
+			renderCronProfiles( profiles );
+		} );
+	}
+
+	function renderCronProfiles( profiles ) {
+		var $container = $( '#scrutinizer-cron-profiles' );
+		if ( ! $container.length ) {
+			return;
+		}
+
+		var html = '<h4>' + __( 'Recent Cron Profiles', 'scrutinizer' ) + '</h4>';
+
+		if ( ! profiles || 0 === profiles.length ) {
+			html += '<p class="scrutinizer-empty">' + __( 'No cron profiles captured yet. Enable cron profiling above to start.', 'scrutinizer' ) + '</p>';
+			$container.html( html );
+			return;
+		}
+
+		html += '<table class="scrutinizer-profile-table scrutinizer-cron-profile-table widefat">';
+		html += '<thead><tr>';
+		html += '<th>' + __( 'Captured', 'scrutinizer' ) + '</th>';
+		html += '<th class="numeric">' + __( 'Duration', 'scrutinizer' ) + '</th>';
+		html += '<th>' + __( 'Route', 'scrutinizer' ) + '</th>';
+		html += '<th>' + __( 'Actions', 'scrutinizer' ) + '</th>';
+		html += '</tr></thead><tbody>';
+
+		for ( var i = 0; i < profiles.length; i++ ) {
+			var p = profiles[ i ];
+			var durMs = ( parseInt( p.duration_ns, 10 ) / 1e6 ).toFixed( 1 );
+
+			html += '<tr>';
+			html += '<td>' + esc( p.captured_at ) + '</td>';
+			html += '<td class="numeric">' + esc( durMs ) + ' ms</td>';
+			html += '<td><code>' + esc( p.route_key || p.request_url || '' ) + '</code></td>';
+			html += '<td class="scrutinizer-actions">';
+			html += '<a href="#" class="scrutinizer-view-profile" data-profile-id="' + parseInt( p.id, 10 ) + '">' + __( 'View', 'scrutinizer' ) + '</a>';
+			html += '</td>';
+			html += '</tr>';
+		}
+
+		html += '</tbody></table>';
+
+		$container.html( html );
 	}
 
 	function formatCronTime( timestamp, overdue, overdueBy ) {

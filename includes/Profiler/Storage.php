@@ -1071,6 +1071,11 @@ class Storage {
 		$where = array( '1=1' );
 		$vals  = array();
 
+		if ( ! empty( $args['profile_type'] ) ) {
+			$where[] = 'profile_type = %s';
+			$vals[]  = $args['profile_type'];
+		}
+
 		if ( ! empty( $args['route_key'] ) ) {
 			$where[] = 'route_key = %s';
 			$vals[]  = $args['route_key'];
