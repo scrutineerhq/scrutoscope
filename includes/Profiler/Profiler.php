@@ -473,6 +473,7 @@ class Profiler {
 			'method'             => $request_method,
 			'duration_ns'        => $duration_ns,
 			'bootstrap_ns'       => ( $this->boot_ns > 0 ) ? max( 0, $this->request_start_ns - $this->boot_ns ) : 0,
+			'boot_phases'        => $this->build_boot_phases(),
 			'route_class'        => $this->route_class,
 			'wp_version'         => get_bloginfo( 'version' ),
 			'timestamp'          => time(),
@@ -1014,6 +1015,43 @@ class Profiler {
 			}
 		);
 		return $loads;
+	}
+
+	/**
+	 * Split the pre-plugin bootstrap into the phases we can actually hook.
+	 *
+	 * The bootstrap window runs from the mu-plugin boot timer to plugins_loaded. The
+	 * only hookable point in that window is muplugins_loaded (captured by the
+	 * early mu-plugin), so we split into the must-use phase and the
+	 * active-plugin-loading phase. Anything before the boot timer (SAPI start,
+	 * drop-ins, the must-use plugins loaded before ours) is not measurable and
+	 * is deliberately not invented.
+	 *
+	 * @return array<int, array{phase: string, ns: int}>
+	 */
+	private function build_boot_phases() {
+		if ( $this->boot_ns <= 0 || $this->request_start_ns <= 0 ) {
+			return array();
+		}
+		if ( defined( 'SCRUTINIZER_MUPLUGINS_LOADED_NS' ) ) {
+			$mu = (int) SCRUTINIZER_MUPLUGINS_LOADED_NS;
+			return array(
+				array(
+					'phase' => 'Must-use plugins',
+					'ns'    => max( 0, $mu - $this->boot_ns ),
+				),
+				array(
+					'phase' => 'Active plugins loading',
+					'ns'    => max( 0, $this->request_start_ns - $mu ),
+				),
+			);
+		}
+		return array(
+			array(
+				'phase' => 'Pre-plugin bootstrap',
+				'ns'    => max( 0, $this->request_start_ns - $this->boot_ns ),
+			),
+		);
 	}
 
 	/**
