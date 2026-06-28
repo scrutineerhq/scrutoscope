@@ -24,7 +24,7 @@ class TimelineSyncTest extends TestCase {
 	/**
 	 * sha256 the shared renderer is pinned to. Must equal the relay's constant.
 	 */
-	const EXPECTED_SHA256 = '186b8f2d512b988f1273b3a07168a4360d47b365f220b6f29303cd412914c0c1';
+	const EXPECTED_SHA256 = 'a08bfbef616cbbf448217792a8699a758af4a858675aaab15054e193392463c6';
 
 	/**
 	 * The shared renderer must match the byte-identical hash shared with the relay.

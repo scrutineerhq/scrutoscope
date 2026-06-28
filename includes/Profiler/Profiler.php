@@ -636,6 +636,9 @@ class Profiler {
 			'method'   => isset( $parsed_args['method'] ) ? strtoupper( $parsed_args['method'] ) : 'GET',
 			'start_ns' => hrtime( true ),
 			'caller'   => self::get_http_caller(),
+			// WP requests default to blocking. 'blocking' => false is
+			// fire-and-forget — PHP doesn't wait for the response.
+			'blocking' => isset( $parsed_args['blocking'] ) ? (bool) $parsed_args['blocking'] : true,
 		);
 		return $preempt; // Never interfere with the request.
 	}
@@ -673,6 +676,7 @@ class Profiler {
 			'duration_ns' => max( 0, $end_ns - $pending['start_ns'] ),
 			'caller'      => $pending['caller'],
 			'is_error'    => $is_error,
+			'blocking'    => $pending['blocking'],
 		);
 
 		return $response;
@@ -696,6 +700,7 @@ class Profiler {
 				'offset_ns'   => $offset_ns,
 				'caller'      => $call['caller'],
 				'is_error'    => $call['is_error'],
+				'blocking'    => isset( $call['blocking'] ) ? $call['blocking'] : true,
 			);
 		}
 
