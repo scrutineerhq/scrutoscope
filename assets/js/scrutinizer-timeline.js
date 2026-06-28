@@ -227,7 +227,10 @@
         id: 'h' + i, host: parseHost(h.url), method: h.method || 'GET',
         status: h.status != null ? h.status : 0,
         start: (h.offset_ns || 0) / 1e6,
-        dur: (h.duration_ns ? h.duration_ns / 1e6 : (h.duration_ms || 0))
+        dur: (h.duration_ns ? h.duration_ns / 1e6 : (h.duration_ms || 0)),
+        // Default to blocking — WP's own default, and the safe read for legacy
+        // captures that predate the flag. Only an explicit false is async.
+        blocking: h.blocking !== false
       };
     });
 
@@ -614,11 +617,15 @@
       var tagColor = isHttp ? '#b45309' : isU ? '#6b7280' : colorFor(hSpan.type, hSpan.src);
       var name, tag, m1l, m1, m2l, m2, m3l, m3;
       if (isHttp) {
-        var blocking = hSpan.dur / T > 0.2;
         name = hSpan.host; tag = hSpan.method + ' ' + hSpan.status + ' · external';
         m1l = 'Duration'; m1 = fmtMs(hSpan.dur) + ' ms';
         m2l = 'Started'; m2 = '+' + fmtMs(hSpan.start) + ' ms';
-        m3l = 'Blocking'; m3 = blocking ? 'yes' : 'no';
+        if (hSpan.blocking === false) {
+          // Fire-and-forget (blocking:false) — PHP never waited for the response.
+          m3l = 'Mode'; m3 = 'async · non-blocking';
+        } else {
+          m3l = 'Share'; m3 = (hSpan.dur / T * 100).toFixed(1) + '%';
+        }
       } else if (isU) {
         name = 'Unattributed Time'; tag = 'unattributed';
         m1l = 'Duration'; m1 = fmtMs(hSpan.dur) + ' ms';
@@ -868,9 +875,10 @@
         }));
       });
 
-      // overlay band for blocking HTTP
+      // Overlay band for a dominant BLOCKING wait. Async (fire-and-forget)
+      // calls never make PHP wait, so they never get this band.
       model.http.forEach(function (h) {
-        if (h.dur / T > 0.2) {
+        if (h.blocking && h.dur / T > 0.2) {
           var ob = el('div', {
             position: 'absolute', left: pct(h.start) + '%', width: pct(h.dur) + '%', top: 0, bottom: 0,
             background: 'rgba(180,83,9,0.08)', borderLeft: '1px dashed rgba(180,83,9,.5)',
@@ -977,30 +985,44 @@
       lane.appendChild(el('span', { position: 'absolute', left: '6px', top: '7px', fontSize: '9px', letterSpacing: '.06em', color: TH.laneLabel, textTransform: 'uppercase', pointerEvents: 'none', zIndex: 3 }, { text: 'HTTP' }));
       model.http.forEach(function (h) {
         var w = Math.max(pct(h.dur), 0.6);
-        var blocking = h.dur / T > 0.2;
+        // Blocking is purely the captured request flag — NOT duration. A
+        // synchronous call is solid; a fire-and-forget (blocking:false) call is
+        // hollow + dashed because PHP never waits for it. Bar width already
+        // shows duration, so nothing here keys off it.
+        var async = (h.blocking === false);
+        // Whether the label fits inside is a pure layout question (bar width),
+        // independent of blocking: wide bars self-label inside so the text can't
+        // collide with a trailing call near the right edge.
+        var labelInside = w > 22;
         var xStart = pct(h.start);
         var xEnd = pct(h.start + h.dur);
-        var bar = el('div', {
-          position: 'absolute', left: xStart + '%', width: w + '%', top: blocking ? '3px' : '5px',
-          height: blocking ? '18px' : '15px', background: blocking ? '#9a4708' : '#b45309', borderRadius: '3px',
-          cursor: 'pointer', display: 'flex', alignItems: 'center', minWidth: '8px', overflow: 'hidden',
-          boxShadow: '0 1px 2px rgba(180,83,9,.35)', zIndex: 3
-        }, { 'data-id': h.id, title: h.host + ' · ' + h.method + ' ' + h.status + ' · ' + fmtMs(h.dur) + ' ms' });
-        if (blocking) {
-          // A blocking call is wide by definition — self-label INSIDE the bar so
-          // its label can never collide with a trailing call near the right edge.
+        var label = h.host + ' · ' + fmtMs(h.dur) + ' ms' + (async ? ' · async' : '');
+        var barStyle = {
+          position: 'absolute', left: xStart + '%', width: w + '%', top: '4px', height: '16px',
+          borderRadius: '3px', cursor: 'pointer', display: 'flex', alignItems: 'center',
+          minWidth: '8px', overflow: 'hidden', zIndex: 3
+        };
+        if (async) {
+          barStyle.background = 'rgba(180,83,9,0.10)';
+          barStyle.border = '1px dashed #b45309';
+        } else {
+          barStyle.background = '#b45309';
+          barStyle.boxShadow = '0 1px 2px rgba(180,83,9,.35)';
+        }
+        var bar = el('div', barStyle, { 'data-id': h.id, title: h.method + ' ' + h.status + ' · ' + label });
+        if (labelInside) {
           bar.appendChild(el('span', {
-            padding: '0 6px', fontSize: '9px', fontWeight: 700, letterSpacing: '.04em', color: '#fff',
+            padding: '0 6px', fontSize: '9px', fontWeight: 700, letterSpacing: '.04em',
+            color: async ? '#92400e' : '#fff',
             pointerEvents: 'none', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
-          }, { text: 'BLOCKING · ' + h.host + ' · ' + fmtMs(h.dur) + ' ms' }));
+          }, { text: label }));
         }
         bar.addEventListener('mouseenter', function (e) { showTip(h.id, e.clientX, e.clientY); });
         bar.addEventListener('mousemove', function (e) { moveTip(e.clientX, e.clientY); });
         bar.addEventListener('mouseleave', hideTip);
         lane.appendChild(bar);
-        // Non-blocking calls keep an external label, but flip it to the LEFT of
-        // the bar when the bar ends near the right edge so it can't run off-screen.
-        if (!blocking) {
+        // Narrow bars keep an external label, flipped LEFT near the right edge.
+        if (!labelInside) {
           var lblStyle = {
             position: 'absolute', top: '7px', whiteSpace: 'nowrap', fontSize: '10px',
             color: '#92400e', fontWeight: 600, pointerEvents: 'none', zIndex: 3
@@ -1011,7 +1033,7 @@
           } else {
             lblStyle.left = 'calc(' + xEnd + '% + 6px)';
           }
-          lane.appendChild(el('span', lblStyle, { text: h.host + ' · ' + fmtMs(h.dur) + ' ms' }));
+          lane.appendChild(el('span', lblStyle, { text: label }));
         }
       });
       return lane;

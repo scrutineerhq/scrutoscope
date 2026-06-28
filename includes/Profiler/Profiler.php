@@ -326,7 +326,9 @@ class Profiler {
 
 		// Track external HTTP calls via WP HTTP API.
 		add_filter( 'pre_http_request', array( $this, 'track_http_start' ), 1, 3 );
-		add_filter( 'http_response', array( $this, 'track_http_end' ), PHP_INT_MAX, 3 );
+		// http_api_debug fires for EVERY request — including non-blocking
+		// (fire-and-forget) calls, which never reach the http_response filter.
+		add_action( 'http_api_debug', array( $this, 'track_http_end' ), PHP_INT_MAX, 2 );
 
 		// Core-developer signals: deprecations + doing_it_wrong. Captured only
 		// while profiling (non-profiled requests pay nothing). Aggregate only —
@@ -636,6 +638,9 @@ class Profiler {
 			'method'   => isset( $parsed_args['method'] ) ? strtoupper( $parsed_args['method'] ) : 'GET',
 			'start_ns' => hrtime( true ),
 			'caller'   => self::get_http_caller(),
+			// WP requests default to blocking. 'blocking' => false is
+			// fire-and-forget — PHP doesn't wait for the response.
+			'blocking' => isset( $parsed_args['blocking'] ) ? (bool) $parsed_args['blocking'] : true,
 		);
 		return $preempt; // Never interfere with the request.
 	}
@@ -643,16 +648,16 @@ class Profiler {
 	/**
 	 * Record the completion of an external HTTP call.
 	 *
-	 * Hooked on `http_response` filter at PHP_INT_MAX priority.
+	 * Hooked on the `http_api_debug` action, which fires once per request with
+	 * the 'response' context for blocking AND non-blocking calls (the
+	 * http_response filter never runs for fire-and-forget requests).
 	 *
-	 * @param array|\WP_Error $response    HTTP response or error.
-	 * @param array           $parsed_args Parsed request arguments.
-	 * @param string          $url         The request URL.
-	 * @return array|\WP_Error  Unchanged response.
+	 * @param array|\WP_Error $response HTTP response or error.
+	 * @param string          $context  Debug context — only 'response' is the end.
 	 */
-	public function track_http_end( $response, $parsed_args, $url ) {
-		if ( empty( $this->http_pending ) ) {
-			return $response;
+	public function track_http_end( $response, $context ) {
+		if ( 'response' !== $context || empty( $this->http_pending ) ) {
+			return;
 		}
 
 		$pending = array_pop( $this->http_pending );
@@ -673,9 +678,8 @@ class Profiler {
 			'duration_ns' => max( 0, $end_ns - $pending['start_ns'] ),
 			'caller'      => $pending['caller'],
 			'is_error'    => $is_error,
+			'blocking'    => $pending['blocking'],
 		);
-
-		return $response;
 	}
 
 	/**
@@ -696,6 +700,7 @@ class Profiler {
 				'offset_ns'   => $offset_ns,
 				'caller'      => $call['caller'],
 				'is_error'    => $call['is_error'],
+				'blocking'    => isset( $call['blocking'] ) ? $call['blocking'] : true,
 			);
 		}
 
