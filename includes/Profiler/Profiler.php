@@ -286,8 +286,8 @@ class Profiler {
 		$this->phase_markers['profiler_start'] = $this->request_start_ns;
 		$this->phase_memory['profiler_start']  = memory_get_usage();
 
-		$this->call_stack   = new CallStack();
-		$this->lightweight  = (bool) get_option( 'scrutinizer_lightweight_mode', false );
+		$this->call_stack  = new CallStack();
+		$this->lightweight = (bool) get_option( 'scrutinizer_lightweight_mode', false );
 		$this->call_stack->set_lightweight( $this->lightweight );
 		$this->instrumentor = new Instrumentor( $this->call_stack );
 
