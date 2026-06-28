@@ -221,11 +221,13 @@ function scrutinizer_capture_banner() {
 		return;
 	}
 
-	$text = esc_html__( 'Profiling active - keep browsing to capture more pages.', 'scrutinizer' );
+	$text     = esc_html__( 'Profiling active - keep browsing to capture more pages.', 'scrutinizer' );
+	$cta_url  = esc_url( admin_url( 'tools.php?page=scrutinizer' ) );
+	$cta_text = esc_html__( 'Return to Scrutinizer to stop.', 'scrutinizer' );
 	?>
 	<div id="scrutinizer-capture-banner" role="status" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:100001;background:#1d2327;color:#f0f0f1;font:13px/1.4 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,sans-serif;padding:10px 16px;align-items:center;gap:10px;box-shadow:0 -1px 4px rgba(0,0,0,.15);justify-content:center;border-top:2px solid #00ba37;">
 		<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#00ba37;flex-shrink:0;"></span>
-		<span><?php echo $text; ?></span>
+		<span><?php echo $text; ?> <a href="<?php echo $cta_url; ?>" style="color:#72aee6;text-decoration:none;"><?php echo $cta_text; ?></a></span>
 		<button type="button" id="scrutinizer-capture-dismiss" style="background:none;border:none;color:#c3c4c7;cursor:pointer;font-size:18px;line-height:1;padding:8px 12px;min-width:32px;min-height:32px;margin-left:4px;display:inline-flex;align-items:center;justify-content:center;" aria-label="<?php esc_attr_e( 'Dismiss', 'scrutinizer' ); ?>">&times;</button>
 	</div>
 	<script>

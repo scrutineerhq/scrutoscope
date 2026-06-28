@@ -2385,3 +2385,7 @@ msgstr ""
 #: scrutinizer.php:230
 msgid "Dismiss"
 msgstr ""
+
+#: scrutinizer.php:226
+msgid "Return to Scrutinizer to stop."
+msgstr ""
