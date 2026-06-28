@@ -21,7 +21,7 @@ Scrutinizer is a read-only profiling plugin for WordPress. It instruments every 
 * **Server Request Duration** — Total wall-clock time for the PHP request
 * **Source Attribution** — Every hook callback traced to its plugin/theme/core with exclusive and inclusive timing
 * **Database Queries** — Query text (sanitized), execution time, caller, and source
-* **HTTP Calls** — External requests with URL, duration, and response code
+* **HTTP Calls** — External request destination host (paths and query strings are stripped), duration, response code, and whether PHP waited for the response (blocking vs. async)
 * **Autoloaded Options** — Option names, sizes, and sources contributing to autoload bloat
 * **Enqueued Assets** — Scripts and stylesheets with sizes and dependency chains
 * **Hook Execution Trace** — Full callback tree by WordPress lifecycle phase
@@ -41,11 +41,11 @@ Scrutinizer is a read-only profiling plugin for WordPress. It instruments every 
 
 = Design Philosophy =
 
-* **Read-only** — Scrutinizer measures. It never modifies your site.
+* **Read-only by design** — Scrutinizer does not change your content, themes, plugins, or site behavior. It stores its own profiling tables, settings, and scheduled cleanup events (plus a record per report you choose to share). Optional early-boot timing adds a small must-use plugin only when you enable it.
 * **Data first** — The dashboard leads with profiling data, not settings.
-* **Trustworthy defaults** — Safe to activate and forget.
-* **WordPress native** — Standard admin patterns, no custom dark themes.
-* **Privacy by design** — No telemetry. SQL sanitized. Sharing is opt-in and encrypted.
+* **Off until asked** — Background measurement, query profiling, and early-boot timing are all opt-in. A fresh install just adds its tables and a cleanup task.
+* **WordPress native** — Standard admin patterns.
+* **Privacy by design** — No telemetry. SQL is reduced to verb + table; outbound HTTP URLs are reduced to scheme + host. Sharing is opt-in and end-to-end encrypted.
 
 == Installation ==
 
@@ -54,13 +54,13 @@ Scrutinizer is a read-only profiling plugin for WordPress. It instruments every 
 3. Activate through the Plugins menu
 4. Go to Tools → Scrutinizer
 
-Profiles begin capturing automatically at 10% sample rate.
+Background measurement is optional and **off by default**. To capture a profile, open Tools → Scrutinizer and start a profiling session, or enable background measurement with a sample rate you choose.
 
 == Frequently Asked Questions ==
 
 = Does Scrutinizer slow down my site? =
 
-There are two kinds of overhead. An always-on check on every request — about 2ms or less — decides whether the request is being profiled; this is what every visitor pays, and it's negligible. When a request *is* being profiled (an admin session, or the sampled fraction of background traffic), instrumenting the hooks and timing every callback adds roughly 250ms in our benchmarks. Both vary a lot with your environment — number of active plugins, OPcache, whether MySQL is local or remote, your hardware, and current load — so we report what we measured rather than promising a number. At the default 10% background sample rate, most requests only pay the ~2ms check. And you're always one click from zero: deactivating Scrutinizer removes all overhead and keeps your captured profiles (only deleting the plugin removes the data).
+There are two kinds of overhead. An always-on check on every request — about 2ms or less — decides whether the request is being profiled; this is what every visitor pays, and it's negligible. When a request *is* being profiled (an admin session, or the sampled fraction of background traffic), instrumenting the hooks and timing every callback adds roughly 250ms in our benchmarks. Both vary a lot with your environment — number of active plugins, OPcache, whether MySQL is local or remote, your hardware, and current load — so we report what we measured rather than promising a number. Background measurement is off by default; when you turn it on you choose the sample rate, and at a low rate most requests only pay the ~2ms check. Query detail is a separate opt-in: enabling Query Profiling turns on WordPress `SAVEQUERIES`, which makes WordPress keep query text, timing, and caller in memory for the request — extra overhead you only pay when you ask for query detail, so leave it off when you just need request and source timing. And you're always one click from zero: deactivating Scrutinizer removes all overhead and keeps your captured profiles (only deleting the plugin removes the data).
 
 = What data leaves my server? =
 
@@ -73,6 +73,37 @@ Yes. Scrutinizer profiles any WordPress request, including WooCommerce pages, AJ
 = Can I use it on a production site? =
 
 Yes, with a low sample rate (0.1% or 1%). Scrutinizer is designed for background capture at scale. Use higher rates for focused debugging.
+
+== External Services ==
+
+Scrutinizer is local-first and does not phone home. It contacts exactly one external service, and only when you explicitly choose to share a report.
+
+**Service:** Scrutinizer relay — zero-knowledge report sharing.
+**Provided by:** The Scrutineer Project (https://scrutinizer.dev). Relay source: https://github.com/scrutineerhq/scrutinizer-relay
+
+**When it is contacted (admin-initiated only):**
+
+* When you click **Send to Support** / **Encrypt & Share** to create a shared report.
+* When you **revoke** a report you previously shared.
+* When you open a relay-hosted shared report link in your browser.
+
+It is never contacted during normal profiling, page loads, or background capture.
+
+**What is sent:**
+
+* The **encrypted** report ciphertext and its initialization vector (IV).
+* The time-to-live (TTL) you choose and an optional burn-after-reading flag.
+* Key-derivation metadata if you set a passphrase — never the passphrase itself.
+* A revoke token, so you can delete the report later.
+* Normal HTTP request metadata (IP address, user agent) visible to any web service.
+
+**What is never sent:**
+
+* The decryption key — it stays in the URL fragment (after `#`), which browsers never transmit to the server.
+* Your passphrase.
+* Any plaintext profile data.
+
+**Data retention:** a shared report expires after the TTL you choose, can be set to burn after its first read, and can be revoked manually at any time. The relay only ever stores ciphertext.
 
 == Changelog ==
 
