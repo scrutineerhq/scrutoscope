@@ -5370,6 +5370,9 @@
 						source_type: sourceType,
 						source_name: sourceName,
 						is_error: h.is_error || false,
+						// Preserve the blocking flag — without it the shared viewer
+						// would default a fire-and-forget call to blocking.
+						blocking: h.blocking !== false,
 						offset_ms: ( h.offset_ns || 0 ) / 1e6
 					};
 				} );

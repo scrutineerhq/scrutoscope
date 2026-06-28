@@ -63,4 +63,24 @@ class SanitizerTest extends TestCase {
 	public function test_sanitize_sql_reduces_to_verb_and_table() {
 		$this->assertSame( 'SELECT wp_options', Sanitizer::sanitize_sql( "SELECT option_value FROM wp_options WHERE option_name = 'siteurl' LIMIT 1" ) );
 	}
+
+	/**
+	 * Outbound HTTP URLs are reduced to scheme+host on output, so a legacy
+	 * stored profile (written before write-time reduction) can't leak a webhook
+	 * token through a share/export. Guards the http_calls output path.
+	 */
+	public function test_http_call_urls_are_reduced_to_host_on_output() {
+		$data  = array(
+			'http_calls' => array(
+				array( 'url' => 'https://hooks.slack.com/services/T00/B11/SuperSecretToken', 'method' => 'POST' ),
+				array( 'url' => 'https://api.telegram.org/bot999:SECRETKEY/sendMessage', 'method' => 'GET' ),
+			),
+		);
+		$clean = Sanitizer::sanitize( $data );
+
+		$this->assertSame( 'https://hooks.slack.com', $clean['http_calls'][0]['url'] );
+		$this->assertSame( 'https://api.telegram.org', $clean['http_calls'][1]['url'] );
+		$this->assertStringNotContainsString( 'SuperSecretToken', wp_json_encode( $clean ) );
+		$this->assertStringNotContainsString( 'SECRETKEY', wp_json_encode( $clean ) );
+	}
 }
