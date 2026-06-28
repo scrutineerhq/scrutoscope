@@ -531,13 +531,11 @@ class Commands {
 	 */
 	public function mu_plugin( $args ) {
 		$action  = $args[0];
-		$mu_dir  = WPMU_PLUGIN_DIR;
-		$mu_file = $mu_dir . '/scrutinizer-early.php';
-		$source  = SCRUTINIZER_DIR . 'assets/mu-plugin/scrutinizer-early.php';
+		$mu_file = \Scrutinizer\Admin\EarlyBoot::target_path();
 
 		switch ( $action ) {
 			case 'status':
-				if ( file_exists( $mu_file ) ) {
+				if ( \Scrutinizer\Admin\EarlyBoot::is_installed() ) {
 					$active = defined( 'SCRUTINIZER_BOOT_NS' );
 					\WP_CLI::success( "Installed at {$mu_file}" . ( $active ? ' (active this request)' : '' ) );
 				} else {
@@ -546,29 +544,19 @@ class Commands {
 				break;
 
 			case 'install':
-				if ( ! file_exists( $source ) ) {
-					\WP_CLI::error( 'Source mu-plugin not found in plugin assets.' );
+				$result = \Scrutinizer\Admin\EarlyBoot::install();
+				if ( is_wp_error( $result ) ) {
+					\WP_CLI::error( $result->get_error_message() );
 				}
-				if ( ! is_dir( $mu_dir ) ) {
-					if ( ! wp_mkdir_p( $mu_dir ) ) {
-						\WP_CLI::error( "Could not create mu-plugins directory: {$mu_dir}" );
-					}
-				}
-				if ( ! copy( $source, $mu_file ) ) {
-					\WP_CLI::error( "Failed to copy mu-plugin to {$mu_file}" );
-				}
+				update_option( \Scrutinizer\Admin\EarlyBoot::OPTION, true, false );
 				\WP_CLI::success( 'Early boot timer installed. New profiles will include bootstrap timing.' );
 				break;
 
 			case 'remove':
-				if ( ! file_exists( $mu_file ) ) {
-					\WP_CLI::log( 'Already removed.' );
-					return;
-				}
-				wp_delete_file( $mu_file );
-				if ( file_exists( $mu_file ) ) {
+				if ( ! \Scrutinizer\Admin\EarlyBoot::remove() ) {
 					\WP_CLI::error( "Failed to remove {$mu_file}" );
 				}
+				update_option( \Scrutinizer\Admin\EarlyBoot::OPTION, false, false );
 				\WP_CLI::success( 'Early boot timer removed.' );
 				break;
 

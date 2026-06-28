@@ -65,11 +65,12 @@ function scrutinizer_uninstall_site() {
 	wp_clear_scheduled_hook( 'scrutinizer_cleanup_profiles' );
 	wp_clear_scheduled_hook( 'scrutinizer_cleanup_passwords' );
 
-	// 6. Remove early boot mu-plugin.
+	// 6. Remove early boot mu-plugin + its opt-in preference.
 	$mu_file = WPMU_PLUGIN_DIR . '/scrutinizer-early.php';
 	if ( file_exists( $mu_file ) ) {
-		unlink( $mu_file );
+		wp_delete_file( $mu_file );
 	}
+	delete_option( 'scrutinizer_early_boot' );
 
 	// 7. Delete Application Passwords with our app_id.
 	$app_id = '7c9a3f2e-1b4d-4e8a-9f6c-2d5e8a1b3c7f';

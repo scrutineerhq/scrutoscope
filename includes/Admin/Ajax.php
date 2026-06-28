@@ -59,6 +59,8 @@ class Ajax {
 		'create_api_password',
 		'revoke_api_password',
 		'toggle_query_profiling',
+		'toggle_early_boot',
+		'dismiss_early_boot_banner',
 		'get_api_log',
 		'clear_api_log',
 		'get_profile_trace',
@@ -313,6 +315,48 @@ class Ajax {
 					: __( 'Query profiling disabled. New captures will skip SQL timing.', 'scrutinizer' ),
 			)
 		);
+	}
+
+	/**
+	 * Toggle early-boot timing — installs / removes the must-use plugin.
+	 *
+	 * Enabling writes scrutinizer-early.php into wp-content/mu-plugins (the only
+	 * write outside the plugin dir). On a filesystem failure the option is NOT
+	 * set and the error is returned so the UI can show an admin notice.
+	 */
+	public static function toggle_early_boot() {
+		$enabled = ! empty( $_POST['enabled'] );
+
+		if ( $enabled ) {
+			$result = EarlyBoot::install();
+			if ( is_wp_error( $result ) ) {
+				wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+			}
+			update_option( EarlyBoot::OPTION, true, false );
+			wp_send_json_success(
+				array(
+					'enabled' => true,
+					'message' => __( 'Early-boot timing enabled. The next profiled request will include the pre-plugin bootstrap.', 'scrutinizer' ),
+				)
+			);
+		}
+
+		EarlyBoot::remove();
+		update_option( EarlyBoot::OPTION, false, false );
+		wp_send_json_success(
+			array(
+				'enabled' => false,
+				'message' => __( 'Early-boot timing disabled and the must-use plugin removed.', 'scrutinizer' ),
+			)
+		);
+	}
+
+	/**
+	 * Persist dismissal of the early-boot discovery banner (per user).
+	 */
+	public static function dismiss_early_boot_banner() {
+		update_user_meta( get_current_user_id(), 'scrutinizer_early_boot_banner_dismissed', 1 );
+		wp_send_json_success();
 	}
 
 	/**

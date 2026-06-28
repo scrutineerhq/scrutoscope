@@ -116,14 +116,11 @@ function scrutinizer_activate() {
 		wp_schedule_event( time(), 'twicedaily', 'scrutinizer_cleanup_profiles' );
 	}
 
-	// Install early boot timer mu-plugin.
-	$source  = SCRUTINIZER_DIR . 'assets/mu-plugin/scrutinizer-early.php';
-	$mu_file = WPMU_PLUGIN_DIR . '/scrutinizer-early.php';
-	if ( file_exists( $source ) && ! file_exists( $mu_file ) ) {
-		if ( ! is_dir( WPMU_PLUGIN_DIR ) ) {
-			wp_mkdir_p( WPMU_PLUGIN_DIR );
-		}
-		copy( $source, $mu_file );
+	// Early-boot timing is OPT-IN: a fresh activation writes nothing outside the
+	// plugin directory. Only restore the must-use plugin if the admin previously
+	// enabled it (e.g. reactivating after a deactivate, or a plugin update).
+	if ( get_option( \Scrutinizer\Admin\EarlyBoot::OPTION, false ) ) {
+		\Scrutinizer\Admin\EarlyBoot::install();
 	}
 }
 register_activation_hook( __FILE__, 'scrutinizer_activate' );
@@ -140,14 +137,9 @@ function scrutinizer_deactivate() {
 	wp_clear_scheduled_hook( 'scrutinizer_cleanup_profiles' );
 
 	// Remove the early-boot mu-plugin so no Scrutineer code keeps running on
-	// every request while the plugin is deactivated. It is opt-in and can be
-	// reinstalled after reactivation.
-	if ( defined( 'WPMU_PLUGIN_DIR' ) ) {
-		$mu_file = WPMU_PLUGIN_DIR . '/scrutinizer-early.php';
-		if ( file_exists( $mu_file ) ) {
-			wp_delete_file( $mu_file );
-		}
-	}
+	// every request while the plugin is deactivated. The opt-in preference is
+	// kept, so reactivation restores it.
+	\Scrutinizer\Admin\EarlyBoot::remove();
 }
 register_deactivation_hook( __FILE__, 'scrutinizer_deactivate' );
 

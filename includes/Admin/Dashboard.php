@@ -122,6 +122,12 @@ class Dashboard {
 				'diagnosticsFields'    => \Scrutinizer\Api\Diagnostics::get_enabled_fields(),
 				'diagnosticsOptIn'     => \Scrutinizer\Api\Diagnostics::OPT_IN_FIELDS,
 				'queryProfiling'       => scrutinizer_query_profiling_state(),
+				'earlyBoot'            => array(
+					'installed' => EarlyBoot::is_installed(),
+					'enabled'   => (bool) get_option( EarlyBoot::OPTION, false ),
+					'path'      => EarlyBoot::target_path(),
+					'dismissed' => (bool) get_user_meta( get_current_user_id(), 'scrutinizer_early_boot_banner_dismissed', true ),
+				),
 				'i18n'                 => array(
 					'startProfiling'  => __( 'Start Profiling', 'scrutinizer' ),
 					'stopProfiling'   => __( 'Stop Profiling', 'scrutinizer' ),
