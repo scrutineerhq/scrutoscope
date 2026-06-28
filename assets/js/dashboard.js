@@ -186,6 +186,8 @@
 
 		initBackgroundControls();
 		initQueryProfilingControls();
+		initEarlyBootControls();
+		initEarlyBootBanner();
 		initRetentionControls();
 		initProxySettings();
 	}
@@ -605,11 +607,17 @@
 			renderGroupedTable( groupedData );
 		} );
 
-		// Query profiling toggle.
+		// Query profiling + early-boot toggles.
 		$( document ).on( 'change', '#scrutinizer-qp-toggle', toggleQueryProfiling );
+		$( document ).on( 'change', '#scrutinizer-eb-toggle', toggleEarlyBoot );
+		$( document ).on( 'click', '#scrutinizer-eb-banner-enable', function() {
+			setEarlyBoot( true );
+		} );
+		$( document ).on( 'click', '#scrutinizer-eb-banner-dismiss', dismissEarlyBootBanner );
 		$( document ).on( 'click', '.scrutinizer-qp-more', function( e ) {
 			e.preventDefault();
-			var $content = $( '.scrutinizer-qp-detail-content' );
+			// Toggle only THIS control's detail panel, not every panel on the page.
+			var $content = $( this ).siblings( '.scrutinizer-qp-detail-content' );
 			if ( $content.is( ':visible' ) ) {
 				$content.slideUp( 150 );
 				$( this ).text( __( 'Details', 'scrutinizer' ) );
@@ -1089,6 +1097,86 @@
 			if ( response.success ) {
 				showNotice( response.data.message, 'success' );
 			}
+		} );
+	}
+
+	// Early-boot timing — opt-in toggle that installs/removes the MU plugin.
+	function initEarlyBootControls() {
+		var eb   = scrutinizerAdmin.earlyBoot || {};
+		var isOn = !! eb.installed;
+
+		var html = '<div class="scrutinizer-qp-controls scrutinizer-eb-controls">';
+		html += '<div class="scrutinizer-qp-header">';
+		html += '<h3>' + __( 'Early Boot Timing', 'scrutinizer' ) + '</h3>';
+		html += '<label class="scrutinizer-switch">';
+		html += '<input type="checkbox" id="scrutinizer-eb-toggle" aria-label="' + esc( __( 'Enable early boot timing', 'scrutinizer' ) ) + '"' + ( isOn ? ' checked' : '' ) + '>';
+		html += '<span class="scrutinizer-switch-slider"></span>';
+		html += '</label>';
+		html += '</div>';
+
+		html += '<p class="scrutinizer-qp-desc">';
+		html += __( 'Measure time spent before plugins load. Optional and off by default.', 'scrutinizer' );
+		html += '</p>';
+
+		html += '<div class="scrutinizer-qp-detail">';
+		html += '<a href="#" class="scrutinizer-qp-more">' + __( 'Details', 'scrutinizer' ) + '</a>';
+		html += '<div class="scrutinizer-qp-detail-content" style="display:none;">';
+		html += '<p>' + __( 'Enabling this writes a small must-use plugin to your site:', 'scrutinizer' ) + '</p>';
+		html += '<code class="scrutinizer-qp-code">' + esc( eb.path || 'wp-content/mu-plugins/scrutinizer-early.php' ) + '</code>';
+		html += '<p>' + __( 'It records a timestamp at the very start of each request so the pre-plugin bootstrap can be timed — nothing else. Remove it anytime with this toggle, or via WP-CLI: wp scrutinizer mu-plugin remove.', 'scrutinizer' ) + '</p>';
+		html += '</div></div>';
+		html += '</div>';
+
+		$( '.scrutinizer-qp-controls' ).after( html );
+	}
+
+	// One-time, dismissable nudge on the dashboard home when the MU plugin is
+	// not installed — scoped to this page only, never a site-wide admin notice.
+	function initEarlyBootBanner() {
+		var eb = scrutinizerAdmin.earlyBoot || {};
+		if ( eb.installed || eb.dismissed ) {
+			return;
+		}
+		var html = '<div class="scrutinizer-eb-banner notice notice-info">';
+		html += '<p>' + esc( __( 'Early-boot timing is off. Enable it to measure time spent before plugins load — it adds a small must-use plugin you can remove anytime.', 'scrutinizer' ) ) + '</p>';
+		html += '<p>';
+		html += '<button type="button" class="button button-primary" id="scrutinizer-eb-banner-enable">' + esc( __( 'Enable', 'scrutinizer' ) ) + '</button> ';
+		html += '<button type="button" class="button" id="scrutinizer-eb-banner-dismiss">' + esc( __( 'Dismiss', 'scrutinizer' ) ) + '</button>';
+		html += '</p></div>';
+		$( '#scrutinizer-home' ).prepend( html );
+	}
+
+	function toggleEarlyBoot() {
+		setEarlyBoot( $( '#scrutinizer-eb-toggle' ).is( ':checked' ) );
+	}
+
+	function setEarlyBoot( enabled ) {
+		$.post( scrutinizerAdmin.ajaxUrl, {
+			action:  'scrutinizer_toggle_early_boot',
+			nonce:   scrutinizerAdmin.nonce,
+			enabled: enabled ? 1 : 0
+		}, function( response ) {
+			if ( response.success ) {
+				scrutinizerAdmin.earlyBoot.installed = response.data.enabled;
+				$( '#scrutinizer-eb-toggle' ).prop( 'checked', response.data.enabled );
+				if ( response.data.enabled ) {
+					$( '.scrutinizer-eb-banner' ).remove();
+				}
+				showNotice( response.data.message, 'success' );
+			} else {
+				// Filesystem write failed (managed host etc.) — revert + surface it.
+				$( '#scrutinizer-eb-toggle' ).prop( 'checked', false );
+				showNotice( ( response.data && response.data.message ) || __( 'Could not enable early-boot timing.', 'scrutinizer' ), 'error' );
+			}
+		} );
+	}
+
+	function dismissEarlyBootBanner() {
+		$( '.scrutinizer-eb-banner' ).remove();
+		scrutinizerAdmin.earlyBoot.dismissed = true;
+		$.post( scrutinizerAdmin.ajaxUrl, {
+			action: 'scrutinizer_dismiss_early_boot_banner',
+			nonce:  scrutinizerAdmin.nonce
 		} );
 	}
 

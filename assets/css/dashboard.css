@@ -3435,3 +3435,13 @@ details.scrutinizer-term > .scrutinizer-term-explain {
 #scrutinizer-dashboard .description a {
 	text-decoration: underline;
 }
+
+/* Early-boot discovery banner (scoped to the Scrutineer home view). */
+.scrutinizer-eb-banner {
+	margin: 0 0 16px;
+	padding: 10px 14px;
+	border-left-width: 4px;
+}
+.scrutinizer-eb-banner p {
+	margin: 0.5em 0;
+}
