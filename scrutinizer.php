@@ -196,12 +196,54 @@ function scrutinizer_admin_bar_menu( $wp_admin_bar ) {
 			'title' => '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#00ba37;margin-right:6px;vertical-align:middle;"></span>Scrutinizer',
 			'href'  => admin_url( 'tools.php?page=scrutinizer' ),
 			'meta'  => array(
-				'title' => __( 'Profiling active — click to view dashboard', 'scrutinizer' ),
+				'title' => __( 'Profiling active - click to view dashboard', 'scrutinizer' ),
 			),
 		)
 	);
 }
 add_action( 'admin_bar_menu', 'scrutinizer_admin_bar_menu', 100 );
+
+/**
+ * Show a floating capture banner on profiled pages.
+ *
+ * Fires on wp_footer (front-end) and admin_footer (admin) so it works
+ * across all three capture contexts: admin pages, front-end logged-in,
+ * and front-end logged-out/incognito.
+ */
+function scrutinizer_capture_banner() {
+	if ( ! \Scrutinizer\Profiler\Session::has_valid_cookie() ) {
+		return;
+	}
+
+	// Skip the Scrutinizer dashboard itself — it already has session UI.
+	// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+	if ( is_admin() && isset( $_GET['page'] ) && 'scrutinizer' === $_GET['page'] ) {
+		return;
+	}
+
+	$text = esc_html__( 'Profiling active - keep browsing to capture more pages.', 'scrutinizer' );
+	?>
+	<div id="scrutinizer-capture-banner" role="status" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:999999;background:#1d2327;color:#f0f0f1;font:13px/1.4 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,sans-serif;padding:10px 16px;align-items:center;gap:10px;box-shadow:0 -2px 8px rgba(0,0,0,.3);justify-content:center;">
+		<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#00ba37;flex-shrink:0;"></span>
+		<span><?php echo $text; ?></span>
+		<button type="button" id="scrutinizer-capture-dismiss" style="background:none;border:none;color:#a7aaad;cursor:pointer;font-size:18px;line-height:1;padding:0 4px;margin-left:8px;" aria-label="<?php esc_attr_e( 'Dismiss', 'scrutinizer' ); ?>">&times;</button>
+	</div>
+	<script>
+	(function(){
+		if(sessionStorage.getItem('scrutinizer_banner_off'))return;
+		var b=document.getElementById('scrutinizer-capture-banner');
+		if(!b)return;
+		b.style.display='flex';
+		document.getElementById('scrutinizer-capture-dismiss').addEventListener('click',function(){
+			b.style.display='none';
+			sessionStorage.setItem('scrutinizer_banner_off','1');
+		});
+	})();
+	</script>
+	<?php
+}
+add_action( 'wp_footer', 'scrutinizer_capture_banner', PHP_INT_MAX );
+add_action( 'admin_footer', 'scrutinizer_capture_banner', PHP_INT_MAX );
 
 /**
  * Register admin page, AJAX handlers, and REST API.

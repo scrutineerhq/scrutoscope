@@ -568,7 +568,7 @@ msgid "You do not have permission to access Scrutineer data."
 msgstr ""
 
 #: scrutinizer.php:199
-msgid "Profiling active — click to view dashboard"
+msgid "Profiling active - click to view dashboard"
 msgstr ""
 
 #: assets/js/dashboard.js:153
@@ -2376,4 +2376,12 @@ msgstr ""
 #: assets/js/dashboard.js:5841
 #, js-format
 msgid "Revocation failed: %s"
+msgstr ""
+
+#: scrutinizer.php:228
+msgid "Profiling active - keep browsing to capture more pages."
+msgstr ""
+
+#: scrutinizer.php:230
+msgid "Dismiss"
 msgstr ""
