@@ -33,10 +33,8 @@ class Cron {
 	public static function collect() {
 		$cron_array = _get_cron_array();
 		$schedules  = wp_get_schedules();
-		$now        = time();
-
+		$now      = time();
 		$events   = array();
-
 		$warnings = array();
 
 		if ( ! is_array( $cron_array ) ) {
@@ -133,8 +131,9 @@ class Cron {
 			}
 			$threshold = $interval > 0 ? $interval * 2 : 600;
 
-			$close_count = 0;
-			for ( $ci = 1; $ci < count( $timestamps ); $ci++ ) {
+			$close_count    = 0;
+			$timestamp_count = count( $timestamps );
+			for ( $ci = 1; $ci < $timestamp_count; $ci++ ) {
 				if ( ( $timestamps[ $ci ] - $timestamps[ $ci - 1 ] ) < $threshold ) {
 					++$close_count;
 				}
