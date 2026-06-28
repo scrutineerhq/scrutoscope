@@ -22,14 +22,14 @@ Regression detection reads stored profiles, which roll off at the 7-day TTL — 
 - **M5.5 — Data Lifecycle & Share Management** ✅ Shared reports ledger (save/get/delete/revoke), profile TTL (7d default, configurable), pinned + shared exempt from cleanup, TTL badges in History tab.
 - **UX Panel** ✅ 18/18 findings implemented.
 
-## M5.6 — Cron Profiling Integration
+## M5.6 — Cron Profiling Integration ✅ Shipped in 1.2.0 (opt-in)
 
-Connect the cron inventory to actual profiler data. The profiler already captures cron-triggered requests via background profiling — surface that data in the cron view.
+Connect the cron inventory to actual profiler data, surfaced in the cron view.
 
-- [ ] Per-hook cost column — cross-reference cron hooks with trace data from profiled cron requests, show exclusive time per hook
-- [ ] Click-through to performance history — cron hook row links to filtered profile list for that hook
-- [ ] Trend line per hook — sparkline showing cost over recent executions
-- [ ] Worst execution highlight — flag hooks whose cost has spiked
+- [x] **Opt-in capture** — Settings → "Profile Cron Jobs" lifts the WP-Cron sampling exclusion (cron is normally skipped). Cron hook names are snapshotted at request start, since single events vanish from the cron array once they fire.
+- [x] **Per-hook cost column** — exclusive time per hook from profiled cron runs, with the worst (peak) run flagged. Stored in a bounded `scrutinizer_cron_hook_costs` option (last/max/runs per hook, capped at 50).
+- [ ] Click-through to per-hook profile history (deferred)
+- [ ] Trend line per hook + statistical spike detection (deferred)
 
 ## M6 — Polish and wp.org Submission
 
@@ -65,19 +65,23 @@ Connect the cron inventory to actual profiler data. The profiler already capture
 - [x] Relay viewer Content-Security-Policy header (nonce-based CSP via `withSecurityHeaders`)
 - [x] wp.org plugin readme (`readme.txt` present — header/description/FAQ/changelog/screenshots)
 - [x] Security audit — authz/CSRF, injection, data-exposure, instrumentation (5 fixes, incl. the XML-RPC app-password bypass)
-- [ ] Screenshot preparation (manual — needs the final UI captured)
-- [ ] wp.org submission
+- [x] **Submission-readiness review addressed** (`.context/reviews/submission-readiness-review.md`) — early-boot MU plugin made opt-in (Settings toggle + dismissable banner + CLI); `SAVEQUERIES`/query profiling defaulted off; External Services disclosure + readme accuracy; agent prompt + manifest docs aligned with host-only HTTP; `unlink()` → `wp_delete_file()`. Shipped as 1.1.0.
+- [ ] Screenshot preparation (delegated — capture against fresh traffic on the 1.2.0 UI)
+- [ ] Manual keyboard / screen-reader QA pass (axe-core clean across all views; best-effort)
+- [ ] wp.org submission (after the above + beta QA; flip beta → final `v1.2.0` tag)
 
-> **Remaining wp.org blockers:** the i18n JS string sweep + screenshots. Everything else in M6 is done.
+> **Remaining before submission:** refreshed screenshots + a manual keyboard/SR pass, then beta QA. Released as betas `v1.1.0-beta.1` (trust/readiness) and `v1.2.0-beta.1` (lightweight capture mode + cron profiling).
 
-## Direction (not scheduled) — Core-developer troubleshooting
+## Core-developer troubleshooting — mostly shipped in 1.1.0
 
-Exploratory direction, not committed scope. The pitch: serve people troubleshooting **WordPress core itself** (not plugins) by breaking open the single "core" attribution bucket. **Hard constraint:** every item below must obey the Constitution's output boundary — *aggregates only, never contents.* Object-cache inspection is explicitly out (D42). If any of this ships, attribution comes first; it's the foundation the rest renders on.
+Serve people troubleshooting **WordPress core itself** (not plugins) by breaking open the single "core" attribution bucket. **Hard constraint:** every item obeys the Constitution's output boundary — *aggregates only, never contents.* Object-cache inspection is explicitly out (D42).
 
-- **Subsystem attribution (foundation).** Map a core callback's file to a subsystem (`class-wp-query.php` → Query, `option.php` → Options/autoload, `l10n.php` → i18n, `block-*.php` → Blocks, `rest-api/*` → REST) so "core 180ms" becomes "Query 40ms, i18n 22ms, Blocks 18ms." Mostly a path→subsystem lookup over data already captured.
-- **Cross-build comparison.** Compare the same route across WP builds / PHP versions (the route fingerprint already records both). **Design note:** build/version is a *comparison axis*, NOT a fingerprint dimension — folding it into the match key would stop trunk and 6.7 profiles from matching. It's a second baseline strategy alongside the shipped recent-vs-older window. Stretch: stamp the core git SHA when WP runs from a checkout → bisect a regression to a commit.
-- **Boot-sequence breakdown.** Split pre-plugin `bootstrap_ns` into phases (textdomain load, must-use, drop-ins) — the part a core dev actually cares about.
-- **Dev-signal surfacing.** Hook `deprecated_function_run` / `deprecated_hook_run` / `doing_it_wrong` and attach the call site (aggregate count + location, not values).
-- **i18n JIT visibility.** Surface `_load_textdomain_just_in_time` triggers (which textdomain, which hook) — a real core perf topic, tappable via textdomain-load hooks without wrapping every `__()`.
+- [x] **Subsystem attribution (foundation).** ✅ 1.1.0. Maps a core callback's file to a subsystem (`class-wp-query.php` → Query, `option.php` → Options, `l10n.php` → i18n, `block-*.php` → Blocks, `rest-api/*` → REST), so "core 180ms" becomes a per-subsystem breakdown (Sources tab + relay).
+- [x] **Boot-sequence breakdown.** ✅ 1.1.0. Splits pre-plugin `bootstrap_ns` into must-use vs. active-plugin loading (the early mu-plugin captures `muplugins_loaded`). Honest about what's hookable.
+- [x] **Dev-signal surfacing.** ✅ 1.1.0. Hooks `deprecated_*` / `_doing_it_wrong()` and attaches the triggering source (aggregate count + source, never values).
+- [x] **i18n JIT visibility.** ✅ 1.1.0. Surfaces `_load_textdomain_just_in_time` loads with the lifecycle hook that triggered each.
+- [ ] **Cross-build comparison.** *Skipped (per product call).* Compare the same route across WP builds / PHP versions. **Design note for later:** build/version is a *comparison axis*, NOT a fingerprint dimension — folding it into the match key would stop trunk and 6.7 profiles from matching.
+
+Deliberately **excluded**: object-cache instrumentation (D42), any query-value/content inspection (D41).
 
 Deliberately **excluded**: object-cache instrumentation (D42), any query-value/content inspection (D41).

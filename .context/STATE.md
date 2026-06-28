@@ -2,11 +2,12 @@
 
 > Volatile snapshot of the project. Updated after significant sessions.
 
-**Last updated:** 2026-06-26
+**Last updated:** 2026-06-28
 
 ## Version
 
-- Plugin: `1.0.0`
+- Plugin: `1.2.0` (beta — `v1.2.0-beta.1` pre-release cut; not yet submitted to wp.org)
+- Last stable tag: `v1.0.3`
 - PHP: 7.4+
 - WordPress: 6.0+
 
@@ -15,15 +16,14 @@
 | Component | Status |
 |-----------|--------|
 | Plugin bootstrap (`scrutinizer.php`) | ✅ Functional |
-| Profiler engine (`includes/Profiler/`) | ✅ Complete |
-| API (`includes/Api/`) | ✅ Complete — 6 REST endpoints |
-| Admin UI (`includes/Admin/`) | ✅ Functional — 31 AJAX handlers |
-| CSS/JS (`assets/`) | ✅ Complete — lazy-load, trace explorer, share w/ gzip |
+| Profiler engine (`includes/Profiler/`) | ✅ Complete (+ lightweight capture mode) |
+| API (`includes/Api/`) | ✅ Complete — 6 REST endpoints + public manifest |
+| Admin UI (`includes/Admin/`) | ✅ Functional — AJAX-gated handlers, EarlyBoot helper |
+| CSS/JS (`assets/`) | ✅ Complete — shared timeline renderer, dark-mode-aware |
 | WP-CLI (`includes/Cli/`) | ✅ Complete — 7 subcommands |
-| Share relay (`scrutinizer.dev`) | ✅ Deployed — CF Worker + R2 + KV |
-| Viewer (`scrutinizer.dev/view`) | ✅ File upload + relay decryption |
-| Landing page (`scrutineer.dev`) | ✅ Deployed — CF Worker |
-| Tests (`tests/`) | ⬜ Empty |
+| Share relay (`scrutinizer.dev`) | ✅ Deployed — CF Worker + R2 + KV; dark mode; core-dev diagnostics parity |
+| Viewer (`scrutinizer.dev/view`) | ✅ File upload + relay decryption; handles lightweight reports |
+| Tests (`tests/`) | ✅ PHPUnit suite (Sanitizer, QueryReducer, Prompt, Storage sanitize…); relay vitest + Playwright e2e; shared-renderer checksum guard in both repos |
 
 ## Milestones
 
@@ -32,34 +32,30 @@
 | M1 — Core Instrumentation | ✅ Complete |
 | M2 — Deep Mode & Timeline | ✅ Complete |
 | M2.5 — AI Agent API & Sharing | ✅ Complete |
-| M3 — Compare Workflow + Regression Detection | ✅ Complete — classifier (3-threshold verdict), route-fingerprint matching, `/v1/regression`, route-detail verdict banner, + long-term aggregate windows (cross-deploy). Detection, not a gate (D43). |
+| M3 — Compare Workflow + Regression Detection | ✅ Complete (detection, not a gate — D43) |
+| M3.5 — Long-term stats aggregate | ✅ Capture + cross-deploy windows shipped; aggregate-retention pruning + trend sparklines deferred |
 | M4 — Report Sharing | ✅ Complete (absorbed into M2.5) |
 | M5 — WP-CLI | ✅ Complete |
 | M5.5 — Data Lifecycle & Share Mgmt | ✅ Complete |
-| UX Panel (18 findings) | ✅ 18/18 implemented |
-| M5.6 — Cron Profiling Integration | ⬜ Not started |
-| M6 — wp.org Submission | 🔧 In progress |
+| M5.6 — Cron Profiling | ✅ Shipped in 1.2.0 (opt-in capture + per-hook cost column; trend/spike deferred) |
+| M5.7 — Core-developer attribution | ✅ Shipped in 1.1.0 (subsystem breakdown, dev signals, i18n JIT, boot breakdown; cross-build comparison skipped) |
+| M6 — wp.org Submission readiness | ✅ Done except final screenshots + a manual keyboard/SR QA pass |
 
-## M6 Progress
+## Releases
 
-Done:
-- `uninstall.php` (clean teardown)
-- `handle_prompt` → proper REST response
-- API log → custom table
-- Cron registration optimization
-- Contrast/a11y fixes, milestone clipping, queries pill labels
-- Shared reports ledger + profile TTL (7d default, configurable)
+- `v1.2.0-beta.1` — pre-release (current QA artifact). Adds lightweight capture mode + cron profiling.
+- `v1.1.0-beta.1` — pre-release. Trust/readiness: opt-in early boot, default-off `SAVEQUERIES`, External Services disclosure, accurate blocking/async HTTP, security hardening, core-dev attribution, relay dark mode, i18n.
+- `v1.0.3` — last tagged stable.
 
-Remaining:
-- i18n (JS + PHP string wrapping, .pot generation)
-- a11y (ARIA tab pattern, focus trap, screen reader announcements)
-- Relay viewer CSP header
-- Tab active-state visual consistency
-- wp.org readme (readme.txt, screenshots, FAQ, changelog)
-- Security audit (activation flow, cookies, CSRF, nonces)
-- wp.org submission
+## Before wp.org submission
 
-## Next Up
+- Refreshed wp.org screenshots (delegated — captured against fresh traffic on the 1.2.0 UI).
+- A manual keyboard + screen-reader QA pass (axe-core is clean across all views; best-effort).
+- Flip the beta → final `v1.2.0` tag (bump the CHANGELOG date) once QA passes.
 
-- M6 completion (i18n, a11y, wp.org readme, security audit)
-- M5.6 cron profiling integration
+## Deferred (1.2.x / later)
+
+- Cron trend sparklines + statistical spike detection (M5.6 follow-ups).
+- Long-term aggregate retention pruning + trend sparklines (M3.5).
+- Cross-build / cross-PHP-version comparison (core-dev direction).
+- Roadmap: OpenAPI/JSON-schema endpoint, first-run "capture one profile" flow, methodology doc, DB-growth + managed-hosting docs.
