@@ -41,9 +41,12 @@ if ( defined( 'SAVEQUERIES' ) ) {
 	// Externally managed — respect whatever wp-config.php set.
 	define( 'SCRUTINIZER_SAVEQUERIES_MANAGED', false );
 } else {
-	// We control it. Default: on (you installed a profiler — you want data).
+	// We control it. Default OFF: SAVEQUERIES makes WordPress retain query text,
+	// timing, and caller for every request — real overhead that shouldn't be
+	// paid until the admin opts in (Settings → Query Profiling). The basic query
+	// COUNT is always available via $wpdb->num_queries regardless.
 	define( 'SCRUTINIZER_SAVEQUERIES_MANAGED', true );
-	if ( get_option( 'scrutinizer_query_profiling', true ) ) {
+	if ( get_option( 'scrutinizer_query_profiling', false ) ) {
 		define( 'SAVEQUERIES', true );
 	}
 }
