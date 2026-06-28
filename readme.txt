@@ -108,14 +108,23 @@ It is never contacted during normal profiling, page loads, or background capture
 == Changelog ==
 
 = 1.1.0 =
-* New: Redesigned Request Timeline — a cost-sorted "who owns the time" bar names the culprit at a glance, over a chronological timeline with WordPress lifecycle phase markers. Unattributed time is always shown (never hidden); HTTP waits and database-query density get their own lanes; memory is drawn as a growth curve. Colour-blind-safe palette with a deuteranopia toggle, plus zoom and pan.
-* New: One shared timeline renderer — a profile looks identical in the dashboard and in a shared report.
-* New: Memory over time — the profiler samples memory at each lifecycle phase, so the timeline shows an honest growth curve with the peak labelled.
-* New: Regression detection — Scrutinizer reports a verdict (Likely regression / Difference observed / Within noise / Insufficient data) by comparing a route against its own history. A long-term aggregate compares across windows that outlive the 7-day profile retention, so the signal survives deploys. Detection only — it never blocks or changes anything.
-* New: Long-term route-statistics aggregate, pruned automatically so it can't grow unbounded.
-* Security: Fixed a bypass where a Scrutineer Application Password could be used over XML-RPC outside its intended REST scope and short expiry; also hardened the WP-CLI export, the report-sharing path, deactivation cleanup, and the autoloader.
-* Accessibility: Full keyboard tab navigation (arrow keys), focus moves into each view on change, and screen-reader announcements for dynamic updates.
-* i18n: Dashboard interface strings are now translatable.
+This release focuses on trust — opt-in defaults and honest disclosure — alongside a redesigned timeline and deeper attribution.
+
+* New: Redesigned Request Timeline — a cost-sorted "who owns the time" bar names the culprit at a glance, over a chronological timeline with WordPress lifecycle phase markers. Unattributed time is always shown (never hidden); HTTP waits and database-query density get their own lanes; memory is drawn as a growth curve. Colour-blind-safe (Okabe–Ito) palette, with zoom and pan.
+* New: One shared timeline renderer — a profile looks identical in the dashboard and in a shared report, which now also has a dark mode.
+* New: Core-developer attribution — the single "core" bucket splits into WordPress subsystems (Query, Options, Blocks, REST, i18n…); deprecations and _doing_it_wrong() notices are captured with the source that triggered them; just-in-time translation loads are surfaced with the hook that caused them; and the pre-plugin bootstrap is split into must-use vs. active-plugin loading.
+* New: Accurate outbound-HTTP timing — each call records whether PHP actually waited (blocking) or fired-and-forgot (async), shown distinctly on the timeline, instead of inferring it from duration.
+* New: Memory over time — memory is sampled at each lifecycle phase, so the timeline shows an honest growth curve with the peak labelled.
+* New: Regression detection — a verdict (Likely regression / Difference observed / Within noise / Insufficient data) from comparing a route against its own history, with a long-term aggregate that survives deploys and the 7-day profile retention. Detection only — it never blocks or changes anything.
+* Changed: Early-boot timing is now opt-in — activation no longer writes a must-use plugin; enable it from Settings (or WP-CLI) when you want pre-plugin bootstrap timing.
+* Changed: Query profiling (SAVEQUERIES) now defaults off — enable it from Settings when you need per-query detail; the basic query count is always available.
+* Changed: Outbound HTTP URLs are reduced to scheme + host (paths and query strings stripped) on write, read, and output, because paths can carry secret tokens.
+* Security: Fixed a bypass where a Scrutineer Application Password (scoped to REST with a short expiry) could be used over XML-RPC, skipping both scope and expiry.
+* Security: Legacy stored profiles are re-sanitized on read and output, so older rows can't leak a full outbound URL through a share or export. Also hardened the WP-CLI export, report-sharing, deactivation/uninstall cleanup, and the autoloader.
+* Fixed: Shared-report viewer — trace callbacks show their names grouped by hook, the breakdown bar renders correctly, the timeline follows dark mode, and duplicate tabs are removed.
+* Accessibility: Full ARIA tab pattern with arrow-key navigation, focus management on view changes, and screen-reader announcements for dynamic content.
+* i18n: All dashboard strings are translatable; a fresh translation template (.pot) ships with the plugin.
+* Docs: Added an External Services disclosure for the optional report-sharing relay, and corrected readme/agent wording to match the privacy behavior (host-only HTTP, opt-in defaults).
 
 = 1.0.3 =
 * Security: GDPR-compliant IP hashing — API log stores HMAC-SHA256 pseudonyms, not raw IPs
@@ -178,7 +187,7 @@ It is never contacted during normal profiling, page loads, or background capture
 == Upgrade Notice ==
 
 = 1.1.0 =
-A major update: the redesigned Request Timeline, memory-over-time sampling, regression detection with cross-deploy history, accessibility and translation support, and security hardening.
+Heads-up on two default changes: early-boot timing is now opt-in (no must-use plugin is written on activation), and query profiling (SAVEQUERIES) now defaults off — enable either from Settings. Also: a redesigned Request Timeline, core-developer attribution, accurate blocking-vs-async HTTP timing, and security hardening.
 
 = 1.0.3 =
 Security hardening (IP hashing, token binding, proxy spoofing fix), background profiling filters, full-page settings view.
