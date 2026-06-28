@@ -714,6 +714,9 @@ class RestApi {
 					'source'      => isset( $h['source_name'] ) ? $h['source_name'] : ( isset( $h['source'] ) ? $h['source'] : '' ),
 					'source_type' => isset( $h['source_type'] ) ? $h['source_type'] : 'unknown',
 					'is_error'    => ! empty( $h['is_error'] ),
+					// Default true: legacy data without the flag, and WP's own
+					// default, are both blocking. Only an explicit false is async.
+					'blocking'    => ! isset( $h['blocking'] ) || false !== $h['blocking'],
 				);
 			}
 		}

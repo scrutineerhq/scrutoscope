@@ -13,6 +13,7 @@
 namespace Scrutinizer\Api;
 
 use Scrutinizer\Profiler\QueryReducer;
+use Scrutinizer\Profiler\Storage;
 
 /**
  * Recursively sanitize data structures for external output.
@@ -117,6 +118,12 @@ class Sanitizer {
 				// so a residual full query can never leak through a share/export.
 				if ( 'sql' === $key && is_string( $value ) ) {
 					$clean[ $key ] = QueryReducer::reduce( $value );
+				} elseif ( 'http_calls' === $key && is_array( $value ) ) {
+					// Outbound URLs embed secret tokens in their PATH; reduce to
+					// scheme+host on every output path — same defense-in-depth as
+					// SQL, since a write-time reduction can regress or predate a
+					// stored profile.
+					$clean[ $key ] = self::reduce_http_call_urls( self::sanitize( $value ) );
 				} else {
 					$clean[ $key ] = self::sanitize( $value );
 				}
@@ -133,6 +140,24 @@ class Sanitizer {
 		}
 
 		return $data;
+	}
+
+	/**
+	 * Reduce each outbound HTTP call's URL to scheme + host.
+	 *
+	 * @param array $calls Already-scrubbed http_calls entries.
+	 * @return array
+	 */
+	private static function reduce_http_call_urls( $calls ) {
+		if ( ! is_array( $calls ) ) {
+			return $calls;
+		}
+		foreach ( $calls as $i => $call ) {
+			if ( is_array( $call ) && isset( $call['url'] ) && is_string( $call['url'] ) ) {
+				$calls[ $i ]['url'] = Storage::strip_url_to_host( $call['url'] );
+			}
+		}
+		return $calls;
 	}
 
 	/**

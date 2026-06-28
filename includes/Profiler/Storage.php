@@ -152,11 +152,12 @@ class Storage {
 	 * Reduce a URL to scheme + host (+ port), dropping path, query, and fragment.
 	 *
 	 * Used for outbound HTTP calls, whose paths commonly carry credentials.
+	 * Public so the output-side Sanitizer can apply the same reduction.
 	 *
 	 * @param string $url URL to reduce.
 	 * @return string Reduced URL, or '' when the input is empty/unparseable.
 	 */
-	private static function strip_url_to_host( $url ) {
+	public static function strip_url_to_host( $url ) {
 		if ( ! is_string( $url ) || '' === $url ) {
 			return '';
 		}
@@ -698,7 +699,11 @@ class Storage {
 			return null;
 		}
 
-		$row['profile_data'] = self::decode_profile_data( $row['profile_data'] );
+		// Re-apply the URL/value reduction on read, not just write: a profile
+		// stored before a given reduction existed must never surface raw values
+		// through the dashboard, a share, or the REST API. sanitize_profile is
+		// idempotent, so re-reducing already-clean data is a no-op.
+		$row['profile_data'] = self::sanitize_profile( self::decode_profile_data( $row['profile_data'] ) );
 
 		return $row;
 	}

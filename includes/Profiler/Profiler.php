@@ -324,8 +324,9 @@ class Profiler {
 			add_action( $hook, array( $this, 'record_phase_marker' ), 0 );
 		}
 
-		// Track external HTTP calls via WP HTTP API.
-		add_filter( 'pre_http_request', array( $this, 'track_http_start' ), 1, 3 );
+		// Track external HTTP calls via WP HTTP API. Run last (PHP_INT_MAX) so we
+		// observe the final short-circuit decision before recording a pending call.
+		add_filter( 'pre_http_request', array( $this, 'track_http_start' ), PHP_INT_MAX, 3 );
 		// http_api_debug fires for EVERY request — including non-blocking
 		// (fire-and-forget) calls, which never reach the http_response filter.
 		add_action( 'http_api_debug', array( $this, 'track_http_end' ), PHP_INT_MAX, 2 );
@@ -625,7 +626,7 @@ class Profiler {
 	/**
 	 * Record the start of an external HTTP call.
 	 *
-	 * Hooked on `pre_http_request` filter at priority 1.
+	 * Hooked on `pre_http_request` at PHP_INT_MAX so we see the final preempt.
 	 *
 	 * @param false|array|\WP_Error $preempt     Short-circuit value.
 	 * @param array                 $parsed_args Parsed request arguments.
@@ -633,6 +634,12 @@ class Profiler {
 	 * @return false|array|\WP_Error  Unchanged preempt value.
 	 */
 	public function track_http_start( $preempt, $parsed_args, $url ) {
+		// A non-false $preempt means a filter short-circuited this request: it
+		// won't run and won't reach http_api_debug, so don't record a pending
+		// call that could never be completed.
+		if ( false !== $preempt ) {
+			return $preempt;
+		}
 		$this->http_pending[] = array(
 			'url'      => $url,
 			'method'   => isset( $parsed_args['method'] ) ? strtoupper( $parsed_args['method'] ) : 'GET',
