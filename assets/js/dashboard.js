@@ -2158,6 +2158,14 @@
 		html += renderMetricCard( String( summary.callback_count || 0 ), __( 'Callbacks', 'scrutinizer' ), 'default' );
 		html += '</div>';
 
+		// Lightweight profile callout.
+		if ( summary.lightweight ) {
+			html += '<div class="scrutinizer-lightweight-notice" style="background:#f0f6fc;border-left:4px solid #72aee6;padding:10px 14px;margin:12px 0;font-size:13px;line-height:1.5;color:#1d2327;">';
+			html += '<strong>' + esc( __( 'Lightweight profile', 'scrutinizer' ) ) + '</strong> ';
+			html += esc( __( 'This was captured in Lightweight Mode, which records source totals but skips the timeline and per-callback trace to keep profiles small. The Sources, Queries, and HTTP tabs have the full breakdown. Turn off Lightweight Mode in Settings and capture again for the complete timeline and trace.', 'scrutinizer' ) );
+			html += '</div>';
+		}
+
 		// Tab navigation.
 		html += '<div class="scrutinizer-tabs">';
 		html += '<button class="scrutinizer-tab active" data-tab="timeline">' + __( 'Timeline', 'scrutinizer' ) + '</button>';
@@ -3010,7 +3018,7 @@
 		}
 		var html = '<div class="scrutinizer-dev-signals">';
 		html += '<h4>' + esc( __( 'Just-in-time translations', 'scrutinizer' ) ) + '</h4>';
-		html += '<p class="description">' + esc( __( 'Textdomains WordPress loaded on demand because a translation function ran before the textdomain was registered. Loading translations on the right hook avoids this.', 'scrutinizer' ) ) + '</p>';
+		html += '<p class="description">' + esc( __( 'Textdomains WordPress loaded on demand because a translation function ran before the textdomain was registered. Plugins should load translations on init; themes should use after_setup_theme.', 'scrutinizer' ) ) + '</p>';
 		html += '<table class="scrutinizer-subsystem-table"><thead><tr>' +
 			'<th>' + esc( __( 'Textdomain', 'scrutinizer' ) ) + '</th>' +
 			'<th>' + esc( __( 'Loaded on hook', 'scrutinizer' ) ) + '</th>' +

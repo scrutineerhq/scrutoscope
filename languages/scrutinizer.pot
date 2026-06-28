@@ -1579,7 +1579,6 @@ msgid "Just-in-time translations"
 msgstr ""
 
 #: assets/js/dashboard.js:3013
-msgid "Textdomains WordPress loaded on demand because a translation function ran before the textdomain was registered. Loading translations on the right hook avoids this."
 msgstr ""
 
 #: assets/js/dashboard.js:3015
@@ -2388,4 +2387,16 @@ msgstr ""
 
 #: scrutinizer.php:226
 msgid "Return to Scrutinizer to stop."
+msgstr ""
+
+#: assets/js/dashboard.js:2163
+msgid "Lightweight profile"
+msgstr ""
+
+#: assets/js/dashboard.js:2164
+msgid "This was captured in Lightweight Mode, which records source totals but skips the timeline and per-callback trace to keep profiles small. The Sources, Queries, and HTTP tabs have the full breakdown. Turn off Lightweight Mode in Settings and capture again for the complete timeline and trace."
+msgstr ""
+
+#: assets/js/dashboard.js:3018
+msgid "Textdomains WordPress loaded on demand because a translation function ran before the textdomain was registered. Plugins should load translations on init; themes should use after_setup_theme."
 msgstr ""
