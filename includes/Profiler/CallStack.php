@@ -44,6 +44,24 @@ class CallStack {
 	private $trace = array();
 
 	/**
+	 * Lightweight mode: keep the active stack (so exclusive time is still
+	 * computed for source attribution) but do NOT accumulate the full trace
+	 * tree — the single biggest contributor to stored profile size.
+	 *
+	 * @var bool
+	 */
+	private $lightweight = false;
+
+	/**
+	 * Enable lightweight mode (no trace accumulation).
+	 *
+	 * @param bool $on Whether to skip building the trace.
+	 */
+	public function set_lightweight( $on ) {
+		$this->lightweight = (bool) $on;
+	}
+
+	/**
 	 * Push a new frame onto the stack.
 	 *
 	 * @param string $frame_id  Unique callback identifier.
