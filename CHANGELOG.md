@@ -7,23 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.1.0] - 2026-06-27
 
+This release focuses on trust — opt-in defaults and honest disclosure — alongside a redesigned timeline and deeper attribution.
+
 ### Added
 
-- **Redesigned Request Timeline** — a cost-sorted "who owns the time" bar names the culprit at a glance, over a chronological timeline with WordPress lifecycle phase markers. Unattributed time is always shown (never hidden); HTTP waits and database-query density get their own lanes; memory is drawn as a growth curve. Colour-blind-safe (Okabe–Ito) palette with a deuteranopia toggle, plus zoom and pan.
-- **One shared timeline renderer** (`scrutinizer-timeline.js`) drives both the dashboard and the relay viewer — byte-identical, with a checksum test in each repo that fails CI on drift.
-- **Memory-over-time sampling** — the profiler samples `memory_get_usage()` at each lifecycle phase marker, emitting an honest `memory_samples[]` curve (peak still reported separately).
+- **Redesigned Request Timeline** — a cost-sorted "who owns the time" bar names the culprit at a glance, over a chronological timeline with WordPress lifecycle phase markers. Unattributed time is always shown; HTTP waits and database-query density get their own lanes; memory is drawn as a growth curve. Colour-blind-safe (Okabe–Ito) palette, with zoom and pan.
+- **One shared timeline renderer** (`scrutinizer-timeline.js`) drives both the dashboard and the relay viewer — byte-identical, checksum-guarded in CI. The shared-report viewer also gained a dark mode.
+- **Core-developer attribution** — the single "core" bucket splits into WordPress subsystems (Query, Options, Blocks, REST, i18n…); `deprecated_*` / `_doing_it_wrong()` notices are captured with the source that triggered them; just-in-time textdomain loads are surfaced with the hook that caused them; and the pre-plugin bootstrap is split into must-use vs. active-plugin loading. All aggregate-only.
+- **Accurate outbound-HTTP timing** — the real `blocking` request arg is captured (via `http_api_debug`, so fire-and-forget calls are recorded too), and the timeline shows blocking vs. async distinctly instead of inferring it from duration.
+- **Memory-over-time sampling** — `memory_get_usage()` is sampled at each lifecycle phase marker, emitting an honest `memory_samples[]` curve (peak reported separately).
 - **Regression detection** — a verdict (`likely_regression` / `difference_observed` / `within_noise` / `insufficient_data`) from a three-threshold classifier, plus a long-term route-stats aggregate that compares across windows outliving the 7-day profile TTL (cross-deploy). Detection only — never a gate.
-- **Long-term route-statistics aggregate** with automatic retention pruning so it can't grow unbounded.
-- **Internationalization** — dashboard JS strings wrapped for translation via `wp.i18n`.
+- **Internationalization** — all dashboard strings wrapped via `wp.i18n`; a fresh `.pot` ships with the plugin.
+
+### Changed
+
+- **Early-boot timing is opt-in.** Activation no longer writes `scrutinizer-early.php` into `wp-content/mu-plugins`; enable it from Settings (with a one-time dismissable nudge) or WP-CLI, and it's restored on reactivation.
+- **Query profiling (`SAVEQUERIES`) defaults off.** Enable it from Settings for per-query detail; the basic query count stays available via `$wpdb->num_queries`.
+- **Outbound HTTP URLs are reduced to scheme + host** (paths and query strings stripped) on write, read, and output — paths can carry secret tokens.
 
 ### Security
 
 - Fixed a bypass where a Scrutineer Application Password (scoped to REST + a short TTL) could be used over **XML-RPC**, skipping both scope and expiry — now rejected at the authentication layer for any non-REST use.
-- WP-CLI `export` runs the read-time sanitizer; the report-sharing path re-reduces SQL; the early-boot mu-plugin is removed on deactivation; the autoloader rejects path-traversal class names.
+- **Legacy stored profiles are re-sanitized on read and on output**, so older rows can't leak a full outbound URL (webhook/bot tokens live in the path) through a share or export. The `blocking` flag is carried through shares and the REST API.
+- Hardened the WP-CLI `export`, the report-sharing path, deactivation/uninstall cleanup (`wp_delete_file`), and the autoloader (path-traversal); made the SQL reducer idempotent so a defensive re-reduction keeps the table name.
+
+### Fixed
+
+- Shared-report viewer: trace callbacks now show their names grouped by hook (parsed from the composite id), the breakdown bar renders from nanosecond data, the timeline follows dark mode, and duplicate tabs were removed. The routes "Last Captured" column now sorts chronologically.
 
 ### Accessibility
 
 - Full ARIA tab pattern with arrow-key navigation, focus management on view changes, and `aria-live` announcements for dynamic content.
+
+### Docs
+
+- Added an **External Services** disclosure for the optional report-sharing relay; corrected readme and agent-prompt wording to match the privacy behavior (host-only HTTP, opt-in defaults); documented the public `/v1/manifest` endpoint.
 
 ## [1.0.3] - 2026-06-26
 
