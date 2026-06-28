@@ -122,6 +122,7 @@ class Dashboard {
 				'diagnosticsFields'    => \Scrutinizer\Api\Diagnostics::get_enabled_fields(),
 				'diagnosticsOptIn'     => \Scrutinizer\Api\Diagnostics::OPT_IN_FIELDS,
 				'queryProfiling'       => scrutinizer_query_profiling_state(),
+				'lightweightMode'      => (bool) get_option( 'scrutinizer_lightweight_mode', false ),
 				'earlyBoot'            => array(
 					'installed' => EarlyBoot::is_installed(),
 					'enabled'   => (bool) get_option( EarlyBoot::OPTION, false ),

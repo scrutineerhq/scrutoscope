@@ -188,6 +188,7 @@
 		initQueryProfilingControls();
 		initEarlyBootControls();
 		initEarlyBootBanner();
+		initLightweightControls();
 		initRetentionControls();
 		initProxySettings();
 	}
@@ -401,13 +402,28 @@
 			$( '#scrutinizer-tab-' + tab ).show();
 			applyTabRoles();
 
+			// Lightweight captures have no timeline/trace — show a note, don't fetch.
+			var lw = currentProfileData && currentProfileData.profile_data &&
+				currentProfileData.profile_data.summary &&
+				currentProfileData.profile_data.summary.lightweight;
+
 			// Lazy-load trace data on first click.
 			if ( 'trace' === tab && ! traceLoaded && currentProfileId ) {
-				loadTraceData( currentProfileId );
+				if ( lw ) {
+					$( '#scrutinizer-tab-trace' ).html( lightweightTabNote() );
+					traceLoaded = true;
+				} else {
+					loadTraceData( currentProfileId );
+				}
 			}
 			// Lazy-load timeline data on first click.
 			if ( 'timeline' === tab && ! timelineLoaded && currentProfileId ) {
-				loadTimelineData( currentProfileId );
+				if ( lw ) {
+					$( '#scrutinizer-tab-timeline' ).html( lightweightTabNote() );
+					timelineLoaded = true;
+				} else {
+					loadTimelineData( currentProfileId );
+				}
 			}
 		} );
 
@@ -610,6 +626,7 @@
 		// Query profiling + early-boot toggles.
 		$( document ).on( 'change', '#scrutinizer-qp-toggle', toggleQueryProfiling );
 		$( document ).on( 'change', '#scrutinizer-eb-toggle', toggleEarlyBoot );
+		$( document ).on( 'change', '#scrutinizer-lw-toggle', toggleLightweightMode );
 		$( document ).on( 'click', '#scrutinizer-eb-banner-enable', function() {
 			setEarlyBoot( true );
 		} );
@@ -1171,6 +1188,47 @@
 		$.post( scrutinizerAdmin.ajaxUrl, {
 			action: 'scrutinizer_dismiss_early_boot_banner',
 			nonce:  scrutinizerAdmin.nonce
+		} );
+	}
+
+	// Lightweight mode — capture source totals only (no timeline / trace).
+	function initLightweightControls() {
+		var isOn = !! scrutinizerAdmin.lightweightMode;
+
+		var html = '<div class="scrutinizer-qp-controls scrutinizer-lw-controls">';
+		html += '<div class="scrutinizer-qp-header">';
+		html += '<h3>' + __( 'Lightweight Mode', 'scrutinizer' ) + '</h3>';
+		html += '<label class="scrutinizer-switch">';
+		html += '<input type="checkbox" id="scrutinizer-lw-toggle" aria-label="' + esc( __( 'Enable lightweight mode', 'scrutinizer' ) ) + '"' + ( isOn ? ' checked' : '' ) + '>';
+		html += '<span class="scrutinizer-switch-slider"></span>';
+		html += '</label>';
+		html += '</div>';
+
+		html += '<p class="scrutinizer-qp-desc">';
+		html += __( 'Capture source totals only — skip the timeline and per-callback trace. Profiles are roughly 95% smaller, making always-on sampling safe on busy production sites.', 'scrutinizer' );
+		html += '</p>';
+
+		html += '<div class="scrutinizer-qp-detail">';
+		html += '<a href="#" class="scrutinizer-qp-more">' + __( 'Details', 'scrutinizer' ) + '</a>';
+		html += '<div class="scrutinizer-qp-detail-content" style="display:none;">';
+		html += '<p>' + __( 'You still get the full "who owns the time" breakdown — sources, queries, HTTP calls, subsystems. The Timeline and Trace tabs are skipped to keep profiles small. For a deep dive on a specific request, turn this off and capture once.', 'scrutinizer' ) + '</p>';
+		html += '</div></div>';
+		html += '</div>';
+
+		$( '.scrutinizer-eb-controls' ).after( html );
+	}
+
+	function toggleLightweightMode() {
+		var enabled = $( '#scrutinizer-lw-toggle' ).is( ':checked' );
+		$.post( scrutinizerAdmin.ajaxUrl, {
+			action:  'scrutinizer_toggle_lightweight_mode',
+			nonce:   scrutinizerAdmin.nonce,
+			enabled: enabled ? 1 : 0
+		}, function( response ) {
+			if ( response.success ) {
+				scrutinizerAdmin.lightweightMode = response.data.enabled;
+				showNotice( response.data.message, 'success' );
+			}
 		} );
 	}
 
@@ -1979,6 +2037,15 @@
 	}
 
 	// Render the Timeline tab via the shared, framework-agnostic module
+	// Shown on the Timeline + Trace tabs for a lightweight capture (which records
+	// source totals only — no timeline / per-callback trace — for a small profile).
+	function lightweightTabNote() {
+		return '<div style="padding:2rem;text-align:center;color:#646970;">' +
+			'<p style="font-size:14px;max-width:520px;margin:0 auto;line-height:1.6;">' +
+			esc( __( 'Captured in lightweight mode — the timeline and per-callback trace weren\'t recorded, to keep the profile small. The Sources, Queries, and HTTP tabs have the full breakdown. Turn off Lightweight Mode in Settings and capture again for the timeline and trace.', 'scrutinizer' ) ) +
+			'</p></div>';
+	}
+
 	// (the same scrutinizer-timeline.js the relay viewer uses, so both viewing
 	// surfaces stay identical).
 	function renderTimelineModule( profileData ) {
