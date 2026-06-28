@@ -3084,7 +3084,7 @@
 		}
 		var html = '<div class="scrutinizer-dev-signals">';
 		html += '<h4>' + esc( __( 'Just-in-time translations', 'scrutinizer' ) ) + '</h4>';
-		html += '<p class="description">' + esc( __( 'Textdomains WordPress loaded on demand because a translation function ran before the textdomain was registered. Plugins should load translations on init; themes should use after_setup_theme.', 'scrutinizer' ) ) + '</p>';
+		html += '<p class="description">' + esc( __( 'These textdomains were loaded on demand because a translation function ran before the textdomain was registered. This adds a small overhead to the first translation call for each. The hook column shows when the just-in-time load was triggered.', 'scrutinizer' ) ) + '</p>';
 		html += '<table class="scrutinizer-subsystem-table"><thead><tr>' +
 			'<th>' + esc( __( 'Textdomain', 'scrutinizer' ) ) + '</th>' +
 			'<th>' + esc( __( 'Loaded on hook', 'scrutinizer' ) ) + '</th>' +
