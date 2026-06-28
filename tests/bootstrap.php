@@ -57,6 +57,32 @@ if ( ! function_exists( 'wp_json_encode' ) ) {
 		return json_encode( $data, $options, $depth );
 	}
 }
+if ( ! function_exists( 'site_url' ) ) {
+	function site_url( $path = '' ) {
+		return 'https://example.test' . $path;
+	}
+}
+if ( ! function_exists( 'rest_url' ) ) {
+	function rest_url( $path = '' ) {
+		return 'https://example.test/wp-json/' . ltrim( (string) $path, '/' );
+	}
+}
+if ( ! function_exists( 'get_option' ) ) {
+	function get_option( $name, $default = false ) {
+		return $default;
+	}
+}
+if ( ! function_exists( 'get_bloginfo' ) ) {
+	function get_bloginfo( $show = '' ) {
+		return 'Test Site';
+	}
+}
+if ( ! function_exists( 'get_plugins' ) ) {
+	// Defined so Prompt::build() skips require'ing wp-admin/includes/plugin.php.
+	function get_plugins() {
+		return array();
+	}
+}
 
 // --- Classes under test ------------------------------------------------------
 
@@ -64,3 +90,4 @@ require_once __DIR__ . '/../includes/Profiler/QueryReducer.php';
 require_once __DIR__ . '/../includes/Profiler/CallStack.php';
 require_once __DIR__ . '/../includes/Api/Sanitizer.php';
 require_once __DIR__ . '/../includes/Profiler/Storage.php';
+require_once __DIR__ . '/../includes/Api/Prompt.php';

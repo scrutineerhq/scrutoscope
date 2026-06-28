@@ -76,7 +76,7 @@ Returns site environment data (WordPress version, PHP version, active plugins, t
 Returns profiled routes with summary statistics: profile count, average duration, average query count.
 
 ### GET /v1/profile/{id}
-Returns a single profile: summary stats, per-source breakdown (exclusive/inclusive time, callback counts), database queries with timing and attribution, outbound HTTP calls with URL/status/duration/caller, and lifecycle milestones (plugins_loaded, wp_head, etc.).
+Returns a single profile: summary stats, per-source breakdown (exclusive/inclusive time, callback counts), database queries with timing and attribution, outbound HTTP calls with destination host/status/duration/caller (paths and query strings are stripped), and lifecycle milestones (plugins_loaded, wp_head, etc.).
 
 ### GET /v1/compare/{id_a}/{id_b}
 Returns two profiles side by side with computed deltas for duration, query count, and per-source exclusive time changes.
@@ -96,7 +96,7 @@ Returns two profiles side by side with computed deltas for duration, query count
 - While a request is actively profiled, the profiler's own instrumentation adds overhead (~250ms in our benchmarks, environment-dependent) that lands in unattributed/measured time. Treat absolute durations from a profiled request as inflated relative to normal traffic; compare callbacks against each other, not against an unprofiled baseline.
 - Context matters: 500ms with 23 active plugins is different from 500ms with 3 plugins.
 - Database query time should be evaluated relative to total duration. 50ms of query time in a 500ms request is 10% — notable but not alarming. 50ms in a 100ms request is 50% — worth investigating.
-- HTTP calls (outbound requests to external APIs, update checks, license verifiers) are captured with URL, HTTP status, duration, and the callback that initiated them. These are often the single largest contributor to slow requests because network I/O blocks the PHP process. A plugin making a blocking HTTP call on every page load is a significant finding.
+- HTTP calls (outbound requests to external APIs, update checks, license verifiers) are captured with the destination host (scheme + host only — paths and query strings are stripped before storage, since they can carry secret tokens), HTTP status, duration, whether PHP blocked on the response, and the callback that initiated them. These are often the single largest contributor to slow requests because network I/O blocks the PHP process. A plugin making a blocking HTTP call on every page load is a significant finding; a non-blocking (fire-and-forget) call does not make PHP wait.
 - HTTP call duration is included in the exclusive time of the callback that made the call. If a callback shows 800ms exclusive and has HTTP calls totaling 780ms, the callback itself is fast — the network wait is the cost.
 
 ## Tone Rules
