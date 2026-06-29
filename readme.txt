@@ -3,7 +3,7 @@ Contributors: scrutineerhq
 Tags: performance, profiler, p3, p3-profiler, profiling
 Requires at least: 6.0
 Tested up to: 7.0
-Stable tag: 1.2.2
+Stable tag: 1.2.3
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -37,7 +37,7 @@ Scrutinizer is a read-only profiling plugin for WordPress. It instruments every 
 * REST API — seven read-only endpoints for AI agent integration
 * Send to Agent — one-click prompt with short-lived credentials
 * Send to Support — zero-knowledge encrypted sharing
-* WP-CLI — `wp scrutinizer status|list|show|delete|export|clear|mu-plugin`
+* WP-CLI — `wp scrutinizer status|list|show|delete|export|clear|rebuild-stats|mu-plugin`
 
 = Design Philosophy =
 
@@ -106,6 +106,15 @@ It is never contacted during normal profiling, page loads, or background capture
 **Data retention:** a shared report expires after the TTL you choose, can be set to burn after its first read, and can be revoked manually at any time. The relay only ever stores ciphertext.
 
 == Changelog ==
+
+= 1.2.3 =
+* Refactored Storage class (1,619 lines) into four focused classes: Storage, Schema, StorageRouteAggregates, Cleanup
+* Added ABSPATH guards to all PHP files
+* Added minified assets (39% smaller when SCRIPT_DEBUG is off)
+* Fixed uninstall to query only users with Application Passwords instead of all users
+* Streamlined screenshots from 21 to 15
+* Fixed REST endpoint and CLI subcommand counts in documentation
+* Added route normalization tests
 
 = 1.2.2 =
 Cron visibility, sharing fixes, and wp.org polish.
@@ -200,7 +209,7 @@ This release focuses on trust — opt-in defaults and honest disclosure — alon
 * REST API (7 endpoints)
 * Send to Agent with Application Password credentials
 * Send to Support with zero-knowledge encrypted sharing
-* WP-CLI integration (7 commands)
+* WP-CLI integration (8 commands)
 
 == Screenshots ==
 
@@ -221,6 +230,9 @@ This release focuses on trust — opt-in defaults and honest disclosure — alon
 15. AI agent terminal output diagnosing a blocking HTTP call as the top performance issue
 
 == Upgrade Notice ==
+
+= 1.2.3 =
+Internal refactor and polish. Minified assets load by default (39% smaller). No behavior changes.
 
 = 1.2.2 =
 Cron tab reorganized with collapsible sections and profile history. Shared report timeline/trace rendering fixed. Routes view paginates. No default changes.

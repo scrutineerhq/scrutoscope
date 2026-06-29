@@ -5,6 +5,26 @@ All notable changes to Scrutinizer will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.3] - 2026-06-29
+
+Internal refactor, code quality, and wp.org submission polish.
+
+### Changed
+- Refactored Storage class (1,619 lines) into four focused classes: Storage (CRUD), Schema (DDL), StorageRouteAggregates (route stats), Cleanup (retention)
+- Serve minified assets by default (375KB → 228KB); unminified served when SCRIPT_DEBUG is on
+- Streamlined screenshots from 21 to 15 (removed redundant and niche screenshots)
+- Scoped uninstall user query to only users with Application Passwords
+
+### Added
+- ABSPATH exit guards on all 20 PHP files in includes/
+- RouteKey normalization tests (10 cases)
+- Version links for v1.2.1 and v1.2.2 in changelog
+
+### Fixed
+- REST endpoint count in documentation (was 5/6, actual 7)
+- CLI subcommand list in README.md (was wrong names and count)
+- .distignore: AGENTS.md, test-plugins/, .wordpress-org/, *.gitkeep now excluded from release zip
+
 ## [1.2.2] - 2026-06-28
 
 Cron visibility, sharing fixes, and wp.org polish.
@@ -168,7 +188,7 @@ This release focuses on trust — opt-in defaults and honest disclosure — alon
   - `GET /v1/manifest` — Public API manifest for agent discovery
 - **Send to Agent** — One-click prompt generation with short-lived Application Password credentials. Auto-revokes previous access on each generation.
 - **Send to Support** — Zero-knowledge encrypted report sharing via `scrutinizer.dev` relay. Client-side AES-256-GCM encryption, configurable expiry (1–30 days), optional passphrase protection, expire-after-reading, and instant revocation.
-- **WP-CLI Integration** — Seven commands: `wp scrutinizer status`, `list`, `show`, `delete`, `export`, `clear`, `mu-plugin`.
+- **WP-CLI Integration** — Eight commands: `wp scrutinizer status`, `list`, `show`, `delete`, `export`, `clear`, `rebuild-stats`, `mu-plugin`.
 - **Diagnostics Sharing Controls** — Per-field opt-in checkboxes for environment details shared via the API.
 - **Settings Panel** — Gear icon reveals capture rate, retention, and query profiling controls without cluttering the data-first layout.
 
@@ -180,6 +200,7 @@ This release focuses on trust — opt-in defaults and honest disclosure — alon
 - **WordPress native** — Standard admin card patterns, semantic borders, WP color palette. No dark custom themes.
 - **Privacy by design** — SQL queries sanitized with literal stripping. No telemetry. No external calls except opt-in encrypted sharing.
 
+[1.2.3]: https://github.com/scrutineerhq/scrutinizer/releases/tag/v1.2.3
 [1.2.2]: https://github.com/scrutineerhq/scrutinizer/releases/tag/v1.2.2
 [1.2.1]: https://github.com/scrutineerhq/scrutinizer/releases/tag/v1.2.1
 [1.2.0]: https://github.com/scrutineerhq/scrutinizer/releases/tag/v1.2.0
