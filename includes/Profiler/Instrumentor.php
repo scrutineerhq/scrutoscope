@@ -7,6 +7,8 @@
 
 namespace Scrutinizer\Profiler;
 
+defined( 'ABSPATH' ) || exit;
+
 /**
  * Walks the global hook registry and wraps callbacks with timing closures.
  *

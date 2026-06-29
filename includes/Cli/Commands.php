@@ -7,7 +7,10 @@
 
 namespace Scrutinizer\Cli;
 
+defined( 'ABSPATH' ) || exit;
+
 use Scrutinizer\Profiler\Storage;
+use Scrutinizer\Profiler\StorageRouteAggregates;
 use Scrutinizer\Profiler\Session;
 use Scrutinizer\Api\Sanitizer;
 use WP_CLI;
@@ -415,7 +418,7 @@ class Commands {
 	 * @param array $assoc_args Associative arguments.
 	 */
 	public function rebuild_stats( $args, $assoc_args ) {
-		$count = Storage::rebuild_route_stats();
+		$count = StorageRouteAggregates::rebuild_route_stats();
 		WP_CLI::success( "Rebuilt route stats from {$count} profiles." );
 	}
 

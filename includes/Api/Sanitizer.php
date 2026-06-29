@@ -12,6 +12,8 @@
 
 namespace Scrutinizer\Api;
 
+defined( 'ABSPATH' ) || exit;
+
 use Scrutinizer\Profiler\QueryReducer;
 use Scrutinizer\Profiler\Storage;
 

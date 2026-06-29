@@ -7,6 +7,8 @@
 
 namespace Scrutinizer\Profiler;
 
+defined( 'ABSPATH' ) || exit;
+
 /**
  * Aggregates raw callback timings into a structured profile report.
  */

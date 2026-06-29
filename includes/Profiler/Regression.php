@@ -7,6 +7,8 @@
 
 namespace Scrutinizer\Profiler;
 
+defined( 'ABSPATH' ) || exit;
+
 /**
  * Produces a route's regression verdict, preferring the long-term aggregate
  * (which can compare across windows that outlive the profile TTL) and falling
@@ -25,11 +27,11 @@ class Regression {
 	 */
 	public static function for_route( $route_key, $recent_days = 7, $baseline_days = 7 ) {
 		$route_key   = (string) $route_key;
-		$fingerprint = Storage::fingerprint_for_route_key( $route_key );
+		$fingerprint = StorageRouteAggregates::fingerprint_for_route_key( $route_key );
 
 		// Aggregate path: recent window vs an older baseline window (cross-TTL).
 		if ( '' !== $fingerprint ) {
-			$windows = Storage::get_route_stat_windows( $fingerprint, $recent_days, $baseline_days );
+			$windows = StorageRouteAggregates::get_route_stat_windows( $fingerprint, $recent_days, $baseline_days );
 			$result  = Report::classify_histograms( $windows['baseline']['histogram'], $windows['recent']['histogram'] );
 
 			if ( 'insufficient_data' !== $result['verdict'] ) {

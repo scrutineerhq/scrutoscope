@@ -112,7 +112,7 @@ spl_autoload_register(
  * Creates the profiles database table and schedules cleanup cron.
  */
 function scrutinizer_activate() {
-	\Scrutinizer\Profiler\Storage::create_table();
+	\Scrutinizer\Profiler\Schema::create_table();
 
 	// Schedule twice-daily profile cleanup if not already scheduled.
 	if ( ! wp_next_scheduled( 'scrutinizer_cleanup_profiles' ) ) {
@@ -258,7 +258,7 @@ add_action( 'admin_footer', 'scrutinizer_capture_banner', PHP_INT_MAX );
 function scrutinizer_admin_init() {
 	\Scrutinizer\Admin\Dashboard::register();
 	\Scrutinizer\Admin\Ajax::register();
-	\Scrutinizer\Profiler\Storage::maybe_upgrade_table();
+	\Scrutinizer\Profiler\Schema::maybe_upgrade_table();
 	\Scrutinizer\Api\RestApi::register();
 	\Scrutinizer\Api\ApplicationPassword::register();
 
@@ -282,12 +282,12 @@ function scrutinizer_run_cleanup() {
 	$retention_days = (int) get_option( 'scrutinizer_retention_days', 7 );
 	$max_per_route  = (int) get_option( 'scrutinizer_max_per_route', 100 );
 
-	\Scrutinizer\Profiler\Storage::cleanup_profiles( $retention_days, $max_per_route );
+	\Scrutinizer\Profiler\Cleanup::cleanup_profiles( $retention_days, $max_per_route );
 
 	// Prune the long-term stats aggregate. Kept far longer than raw profiles
 	// (it's tiny and exists to outlive them), but still bounded.
 	$stats_retention = (int) get_option( 'scrutinizer_stats_retention_days', 365 );
-	\Scrutinizer\Profiler\Storage::prune_route_stats( $stats_retention );
+	\Scrutinizer\Profiler\StorageRouteAggregates::prune_route_stats( $stats_retention );
 }
 add_action( 'scrutinizer_cleanup_profiles', 'scrutinizer_run_cleanup' );
 

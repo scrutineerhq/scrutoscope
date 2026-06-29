@@ -7,6 +7,8 @@
 
 namespace Scrutinizer\Profiler;
 
+defined( 'ABSPATH' ) || exit;
+
 /**
  * Tracks nested callback execution for exclusive/inclusive time calculation.
  *

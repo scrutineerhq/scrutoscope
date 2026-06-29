@@ -11,6 +11,8 @@
 
 namespace Scrutinizer\Api;
 
+defined( 'ABSPATH' ) || exit;
+
 use Scrutinizer\Profiler\Storage;
 use Scrutinizer\Profiler\Report;
 use Scrutinizer\Profiler\Regression;

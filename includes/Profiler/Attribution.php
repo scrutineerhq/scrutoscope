@@ -7,6 +7,8 @@
 
 namespace Scrutinizer\Profiler;
 
+defined( 'ABSPATH' ) || exit;
+
 /**
  * Maps a WordPress callback to its originating plugin, theme, or core file.
  *

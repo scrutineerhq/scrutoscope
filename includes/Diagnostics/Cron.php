@@ -10,6 +10,8 @@
 
 namespace Scrutinizer\Diagnostics;
 
+defined( 'ABSPATH' ) || exit;
+
 use Scrutinizer\Profiler\Attribution;
 
 /**

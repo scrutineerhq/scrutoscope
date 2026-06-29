@@ -7,6 +7,8 @@
 
 namespace Scrutinizer\Profiler;
 
+defined( 'ABSPATH' ) || exit;
+
 /**
  * A tiny, fixed-bucket duration histogram. Pure aggregate — counts of requests
  * per duration band, never values — so it stays inside the output boundary

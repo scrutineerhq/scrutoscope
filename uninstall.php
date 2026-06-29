@@ -77,7 +77,9 @@ function scrutinizer_uninstall_site() {
 
 	$users = get_users(
 		array(
-			'fields' => 'ID',
+			'fields'       => 'ID',
+			'meta_key'     => '_application_passwords',
+			'meta_compare' => 'EXISTS',
 		)
 	);
 

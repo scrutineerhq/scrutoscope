@@ -10,6 +10,8 @@
 
 namespace Scrutinizer\Api;
 
+defined( 'ABSPATH' ) || exit;
+
 /**
  * Manages Scrutineer-owned Application Passwords.
  */

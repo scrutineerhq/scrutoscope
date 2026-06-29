@@ -11,6 +11,8 @@
 
 namespace Scrutinizer\Api;
 
+defined( 'ABSPATH' ) || exit;
+
 /**
  * Builds the /v1/prompt response — the living API contract.
  */

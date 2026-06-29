@@ -11,6 +11,8 @@
 
 namespace Scrutinizer\Api;
 
+defined( 'ABSPATH' ) || exit;
+
 /**
  * Collects site fingerprint data for diagnostic context.
  */

@@ -7,6 +7,8 @@
 
 namespace Scrutinizer\Admin;
 
+defined( 'ABSPATH' ) || exit;
+
 /**
  * Installs / removes the optional early-boot timer must-use plugin.
  *

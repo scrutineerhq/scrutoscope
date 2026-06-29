@@ -22,6 +22,8 @@
 
 namespace Scrutinizer\Profiler;
 
+defined( 'ABSPATH' ) || exit;
+
 /**
  * Reduces SQL queries to verb + table names.
  */

@@ -7,6 +7,8 @@
 
 namespace Scrutinizer\Admin;
 
+defined( 'ABSPATH' ) || exit;
+
 use Scrutinizer\Profiler\Session;
 use Scrutinizer\Profiler\Storage;
 

@@ -7,6 +7,8 @@
 
 namespace Scrutinizer\Profiler;
 
+defined( 'ABSPATH' ) || exit;
+
 /**
  * Manages the profiling session lifecycle: activation URLs, cookies, and
  * session identity.
