@@ -2,7 +2,9 @@
 .context/
 .git/
 .github/
+.wordpress-org/
 tests/
+test-plugins/
 e2e/
 test-results/
 playwright-report/
@@ -15,6 +17,7 @@ vendor/
 .gitattributes
 .gitignore
 .phpcs.xml.dist
+AGENTS.md
 composer.json
 composer.lock
 package.json
@@ -29,5 +32,6 @@ Makefile
 *.dist
 *.yml
 *.yaml
+*.gitkeep
 !readme.txt
 scrutinizer_debug.php

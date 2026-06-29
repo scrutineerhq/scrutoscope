@@ -26,10 +26,10 @@ Scrutinizer is a read-only profiling plugin for WordPress. It instruments every 
 - **Pin & annotate** profiles with notes and tags
 - **Automatic retention** — TTL + per-route cap, pinned profiles exempt
 - **Cron inventory** — all registered WordPress cron events at a glance
-- **REST API** — five read-only endpoints for AI agent integration
+- **REST API** — seven read-only endpoints for AI agent integration
 - **Send to Agent** — one-click prompt with short-lived credentials
 - **Send to Support** — zero-knowledge encrypted sharing via [scrutinizer.dev](https://scrutinizer.dev)
-- **WP-CLI** — `wp scrutinizer status|list|view|purge|compare|export`
+- **WP-CLI** — `wp scrutinizer status|list|show|delete|export|clear|rebuild-stats|mu-plugin`
 
 ## Requirements
 
@@ -64,15 +64,17 @@ Copy or symlink the `scrutinizer` directory into `wp-content/plugins/`.
 
 ## REST API
 
-Scrutinizer exposes five read-only REST endpoints under `wp-json/scrutinizer/`:
+Scrutinizer exposes seven read-only REST endpoints under `wp-json/scrutinizer/`:
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | `GET` | `/v1/prompt` | System prompt — the API contract (text/plain) |
 | `GET` | `/v1/diagnostics` | Site fingerprint with opt-in fields |
 | `GET` | `/v1/routes` | Profiled routes with summary stats |
+| `GET` | `/v1/regression` | Regression detection for a route |
 | `GET` | `/v1/profile/{id}` | Full compiled profile |
 | `GET` | `/v1/compare/{a}/{b}` | Two profiles with deltas |
+| `GET` | `/v1/manifest` | Plugin capabilities manifest |
 
 Authentication: WordPress Application Passwords. The **Send to Agent** button generates a short-lived credential automatically.
 

@@ -34,7 +34,7 @@ Scrutinizer is a read-only profiling plugin for WordPress. It instruments every 
 * Pin & annotate profiles with notes and tags
 * Automatic retention — TTL + per-route cap, pinned profiles exempt
 * Cron inventory — all registered WordPress cron events at a glance
-* REST API — six read-only endpoints for AI agent integration
+* REST API — seven read-only endpoints for AI agent integration
 * Send to Agent — one-click prompt with short-lived credentials
 * Send to Support — zero-knowledge encrypted sharing
 * WP-CLI — `wp scrutinizer status|list|show|delete|export|clear|mu-plugin`
@@ -197,7 +197,7 @@ This release focuses on trust — opt-in defaults and honest disclosure — alon
 * Pin & annotate with notes and tags
 * Profile retention with TTL and per-route cap
 * Cron inventory
-* REST API (6 endpoints)
+* REST API (7 endpoints)
 * Send to Agent with Application Password credentials
 * Send to Support with zero-knowledge encrypted sharing
 * WP-CLI integration (7 commands)

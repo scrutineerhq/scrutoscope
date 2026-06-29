@@ -180,6 +180,8 @@ This release focuses on trust — opt-in defaults and honest disclosure — alon
 - **WordPress native** — Standard admin card patterns, semantic borders, WP color palette. No dark custom themes.
 - **Privacy by design** — SQL queries sanitized with literal stripping. No telemetry. No external calls except opt-in encrypted sharing.
 
+[1.2.2]: https://github.com/scrutineerhq/scrutinizer/releases/tag/v1.2.2
+[1.2.1]: https://github.com/scrutineerhq/scrutinizer/releases/tag/v1.2.1
 [1.2.0]: https://github.com/scrutineerhq/scrutinizer/releases/tag/v1.2.0
 [1.1.0]: https://github.com/scrutineerhq/scrutinizer/releases/tag/v1.1.0
 [1.0.3]: https://github.com/scrutineerhq/scrutinizer/releases/tag/v1.0.3
