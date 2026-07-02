@@ -4922,14 +4922,8 @@
 		if ( ! sql || ! scrutinizerAdmin.dbPrefix ) {
 			return sql || '';
 		}
-		var prefix = scrutinizerAdmin.dbPrefix;
-		// Only replace if the prefix is non-default — default wp_ is harmless
-		// and replacing it would make shared reports harder to read.
-		if ( prefix === 'wp_' ) {
-			return sql;
-		}
 		// Global replace: prefix appears in table names throughout the query.
-		return sql.split( prefix ).join( '{prefix}_' );
+		return sql.split( scrutinizerAdmin.dbPrefix ).join( '{prefix}_' );
 	}
 
 	function truncate( str, max ) {
