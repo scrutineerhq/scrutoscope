@@ -4914,6 +4914,24 @@
 		return div.innerHTML;
 	}
 
+	/**
+	 * Replace the site DB prefix with {prefix}_ in SQL strings.
+	 * Used in share and export flows to avoid leaking the real prefix.
+	 */
+	function stripDbPrefix( sql ) {
+		if ( ! sql || ! scrutinizerAdmin.dbPrefix ) {
+			return sql || '';
+		}
+		var prefix = scrutinizerAdmin.dbPrefix;
+		// Only replace if the prefix is non-default — default wp_ is harmless
+		// and replacing it would make shared reports harder to read.
+		if ( prefix === 'wp_' ) {
+			return sql;
+		}
+		// Global replace: prefix appears in table names throughout the query.
+		return sql.split( prefix ).join( '{prefix}_' );
+	}
+
 	function truncate( str, max ) {
 		if ( ! str || str.length <= max ) {
 			return str;
@@ -5411,6 +5429,18 @@
 		var data = profile.profile_data || {};
 		var id   = profile.id || 'unknown';
 
+		// Deep-copy profile_data so we can sanitize without mutating the original.
+		var cleanData = JSON.parse( JSON.stringify( data ) );
+
+		// Strip DB prefix from exported query SQL.
+		if ( cleanData.queries && cleanData.queries.length ) {
+			for ( var qi = 0; qi < cleanData.queries.length; qi++ ) {
+				if ( cleanData.queries[ qi ].sql ) {
+					cleanData.queries[ qi ].sql = stripDbPrefix( cleanData.queries[ qi ].sql );
+				}
+			}
+		}
+
 		// Build a clean export object with metadata.
 		var exportObj = {
 			_scrutinizer: {
@@ -5426,7 +5456,7 @@
 			is_pinned:   parseInt( profile.is_pinned, 10 ) === 1,
 			note:        profile.note || '',
 			tags:        profile.tags || '',
-			profile_data: data
+			profile_data: cleanData
 		};
 
 		var json     = JSON.stringify( exportObj, null, 2 );
@@ -5602,7 +5632,7 @@
 					// Flatten nested attribution into top-level fields the
 					// relay can use, but keep native names.
 					var out = {
-						sql: q.sql || '',
+						sql: stripDbPrefix( q.sql || '' ),
 						time_ms: q.time_ms || 0,
 						caller: q.caller || '',
 						offset_ns: q.offset_ns || 0
