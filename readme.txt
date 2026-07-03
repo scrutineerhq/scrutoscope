@@ -1,5 +1,5 @@
 === Scrutinizer ===
-Contributors: scrutineerhq
+Contributors: kurtpayne
 Tags: performance, profiler, p3, p3-profiler, profiling
 Requires at least: 6.0
 Tested up to: 7.0
@@ -247,7 +247,7 @@ Adds a capture feedback banner so users know profiling is active while browsing.
 Adds opt-in Lightweight Mode (production-safe, ~95% smaller profiles) and opt-in Cron profiling (per-hook cost). No default changes.
 
 = 1.1.0 =
-Heads-up on two default changes: early-boot timing is now opt-in (no must-use plugin is written on activation), and query profiling (SAVEQUERIES) now defaults off — enable either from Settings. Also: a redesigned Request Timeline, core-developer attribution, accurate blocking-vs-async HTTP timing, and security hardening.
+Two default changes: early-boot timing is now opt-in, and query profiling (SAVEQUERIES) defaults off. Also: redesigned Request Timeline, core-developer attribution, and security hardening.
 
 = 1.0.3 =
 Security hardening (IP hashing, token binding, proxy spoofing fix), background profiling filters, full-page settings view.

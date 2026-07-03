@@ -165,13 +165,6 @@ function scrutinizer_handle_activation() {
 }
 add_action( 'init', 'scrutinizer_handle_activation' );
 
-/**
- * Load text domain for translations.
- */
-function scrutinizer_load_textdomain() {
-	load_plugin_textdomain( 'scrutinizer', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
-}
-add_action( 'init', 'scrutinizer_load_textdomain' );
 
 /**
  * Show admin bar indicator when profiling is active.

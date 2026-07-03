@@ -237,7 +237,7 @@ class Profiler {
 		// Exclude paths filter.
 		$exclude_paths = get_option( 'scrutinizer_exclude_paths', '' );
 		if ( ! empty( $exclude_paths ) && isset( $_SERVER['REQUEST_URI'] ) ) {
-			$request_path = wp_parse_url( $_SERVER['REQUEST_URI'], PHP_URL_PATH );
+			$request_path = wp_parse_url( wp_unslash( $_SERVER['REQUEST_URI'] ), PHP_URL_PATH );
 			if ( $request_path ) {
 				$patterns = array_filter( array_map( 'trim', explode( "\n", $exclude_paths ) ) );
 				foreach ( $patterns as $pattern ) {
