@@ -3,7 +3,7 @@ Contributors: kurtpayne
 Tags: performance, profiler, p3, p3-profiler, profiling
 Requires at least: 6.0
 Tested up to: 7.0
-Stable tag: 1.2.4
+Stable tag: 1.2.5
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -106,6 +106,13 @@ It is never contacted during normal profiling, page loads, or background capture
 **Data retention:** a shared report expires after the TTL you choose, can be set to burn after its first read, and can be revoked manually at any time. The relay only ever stores ciphertext.
 
 == Changelog ==
+
+= 1.2.5 =
+* Fix: Replace heredoc syntax in Prompt.php for Plugin Check compatibility.
+* Fix: Remove deprecated load_plugin_textdomain call (handled by wp.org since WP 4.6).
+* Fix: Sanitize $_SERVER['REQUEST_URI'] with wp_unslash.
+* Fix: Trim upgrade notice for 1.1.0 to under 300 characters.
+* Fix: Update contributor to kurtpayne.
 
 = 1.2.3 =
 * Refactored Storage class (1,619 lines) into four focused classes: Storage, Schema, StorageRouteAggregates, Cleanup
@@ -230,6 +237,9 @@ This release focuses on trust — opt-in defaults and honest disclosure — alon
 15. AI agent terminal output diagnosing a blocking HTTP call as the top performance issue
 
 == Upgrade Notice ==
+
+= 1.2.5 =
+Plugin Check compatibility fixes for wp.org submission.
 
 = 1.2.4 =
 Breakdown bar fix and DB prefix stripping in shared reports. No default changes.
