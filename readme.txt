@@ -3,7 +3,7 @@ Contributors: scrutineerhq
 Tags: performance, profiler, p3, p3-profiler, profiling
 Requires at least: 6.0
 Tested up to: 7.0
-Stable tag: 1.2.3
+Stable tag: 1.2.4
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -230,6 +230,9 @@ This release focuses on trust — opt-in defaults and honest disclosure — alon
 15. AI agent terminal output diagnosing a blocking HTTP call as the top performance issue
 
 == Upgrade Notice ==
+
+= 1.2.4 =
+Breakdown bar fix and DB prefix stripping in shared reports. No default changes.
 
 = 1.2.3 =
 Internal refactor and polish. Minified assets load by default (39% smaller). No behavior changes.

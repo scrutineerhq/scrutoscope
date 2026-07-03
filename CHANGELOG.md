@@ -5,6 +5,14 @@ All notable changes to Scrutinizer will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.4] - 2026-07-02
+
+Shared report privacy and breakdown bar fix.
+
+### Fixed
+- Breakdown bar now fills to 100% with a labeled "Unattributed" segment for remainder time
+- Database table prefix stripped from SQL in shared and exported profiles (replaced with `{prefix}_`)
+
 ## [1.2.3] - 2026-06-29
 
 Internal refactor, code quality, and wp.org submission polish.
