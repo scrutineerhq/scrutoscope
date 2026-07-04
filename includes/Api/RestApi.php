@@ -266,20 +266,19 @@ class RestApi {
 	}
 
 	/**
-	 * Reduce a User-Agent to a coarse family for the audit log.
+	 * Coarsen a User-Agent for the audit log.
 	 *
-	 * Strips version numbers so the client family stays legible for support
-	 * without storing a precisely fingerprintable string.
+	 * For security audit purposes we preserve the full User-Agent string,
+	 * truncated to 255 chars to prevent storage abuse.
 	 *
 	 * @param string $ua Raw User-Agent.
-	 * @return string Coarsened User-Agent (max 100 chars).
+	 * @return string User-Agent (max 255 chars).
 	 */
 	private static function coarsen_user_agent( $ua ) {
 		if ( '' === $ua ) {
 			return '';
 		}
-		$ua = preg_replace( '/\d+(\.\d+)*/', 'x', $ua );
-		return substr( $ua, 0, 100 );
+		return substr( $ua, 0, 255 );
 	}
 
 	/**
