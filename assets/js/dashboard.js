@@ -2146,12 +2146,12 @@
 		for ( var i = 0; i < profiles.length; i++ ) {
 			var p     = profiles[ i ];
 			var durMs = ( parseInt( p.duration_ns, 10 ) / 1e6 ).toFixed( 1 );
-			var url   = p.request_url || '—';
+			var url   = stripDomain( p.request_url ) || '—';
 			var badge = typeBadge( p.profile_type || 'session' );
 
 			html += '<tr>';
 			html += '<td class="scrutoscope-duration numeric">' + esc( durMs ) + ' ms</td>';
-			html += '<td title="' + esc( p.request_url ) + '">' + esc( truncate( url, 60 ) ) + '</td>';
+			html += '<td title="' + esc( stripDomain( p.request_url ) ) + '">' + esc( truncate( url, 60 ) ) + '</td>';
 			html += '<td>' + esc( p.request_method ) + '</td>';
 			html += '<td>' + esc( p.route_class || '—' ) + '</td>';
 			html += '<td>' + rolePill( p.user_role || 'anonymous' ) + '</td>';
@@ -2280,7 +2280,7 @@
 		html += '</div>';
 
 		// Header with role pill.
-		var headerLabel = esc( request.method ) + ' ' + esc( request.url );
+		var headerLabel = esc( request.method ) + ' ' + esc( stripDomain( request.url ) );
 		if ( request.ajax_action ) {
 			headerLabel = esc( request.method ) + ' ajax:' + esc( request.ajax_action ) + ' ' + rolePill( request.user_role );
 		} else {
@@ -4424,7 +4424,7 @@
 			html += '<tr>';
 			html += '<td>' + esc( p.captured_at ) + '</td>';
 			html += '<td class="numeric">' + esc( durMs ) + ' ms</td>';
-			html += '<td><code>' + esc( p.route_key || p.request_url || '' ) + '</code></td>';
+			html += '<td><code>' + esc( p.route_key || stripDomain( p.request_url ) || '' ) + '</code></td>';
 			html += '<td class="scrutoscope-actions">';
 			html += '<a href="#" class="scrutoscope-view-profile" data-profile-id="' + parseInt( p.id, 10 ) + '">' + __( 'View', 'scrutoscope' ) + '</a>';
 			html += '</td>';
@@ -4541,7 +4541,7 @@
 		for ( var i = 0; i < profiles.length; i++ ) {
 			var p = profiles[ i ];
 			var durMs = p.duration_ns ? ( p.duration_ns / 1e6 ).toFixed( 1 ) + ' ms' : '?';
-			var label = ( p.request_method || 'GET' ) + ' ' + truncate( p.request_url || p.route_key || '', 50 );
+			var label = ( p.request_method || 'GET' ) + ' ' + truncate( stripDomain( p.request_url ) || p.route_key || '', 50 );
 			html += '<li class="scrutoscope-compare-target" data-id="' + parseInt( p.id, 10 ) + '" tabindex="0" role="button">';
 			html += '<span class="picker-route">' + esc( label ) + '</span>';
 			html += '<span class="picker-meta">' + esc( durMs ) + ' · ' + esc( p.captured_at || '' ) + '</span>';
@@ -4604,7 +4604,7 @@
 		html += '<span class="scrutoscope-verdict-badge ' + verdict.cls + '">' + verdict.label + '</span>';
 		html += '<span class="scrutoscope-compare-summary">';
 		// translators: %s is the method and URL of the profile being compared against.
-		html += sprintf( __( 'Compared to %s', 'scrutoscope' ), '<strong>' + esc( ( reqB.method || '' ) + ' ' + truncate( reqB.url || b.request_url || '', 40 ) ) + '</strong>' );
+		html += sprintf( __( 'Compared to %s', 'scrutoscope' ), '<strong>' + esc( ( reqB.method || '' ) + ' ' + truncate( reqB.url || stripDomain( b.request_url ) || '', 40 ) ) + '</strong>' );
 		html += ' <small>(' + esc( b.captured_at || '' ) + ')</small>';
 		html += '</span>';
 		html += '<button type="button" class="button button-link" id="scrutoscope-inline-compare-close" title="' + esc( __( 'Dismiss', 'scrutoscope' ) ) + '">✕</button>';
@@ -4784,9 +4784,9 @@
 
 		// Header: Profile A vs Profile B.
 		html += '<div class="scrutoscope-compare-header">';
-		html += '<div class="compare-profile-label"><strong>A:</strong> ' + esc( reqA.method || '' ) + ' ' + esc( truncate( reqA.url || a.request_url || '', 60 ) ) + '<br><small>' + esc( a.captured_at ) + '</small></div>';
+		html += '<div class="compare-profile-label"><strong>A:</strong> ' + esc( reqA.method || '' ) + ' ' + esc( truncate( reqA.url || stripDomain( a.request_url ) || '', 60 ) ) + '<br><small>' + esc( a.captured_at ) + '</small></div>';
 		html += '<div class="compare-vs">' + __( 'vs', 'scrutoscope' ) + '</div>';
-		html += '<div class="compare-profile-label"><strong>B:</strong> ' + esc( reqB.method || '' ) + ' ' + esc( truncate( reqB.url || b.request_url || '', 60 ) ) + '<br><small>' + esc( b.captured_at ) + '</small></div>';
+		html += '<div class="compare-profile-label"><strong>B:</strong> ' + esc( reqB.method || '' ) + ' ' + esc( truncate( reqB.url || stripDomain( b.request_url ) || '', 60 ) ) + '<br><small>' + esc( b.captured_at ) + '</small></div>';
 		html += '</div>';
 
 		// Summary comparison.
@@ -5013,6 +5013,17 @@
 			return str;
 		}
 		return str.substring( 0, max - 1 ) + '…';
+	}
+
+	function stripDomain( url ) {
+		if ( ! url ) {
+			return '/';
+		}
+		try {
+			return new URL( url ).pathname;
+		} catch ( e ) {
+			return url;
+		}
 	}
 
 	function formatBytes( bytes ) {
