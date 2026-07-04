@@ -3,7 +3,7 @@ Contributors: kurtpayne
 Tags: performance, profiler, p3, p3-profiler, profiling
 Requires at least: 6.0
 Tested up to: 7.0
-Stable tag: 1.2.6
+Stable tag: 1.2.7
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -106,6 +106,12 @@ It is never contacted during normal profiling, page loads, or background capture
 **Data retention:** a shared report expires after the TTL you choose, can be set to burn after its first read, and can be revoked manually at any time. The relay only ever stores ciphertext.
 
 == Changelog ==
+
+= 1.2.7 =
+* Fix: Moved inline scripts to wp_register_script/wp_add_inline_script for wp.org compliance.
+* Fix: Removed unnecessary require_once for plugin.php.
+* Fix: Switched file_put_contents to WordPress uploads directory via wp_upload_dir().
+* Fix: Replaced copy() with WP_Filesystem API for mu-plugin installation.
 
 = 1.2.6 =
 * New: Inline trend sparklines in the routes overview table with regression coloring.

@@ -5,6 +5,16 @@ All notable changes to Scrutinizer will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.7] - 2026-07-04
+
+wp.org review compliance fixes.
+
+### Fixed
+- Moved inline `<script>` to `wp_register_script()` / `wp_add_inline_script()` for wp.org compliance
+- Removed unnecessary `require_once` for `plugin.php`
+- Switched `file_put_contents` to WordPress uploads directory via `wp_upload_dir()`
+- Replaced `copy()` with `WP_Filesystem` API for mu-plugin installation
+
 ## [1.2.6] - 2026-07-04
 
 Dashboard enhancements and tab-switch fix.
@@ -232,6 +242,7 @@ This release focuses on trust — opt-in defaults and honest disclosure — alon
 - **WordPress native** — Standard admin card patterns, semantic borders, WP color palette. No dark custom themes.
 - **Privacy by design** — SQL queries sanitized with literal stripping. No telemetry. No external calls except opt-in encrypted sharing.
 
+[1.2.7]: https://github.com/scrutineerhq/scrutinizer/releases/tag/v1.2.7
 [1.2.6]: https://github.com/scrutineerhq/scrutinizer/releases/tag/v1.2.6
 [1.2.5]: https://github.com/scrutineerhq/scrutinizer/releases/tag/v1.2.5
 [1.2.4]: https://github.com/scrutineerhq/scrutinizer/releases/tag/v1.2.4
