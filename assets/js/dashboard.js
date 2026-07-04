@@ -1872,6 +1872,14 @@
 		$( '#scrutinizer-api-view' ).hide();
 		$( '.scrutinizer-top-tab' ).removeClass( 'active' );
 		$( '.scrutinizer-top-tab[data-top-tab="routes"]' ).addClass( 'active' );
+
+		// Render cached data immediately so switching tabs back from
+		// History/Cron doesn't require a second round-trip (the first
+		// fetchGrouped() may have completed while another tab was active,
+		// storing data in groupedData but skipping the render).
+		if ( groupedData && groupedData.length > 0 ) {
+			renderGroupedTable( groupedData );
+		}
 		fetchGrouped();
 	}
 
