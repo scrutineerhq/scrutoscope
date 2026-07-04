@@ -78,7 +78,20 @@ class EarlyBoot {
 		if ( ! wp_is_writable( $dir ) ) {
 			return new \WP_Error( 'scrutinizer_mu_writable', __( 'The mu-plugins directory is not writable. Your host may restrict filesystem writes.', 'scrutinizer' ) );
 		}
-		if ( ! copy( $source, $target ) ) {
+
+		// Read source and write via WP_Filesystem to satisfy plugin directory guidelines.
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- reading local plugin file.
+		$contents = file_get_contents( $source );
+		if ( false === $contents ) {
+			return new \WP_Error( 'scrutinizer_mu_read', __( 'Could not read the early-boot plugin source file.', 'scrutinizer' ) );
+		}
+
+		global $wp_filesystem;
+		if ( empty( $wp_filesystem ) ) {
+			require_once ABSPATH . 'wp-admin/includes/file.php';
+			WP_Filesystem( false, $dir, true );
+		}
+		if ( ! $wp_filesystem || ! $wp_filesystem->put_contents( $target, $contents, FS_CHMOD_FILE ) ) {
 			return new \WP_Error( 'scrutinizer_mu_copy', __( 'Could not write the early-boot plugin to mu-plugins. Your host may restrict filesystem writes.', 'scrutinizer' ) );
 		}
 		return true;

@@ -165,10 +165,6 @@ class Diagnostics {
 	 * @return array
 	 */
 	private static function collect_plugins() {
-		if ( ! function_exists( 'get_plugins' ) ) {
-			require_once ABSPATH . 'wp-admin/includes/plugin.php';
-		}
-
 		$active = get_option( 'active_plugins', array() );
 		$slugs  = array();
 

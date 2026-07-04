@@ -350,9 +350,12 @@ class Commands {
 		$file = Utils\get_flag_value( $assoc_args, 'file', '' );
 
 		if ( $file ) {
-			// WP-CLI command writing an export to an operator-specified path;
-			// direct file I/O is appropriate here, not the WP_Filesystem API.
-			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+			// Resolve relative paths to the uploads directory.
+			if ( ! path_is_absolute( $file ) ) {
+				$upload_dir = wp_upload_dir();
+				$file       = trailingslashit( $upload_dir['basedir'] ) . basename( $file );
+			}
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- WP-CLI server-side command.
 			$bytes = file_put_contents( $file, $json . "\n" );
 			if ( false === $bytes ) {
 				WP_CLI::error( "Could not write to {$file}." );

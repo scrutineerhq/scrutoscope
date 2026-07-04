@@ -223,23 +223,28 @@ function scrutinizer_capture_banner() {
 		<span><?php echo esc_html( $text ); ?> <a href="<?php echo esc_url( $cta_url ); ?>" style="color:#72aee6;text-decoration:none;"><?php echo esc_html( $cta_text ); ?></a></span>
 		<button type="button" id="scrutinizer-capture-dismiss" style="background:none;border:none;color:#c3c4c7;cursor:pointer;font-size:18px;line-height:1;padding:8px 12px;min-width:32px;min-height:32px;margin-left:4px;display:inline-flex;align-items:center;justify-content:center;" aria-label="<?php esc_attr_e( 'Dismiss', 'scrutinizer' ); ?>">&times;</button>
 	</div>
-	<script>
-	(function(){
-		if(sessionStorage.getItem('scrutinizer_banner_off'))return;
-		var b=document.getElementById('scrutinizer-capture-banner');
-		if(!b)return;
-		b.style.display='flex';
-		document.documentElement.style.paddingBottom='42px';
-		var d=document.getElementById('scrutinizer-capture-dismiss');
-		d.addEventListener('click',function(){
-			b.style.display='none';
-			document.documentElement.style.paddingBottom='';
-			sessionStorage.setItem('scrutinizer_banner_off','1');
-		});
-		d.addEventListener('mouseenter',function(){d.style.color='#f0f0f1';});
-		d.addEventListener('mouseleave',function(){d.style.color='#c3c4c7';});
-	})();
-	</script>
+	<?php
+	wp_register_script( 'scrutinizer-capture-banner', false, array(), SCRUTINIZER_VERSION, true );
+	wp_add_inline_script(
+		'scrutinizer-capture-banner',
+		'(function(){' .
+			"if(sessionStorage.getItem('scrutinizer_banner_off'))return;" .
+			"var b=document.getElementById('scrutinizer-capture-banner');" .
+			'if(!b)return;' .
+			"b.style.display='flex';" .
+			"document.documentElement.style.paddingBottom='42px';" .
+			"var d=document.getElementById('scrutinizer-capture-dismiss');" .
+			"d.addEventListener('click',function(){" .
+				"b.style.display='none';" .
+				"document.documentElement.style.paddingBottom='';" .
+				"sessionStorage.setItem('scrutinizer_banner_off','1');" .
+			'});' .
+			"d.addEventListener('mouseenter',function(){d.style.color='#f0f0f1';});" .
+			"d.addEventListener('mouseleave',function(){d.style.color='#c3c4c7';});" .
+		'})();'
+	);
+	wp_enqueue_script( 'scrutinizer-capture-banner' );
+	?>
 	<?php
 }
 add_action( 'wp_footer', 'scrutinizer_capture_banner', PHP_INT_MAX );

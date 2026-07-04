@@ -29,9 +29,6 @@ class Prompt {
 		$wp_ver   = get_bloginfo( 'version' );
 		$php_ver  = PHP_VERSION;
 
-		if ( ! function_exists( 'get_plugins' ) ) {
-			require_once ABSPATH . 'wp-admin/includes/plugin.php';
-		}
 		$plugin_count = count( get_option( 'active_plugins', array() ) );
 
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- local file read.
