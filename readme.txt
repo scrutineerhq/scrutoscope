@@ -3,7 +3,7 @@ Contributors: kurtpayne
 Tags: performance, profiler, p3, p3-profiler, profiling
 Requires at least: 6.0
 Tested up to: 7.0
-Stable tag: 1.3.0
+Stable tag: 1.3.1
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -107,13 +107,17 @@ It is never contacted during normal profiling, page loads, or background capture
 
 == Changelog ==
 
+= 1.3.1 =
+* Request URLs display as paths only (domain stripped)
+* Access log stores raw IPs and full user agents for security auditing
+* Rebuilt minified assets
+* Updated screenshots
+
 = 1.3.0 =
 * Renamed plugin from "Scrutinizer" to "Scrutoscope"
 * Updated all namespaces, database tables, REST API, WP-CLI commands, option keys, and handles
 * Automatic migration from old names on upgrade
 * Relay endpoint moved to scrutoscope.dev
-* Request URLs display as paths only (domain stripped)
-* Access log stores raw IPs and full user agents for security auditing
 
 = 1.2.7 =
 * Fix: Moved inline scripts to wp_register_script/wp_add_inline_script for wp.org compliance.
@@ -258,6 +262,9 @@ This release focuses on trust — opt-in defaults and honest disclosure — alon
 15. AI agent terminal output diagnosing a blocking HTTP call as the top performance issue
 
 == Upgrade Notice ==
+
+= 1.3.1 =
+Path-only URLs, raw IPs in access log, updated screenshots.
 
 = 1.3.0 =
 Product rename: Scrutinizer is now Scrutoscope. All database tables, options, and settings migrate automatically on upgrade. No action required.

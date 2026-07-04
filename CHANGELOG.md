@@ -5,6 +5,14 @@ All notable changes to Scrutoscope will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.1] - 2026-07-04
+
+### Fixed
+- Request URLs display as paths only (domain stripped from dashboard and shared reports)
+- Access log stores raw IPs and full user agent strings for security auditing
+- Rebuilt minified JS with stripDomain logic
+- Updated screenshots and changelogs
+
 ## [1.3.0] - 2026-07-04
 
 Product rename: Scrutinizer → Scrutoscope.
@@ -21,10 +29,6 @@ Product rename: Scrutinizer → Scrutoscope.
 
 ### Added
 - Automatic migration from old "Scrutinizer" table and option names on activation/upgrade
-
-### Fixed
-- Request URLs now display as paths only (domain stripped from dashboard and shared reports)
-- Access log stores raw IPs and full user agent strings for proper security auditing
 
 ## [1.2.7] - 2026-07-04
 
@@ -263,6 +267,7 @@ This release focuses on trust — opt-in defaults and honest disclosure — alon
 - **WordPress native** — Standard admin card patterns, semantic borders, WP color palette. No dark custom themes.
 - **Privacy by design** — SQL queries sanitized with literal stripping. No telemetry. No external calls except opt-in encrypted sharing.
 
+[1.3.1]: https://github.com/scrutineerhq/scrutoscope/releases/tag/v1.3.1
 [1.3.0]: https://github.com/scrutineerhq/scrutoscope/releases/tag/v1.3.0
 [1.2.7]: https://github.com/scrutineerhq/scrutoscope/releases/tag/v1.2.7
 [1.2.6]: https://github.com/scrutineerhq/scrutoscope/releases/tag/v1.2.6
