@@ -22,6 +22,10 @@ Product rename: Scrutinizer → Scrutoscope.
 ### Added
 - Automatic migration from old "Scrutinizer" table and option names on activation/upgrade
 
+### Fixed
+- Request URLs now display as paths only (domain stripped from dashboard and shared reports)
+- Access log stores raw IPs and full user agent strings for proper security auditing
+
 ## [1.2.7] - 2026-07-04
 
 wp.org review compliance fixes.
