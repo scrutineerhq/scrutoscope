@@ -3012,6 +3012,31 @@
 
 /* ------------------------------------------------------------------ */
 /*  Trend Sparkline (F10)                                              */
+/* Mini sparklines in routes table */
+
+.scrutinizer-trend-cell {
+	white-space: nowrap;
+	vertical-align: middle;
+}
+
+.scrutinizer-mini-spark {
+	display: inline-block;
+	vertical-align: middle;
+}
+
+.scrutinizer-trend-dot {
+	font-size: 10px;
+	vertical-align: middle;
+}
+
+.scrutinizer-trend-dot.trend-regression {
+	color: #d63638;
+}
+
+.scrutinizer-trend-dot.trend-improvement {
+	color: #00a32a;
+}
+
 /* ------------------------------------------------------------------ */
 
 .scrutinizer-sparkline-row {

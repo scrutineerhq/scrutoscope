@@ -1797,6 +1797,7 @@
 		html += sortHeader( __( 'Method', 'scrutinizer' ), 'request_method' );
 		html += sortHeader( __( 'Requests', 'scrutinizer' ), 'request_count' );
 		html += sortHeader( __( 'Avg Duration', 'scrutinizer' ), 'avg_duration_ns' );
+		html += '<th style="width:80px">' + __( 'Trend', 'scrutinizer' ) + '</th>';
 		html += sortHeader( __( 'Min', 'scrutinizer' ), 'min_duration_ns' );
 		html += sortHeader( __( 'Max', 'scrutinizer' ), 'max_duration_ns' );
 		html += sortHeader( __( 'Last Captured', 'scrutinizer' ), 'last_captured' );
@@ -1827,6 +1828,7 @@
 			html += '<td>' + esc( r.request_method ) + '</td>';
 			html += '<td class="numeric">' + parseInt( r.request_count, 10 ) + '</td>';
 			html += '<td class="scrutinizer-duration numeric">' + esc( avgMs ) + ' ms</td>';
+			html += '<td class="scrutinizer-trend-cell">' + renderMiniSparkline( r.duration_history ) + '</td>';
 			html += '<td class="numeric">' + esc( minMs ) + ' ms</td>';
 			html += '<td class="numeric">' + esc( maxMs ) + ' ms</td>';
 			html += '<td>' + esc( r.last_captured ) + '</td>';
@@ -1964,6 +1966,76 @@
 	/* ------------------------------------------------------------------ */
 	/*  Trend Sparkline (F10)                                              */
 	/* ------------------------------------------------------------------ */
+
+	/**
+	 * Render a tiny inline SVG sparkline for the routes table.
+	 * Input: comma-separated duration_ns values, newest first (from GROUP_CONCAT ... ORDER BY captured_at DESC).
+	 */
+	function renderMiniSparkline( historyStr ) {
+		if ( ! historyStr ) {
+			return '<span class="scrutinizer-muted">-</span>';
+		}
+
+		var raw = historyStr.split( ',' );
+		// Reverse so oldest is first (chronological order), take last 20.
+		raw.reverse();
+		if ( raw.length > 20 ) {
+			raw = raw.slice( raw.length - 20 );
+		}
+
+		var points = [];
+		for ( var i = 0; i < raw.length; i++ ) {
+			var ms = parseInt( raw[ i ], 10 ) / 1e6;
+			if ( ! isNaN( ms ) ) {
+				points.push( ms );
+			}
+		}
+
+		if ( points.length < 2 ) {
+			return '<span class="scrutinizer-muted">-</span>';
+		}
+
+		var minVal = Math.min.apply( null, points );
+		var maxVal = Math.max.apply( null, points );
+		var range  = maxVal - minVal || 1;
+
+		var w = 64, h = 20, pad = 1;
+		var plotW = w - pad * 2, plotH = h - pad * 2;
+
+		var svgPoints = [];
+		for ( var j = 0; j < points.length; j++ ) {
+			var x = pad + ( j / ( points.length - 1 ) ) * plotW;
+			var y = pad + plotH - ( ( points[ j ] - minVal ) / range ) * plotH;
+			svgPoints.push( x.toFixed( 1 ) + ',' + y.toFixed( 1 ) );
+		}
+
+		// Trend: compare last 3 avg vs overall avg.
+		var sum = 0;
+		for ( var si = 0; si < points.length; si++ ) { sum += points[ si ]; }
+		var avg = sum / points.length;
+
+		var tailCount = Math.min( 3, points.length );
+		var tailSum = 0;
+		for ( var ti = points.length - tailCount; ti < points.length; ti++ ) { tailSum += points[ ti ]; }
+		var tailAvg = tailSum / tailCount;
+
+		var ratio = tailAvg / avg;
+		var color = ratio > 1.2 ? '#d63638' : ( ratio < 0.8 ? '#00a32a' : '#2271b1' );
+
+		// Regression dot.
+		var dot = '';
+		if ( ratio > 1.2 ) {
+			dot = ' <span class="scrutinizer-trend-dot trend-regression" title="' + esc( __( 'Trending slower', 'scrutinizer' ) ) + '">●</span>';
+		} else if ( ratio < 0.8 ) {
+			dot = ' <span class="scrutinizer-trend-dot trend-improvement" title="' + esc( __( 'Trending faster', 'scrutinizer' ) ) + '">●</span>';
+		}
+
+		var svg = '<svg class="scrutinizer-mini-spark" width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '">';
+		svg += '<polyline points="' + svgPoints.join( ' ' ) + '" fill="none" stroke="' + color + '" stroke-width="1.5" stroke-linejoin="round"/>';
+		svg += '</svg>';
+
+		return svg + dot;
+	}
 
 	function renderSparkline( profiles ) {
 		// Sort by captured_at ascending (oldest first).

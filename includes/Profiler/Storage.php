@@ -816,6 +816,7 @@ class Storage {
 				MAX(captured_at) AS last_captured,
 				MIN(captured_at) AS first_captured,
 				GROUP_CONCAT(DISTINCT profile_type) AS profile_types,
+				GROUP_CONCAT(duration_ns ORDER BY captured_at DESC) AS duration_history,
 				SUM(CASE WHEN response_status >= 200 AND response_status < 300 THEN 1 ELSE 0 END) AS count_2xx,
 				SUM(CASE WHEN response_status >= 300 AND response_status < 400 THEN 1 ELSE 0 END) AS count_3xx,
 				SUM(CASE WHEN response_status >= 400 AND response_status < 500 THEN 1 ELSE 0 END) AS count_4xx,
