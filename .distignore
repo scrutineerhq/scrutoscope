@@ -34,4 +34,4 @@ Makefile
 *.yaml
 *.gitkeep
 !readme.txt
-scrutinizer_debug.php
+scrutoscope_debug.php

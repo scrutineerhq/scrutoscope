@@ -7,15 +7,15 @@
  * This is a safety-by-construction layer — it runs regardless
  * of user checkbox settings.
  *
- * @package Scrutinizer
+ * @package Scrutoscope
  */
 
-namespace Scrutinizer\Api;
+namespace Scrutoscope\Api;
 
 defined( 'ABSPATH' ) || exit;
 
-use Scrutinizer\Profiler\QueryReducer;
-use Scrutinizer\Profiler\Storage;
+use Scrutoscope\Profiler\QueryReducer;
+use Scrutoscope\Profiler\Storage;
 
 /**
  * Recursively sanitize data structures for external output.

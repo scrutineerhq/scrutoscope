@@ -1,9 +1,9 @@
 {
-  "name": "scrutineerhq/scrutinizer",
+  "name": "scrutineerhq/scrutoscope",
   "description": "WordPress Performance Profiler",
   "type": "wordpress-plugin",
   "license": "GPL-2.0-or-later",
-  "homepage": "https://scrutineer.dev/scrutinizer",
+  "homepage": "https://scrutoscope.dev",
   "authors": [
     {
       "name": "The Scrutineer Project",

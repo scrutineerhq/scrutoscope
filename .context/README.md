@@ -1,4 +1,4 @@
-# .context/ — Scrutinizer Agent Context
+# .context/ — Scrutoscope Agent Context
 
 > These files give AI coding agents the context they need to work in this codebase without introducing entropy. Read the relevant files before making changes.
 
@@ -22,4 +22,4 @@ Design question: `DECISIONS.md` → `CONSTITUTION.md`
 
 ## Master Spec
 
-These `.context/` files are the authoritative agent-actionable context for the Scrutinizer plugin.
+These `.context/` files are the authoritative agent-actionable context for the Scrutoscope plugin.

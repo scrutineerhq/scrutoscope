@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
-<ruleset name="Scrutinizer">
-	<description>Coding standards for Scrutinizer</description>
+<ruleset name="Scrutoscope">
+	<description>Coding standards for Scrutoscope</description>
 
-	<file>scrutinizer.php</file>
+	<file>scrutoscope.php</file>
 	<file>includes/</file>
 
 	<arg name="extensions" value="php"/>
@@ -33,7 +33,7 @@
 	<rule ref="WordPress.WP.I18n">
 		<properties>
 			<property name="text_domain" type="array">
-				<element value="scrutinizer"/>
+				<element value="scrutoscope"/>
 			</property>
 		</properties>
 	</rule>

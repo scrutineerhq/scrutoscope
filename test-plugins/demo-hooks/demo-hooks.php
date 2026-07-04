@@ -47,7 +47,7 @@ function demo_hooks_http_calls() {
 
 	// External API call — httpbin echo.
 	$response = wp_remote_get(
-		'https://httpbin.org/get?scrutinizer=test',
+		'https://httpbin.org/get?scrutoscope=test',
 		array( 'timeout' => 5 )
 	);
 

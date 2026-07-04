@@ -5,14 +5,14 @@ The rules that never bend. Every PR, every refactor, every "quick fix" must pass
 ## Identity
 
 - **Brand:** The Scrutineer Project (scrutineer.dev)
-- **Plugin:** Scrutinizer — WordPress Performance Profiler
+- **Plugin:** Scrutoscope — WordPress Performance Profiler
 - **Org handle:** @scrutineerhq (everywhere)
 - **License:** GPL-2.0-or-later. FOSS everything: plugin, relay, CLI, viewer.
-- **WP-CLI namespace:** `wp scrutinizer`
+- **WP-CLI namespace:** `wp scrutoscope`
 
 ## Product philosophy
 
-1. **Profiler only.** Scrutinizer measures. It does not recommend, remediate, or prescribe. Read-only until overwhelming evidence says otherwise.
+1. **Profiler only.** Scrutoscope measures. It does not recommend, remediate, or prescribe. Read-only until overwhelming evidence says otherwise.
 2. **Local-first.** No automatic network requests from install, activation, update, or usage. The admin drives every action.
 3. **No silent collection.** No background telemetry, no opt-out-required data flows. Background profiling is local and admin-configured.
 4. **Attribution ≠ causality.** Never say a plugin "caused" a regression. Say the largest observed increase in exclusive callback time was "associated with" it.
@@ -22,7 +22,7 @@ The rules that never bend. Every PR, every refactor, every "quick fix" must pass
 
 ## Posture — measure & attribute, don't inspect
 
-Scrutinizer reports *where* time and memory go and *who* owns them. It does not report the *contents*. Aggregates (durations, counts, attribution), never values (SQL literals, option values, request bodies, full traces). This is the deliberate trade that makes a report **safe for a non-expert to share in public** — and shareability is the whole point (see the zero-knowledge relay, D24). A shared report must never carry enough to target the site that produced it.
+Scrutoscope reports *where* time and memory go and *who* owns them. It does not report the *contents*. Aggregates (durations, counts, attribution), never values (SQL literals, option values, request bodies, full traces). This is the deliberate trade that makes a report **safe for a non-expert to share in public** — and shareability is the whole point (see the zero-knowledge relay, D24). A shared report must never carry enough to target the site that produced it.
 
 - **The output boundary.** Internal measurement may look deeply to attribute — e.g. read a backtrace to decide which subsystem owns a query. The constraint is at the *output*, not the look: **inspect transiently to attribute; persist and share only the aggregate.** Read the stack, store `Query: 41ms, 18 calls`, discard the rest. You can't leak what you never kept.
 - **Category.** This is a *shareable diagnostic*, not an operator's debugger. Triage, not forensics — "the profiler you can screenshot." When someone needs the exact line and value, that's the **handoff** to Query Monitor or Xdebug. We are the safe front door that localizes the problem; we don't replace the deep tools and we don't compete with them.

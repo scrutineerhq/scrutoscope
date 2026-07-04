@@ -15,14 +15,14 @@
 
 | Component | Status |
 |-----------|--------|
-| Plugin bootstrap (`scrutinizer.php`) | ✅ Functional |
+| Plugin bootstrap (`scrutoscope.php`) | ✅ Functional |
 | Profiler engine (`includes/Profiler/`) | ✅ Complete (+ lightweight capture mode) |
 | API (`includes/Api/`) | ✅ Complete — 6 REST endpoints + public manifest |
 | Admin UI (`includes/Admin/`) | ✅ Functional — AJAX-gated handlers, EarlyBoot helper |
 | CSS/JS (`assets/`) | ✅ Complete — shared timeline renderer, dark-mode-aware |
 | WP-CLI (`includes/Cli/`) | ✅ Complete — 7 subcommands |
-| Share relay (`scrutinizer.dev`) | ✅ Deployed — CF Worker + R2 + KV; dark mode; core-dev diagnostics parity |
-| Viewer (`scrutinizer.dev/view`) | ✅ File upload + relay decryption; handles lightweight reports |
+| Share relay (`scrutoscope.dev`) | ✅ Deployed — CF Worker + R2 + KV; dark mode; core-dev diagnostics parity |
+| Viewer (`scrutoscope.dev/view`) | ✅ File upload + relay decryption; handles lightweight reports |
 | Tests (`tests/`) | ✅ PHPUnit suite (Sanitizer, QueryReducer, Prompt, Storage sanitize…); relay vitest + Playwright e2e; shared-renderer checksum guard in both repos |
 
 ## Milestones

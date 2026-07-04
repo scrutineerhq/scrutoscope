@@ -8,11 +8,11 @@
  * has_reference_params() must detect such callbacks in every form WordPress
  * stores them, including the string 'Class::method' form.
  *
- * @package Scrutinizer
+ * @package Scrutoscope
  */
 
 use PHPUnit\Framework\TestCase;
-use Scrutinizer\Profiler\Instrumentor;
+use Scrutoscope\Profiler\Instrumentor;
 
 require_once __DIR__ . '/../includes/Profiler/Instrumentor.php';
 
@@ -23,7 +23,7 @@ class ByRefFixture {
 }
 
 /**
- * @covers \Scrutinizer\Profiler\Instrumentor::has_reference_params
+ * @covers \Scrutoscope\Profiler\Instrumentor::has_reference_params
  */
 class InstrumentorByRefTest extends TestCase {
 

@@ -2,13 +2,13 @@
 /**
  * Tests for StorageRouteAggregates::normalize_route_key().
  *
- * @package Scrutinizer
+ * @package Scrutoscope
  */
 
 require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/../includes/Profiler/StorageRouteAggregates.php';
 
-use Scrutinizer\Profiler\StorageRouteAggregates;
+use Scrutoscope\Profiler\StorageRouteAggregates;
 
 class RouteKeyTest extends \PHPUnit\Framework\TestCase {
 
@@ -60,8 +60,8 @@ class RouteKeyTest extends \PHPUnit\Framework\TestCase {
 	}
 
 	public function test_deep_path() {
-		$key = StorageRouteAggregates::normalize_route_key( 'GET', 'https://example.com/wp-json/scrutinizer/v1/profile/42' );
-		$this->assertSame( 'GET:/wp-json/scrutinizer/v1/profile/42', $key );
+		$key = StorageRouteAggregates::normalize_route_key( 'GET', 'https://example.com/wp-json/scrutoscope/v1/profile/42' );
+		$this->assertSame( 'GET:/wp-json/scrutoscope/v1/profile/42', $key );
 	}
 
 	public function test_multiple_trailing_slashes() {

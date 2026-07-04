@@ -1,9 +1,9 @@
-=== Scrutinizer ===
+=== Scrutoscope ===
 Contributors: kurtpayne
 Tags: performance, profiler, p3, p3-profiler, profiling
 Requires at least: 6.0
 Tested up to: 7.0
-Stable tag: 1.2.7
+Stable tag: 1.3.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -12,9 +12,9 @@ WordPress Performance Profiler — See where your server request duration is spe
 
 == Description ==
 
-Scrutinizer is a read-only profiling plugin for WordPress. It instruments every hook callback during a page request and attributes the time to its source — plugin, theme, core, mu-plugin, or drop-in — so you can see exactly what's slow and why.
+Scrutoscope is a read-only profiling plugin for WordPress. It instruments every hook callback during a page request and attributes the time to its source — plugin, theme, core, mu-plugin, or drop-in — so you can see exactly what's slow and why.
 
-**By the author of [P3 (Plugin Performance Profiler)](https://wordpress.org/plugins/p3-profiler/).** Scrutinizer is the spiritual successor, rebuilt from scratch for modern WordPress.
+**By the author of [P3 (Plugin Performance Profiler)](https://wordpress.org/plugins/p3-profiler/).** Scrutoscope is the spiritual successor, rebuilt from scratch for modern WordPress.
 
 = What It Measures =
 
@@ -37,11 +37,11 @@ Scrutinizer is a read-only profiling plugin for WordPress. It instruments every 
 * REST API — seven read-only endpoints for AI agent integration
 * Send to Agent — one-click prompt with short-lived credentials
 * Send to Support — zero-knowledge encrypted sharing
-* WP-CLI — `wp scrutinizer status|list|show|delete|export|clear|rebuild-stats|mu-plugin`
+* WP-CLI — `wp scrutoscope status|list|show|delete|export|clear|rebuild-stats|mu-plugin`
 
 = Design Philosophy =
 
-* **Read-only by design** — Scrutinizer does not change your content, themes, plugins, or site behavior. It stores its own profiling tables, settings, and scheduled cleanup events (plus a record per report you choose to share). Optional early-boot timing adds a small must-use plugin only when you enable it.
+* **Read-only by design** — Scrutoscope does not change your content, themes, plugins, or site behavior. It stores its own profiling tables, settings, and scheduled cleanup events (plus a record per report you choose to share). Optional early-boot timing adds a small must-use plugin only when you enable it.
 * **Data first** — The dashboard leads with profiling data, not settings.
 * **Off until asked** — Background measurement, query profiling, and early-boot timing are all opt-in. A fresh install just adds its tables and a cleanup task.
 * **WordPress native** — Standard admin patterns.
@@ -49,18 +49,18 @@ Scrutinizer is a read-only profiling plugin for WordPress. It instruments every 
 
 == Installation ==
 
-1. Download the latest release from [GitHub](https://github.com/scrutineerhq/scrutinizer/releases)
-2. Upload the `scrutinizer` directory to `wp-content/plugins/`
+1. Download the latest release from [GitHub](https://github.com/scrutineerhq/scrutoscope/releases)
+2. Upload the `scrutoscope` directory to `wp-content/plugins/`
 3. Activate through the Plugins menu
-4. Go to Tools → Scrutinizer
+4. Go to Tools → Scrutoscope
 
-Background measurement is optional and **off by default**. To capture a profile, open Tools → Scrutinizer and start a profiling session, or enable background measurement with a sample rate you choose.
+Background measurement is optional and **off by default**. To capture a profile, open Tools → Scrutoscope and start a profiling session, or enable background measurement with a sample rate you choose.
 
 == Frequently Asked Questions ==
 
-= Does Scrutinizer slow down my site? =
+= Does Scrutoscope slow down my site? =
 
-There are two kinds of overhead. An always-on check on every request — a few milliseconds — decides whether the request is being profiled; this is what every visitor pays, and it's negligible. When a request *is* being profiled (an admin session, or the sampled fraction of background traffic), instrumenting the hooks and timing every callback adds roughly 100-200ms in our benchmarks (closer to 100ms in Lightweight Mode, closer to 200ms with the full trace). Both vary a lot with your environment — number of active plugins, OPcache, whether MySQL is local or remote, your hardware, and current load — so we report what we measured rather than promising a number. Background measurement is off by default; when you turn it on you choose the sample rate, and at a low rate most requests only pay the few-ms check. Query detail is a separate opt-in: enabling Query Profiling turns on WordPress `SAVEQUERIES`, which makes WordPress keep query text, timing, and caller in memory for the request — extra overhead you only pay when you ask for query detail, so leave it off when you just need request and source timing. And you're always one click from zero: deactivating Scrutinizer removes all overhead and keeps your captured profiles (only deleting the plugin removes the data).
+There are two kinds of overhead. An always-on check on every request — a few milliseconds — decides whether the request is being profiled; this is what every visitor pays, and it's negligible. When a request *is* being profiled (an admin session, or the sampled fraction of background traffic), instrumenting the hooks and timing every callback adds roughly 100-200ms in our benchmarks (closer to 100ms in Lightweight Mode, closer to 200ms with the full trace). Both vary a lot with your environment — number of active plugins, OPcache, whether MySQL is local or remote, your hardware, and current load — so we report what we measured rather than promising a number. Background measurement is off by default; when you turn it on you choose the sample rate, and at a low rate most requests only pay the few-ms check. Query detail is a separate opt-in: enabling Query Profiling turns on WordPress `SAVEQUERIES`, which makes WordPress keep query text, timing, and caller in memory for the request — extra overhead you only pay when you ask for query detail, so leave it off when you just need request and source timing. And you're always one click from zero: deactivating Scrutoscope removes all overhead and keeps your captured profiles (only deleting the plugin removes the data).
 
 = What data leaves my server? =
 
@@ -68,18 +68,18 @@ Nothing, unless you choose to share a report. The "Send to Support" feature encr
 
 = Does it work with WooCommerce? =
 
-Yes. Scrutinizer profiles any WordPress request, including WooCommerce pages, AJAX calls, and REST API endpoints.
+Yes. Scrutoscope profiles any WordPress request, including WooCommerce pages, AJAX calls, and REST API endpoints.
 
 = Can I use it on a production site? =
 
-Yes, with a low sample rate (0.1% or 1%). Scrutinizer is designed for background capture at scale. Use higher rates for focused debugging.
+Yes, with a low sample rate (0.1% or 1%). Scrutoscope is designed for background capture at scale. Use higher rates for focused debugging.
 
 == External Services ==
 
-Scrutinizer is local-first and does not phone home. It contacts exactly one external service, and only when you explicitly choose to share a report.
+Scrutoscope is local-first and does not phone home. It contacts exactly one external service, and only when you explicitly choose to share a report.
 
-**Service:** Scrutinizer relay — zero-knowledge report sharing.
-**Provided by:** The Scrutineer Project (https://scrutinizer.dev). Relay source: https://github.com/scrutineerhq/scrutinizer-relay
+**Service:** Scrutoscope relay — zero-knowledge report sharing.
+**Provided by:** The Scrutineer Project (https://scrutoscope.dev). Relay source: https://github.com/scrutineerhq/scrutoscope-relay
 
 **When it is contacted (admin-initiated only):**
 
@@ -106,6 +106,12 @@ It is never contacted during normal profiling, page loads, or background capture
 **Data retention:** a shared report expires after the TTL you choose, can be set to burn after its first read, and can be revoked manually at any time. The relay only ever stores ciphertext.
 
 == Changelog ==
+
+= 1.3.0 =
+* Renamed plugin from "Scrutinizer" to "Scrutoscope"
+* Updated all namespaces, database tables, REST API, WP-CLI commands, option keys, and handles
+* Automatic migration from old names on upgrade
+* Relay endpoint moved to scrutoscope.dev
 
 = 1.2.7 =
 * Fix: Moved inline scripts to wp_register_script/wp_add_inline_script for wp.org compliance.

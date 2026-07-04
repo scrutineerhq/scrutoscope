@@ -6,10 +6,10 @@
  * an AI agent how to use the Scrutineer API, interpret profile data,
  * and provide diagnostic analysis.
  *
- * @package Scrutinizer
+ * @package Scrutoscope
  */
 
-namespace Scrutinizer\Api;
+namespace Scrutoscope\Api;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -25,7 +25,7 @@ class Prompt {
 	 */
 	public static function build() {
 		$site_url = site_url();
-		$api_base = rest_url( 'scrutinizer/v1/' );
+		$api_base = rest_url( 'scrutoscope/v1/' );
 		$wp_ver   = get_bloginfo( 'version' );
 		$php_ver  = PHP_VERSION;
 

@@ -2,15 +2,15 @@
 /**
  * Database schema management.
  *
- * @package Scrutinizer
+ * @package Scrutoscope
  */
 
-namespace Scrutinizer\Profiler;
+namespace Scrutoscope\Profiler;
 
 defined( 'ABSPATH' ) || exit;
 
 /**
- * DDL and migrations for Scrutinizer tables.
+ * DDL and migrations for Scrutoscope tables.
  */
 class Schema {
 
@@ -136,5 +136,84 @@ class Schema {
 		// Ensure the route-stats aggregate exists on upgraded installs (dbDelta
 		// is idempotent — no-op when the table is already present).
 		StorageRouteAggregates::create_route_stats_table();
+	}
+
+	/**
+	 * Migrate from the old "Scrutinizer" table and option names.
+	 *
+	 * Renames wp_scrutinizer_profiles → wp_scrutoscope_profiles and
+	 * wp_scrutinizer_route_stats → wp_scrutoscope_route_stats if the old
+	 * tables exist and the new ones do not. Also copies option values from
+	 * scrutinizer_* keys to scrutoscope_* keys.
+	 *
+	 * Safe to call repeatedly — skips when migration is unnecessary.
+	 */
+	public static function maybe_migrate_from_scrutinizer() {
+		global $wpdb;
+
+		$old_profiles = $wpdb->prefix . 'scrutinizer_profiles';
+		$new_profiles = Storage::table_name(); // wp_scrutoscope_profiles.
+
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$old_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $old_profiles ) );
+		$new_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $new_profiles ) );
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		if ( $old_exists && ! $new_exists ) {
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->query( "ALTER TABLE `{$old_profiles}` RENAME TO `{$new_profiles}`" );
+		}
+
+		$old_stats = $wpdb->prefix . 'scrutinizer_route_stats';
+		$new_stats = StorageRouteAggregates::route_stats_table();
+
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$old_stats_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $old_stats ) );
+		$new_stats_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $new_stats ) );
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		if ( $old_stats_exists && ! $new_stats_exists ) {
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->query( "ALTER TABLE `{$old_stats}` RENAME TO `{$new_stats}`" );
+		}
+
+		// Migrate option keys.
+		$option_keys = array(
+			'background_profiling',
+			'sample_rate',
+			'only_successful',
+			'query_profiling',
+			'lightweight_mode',
+			'profile_cron',
+			'cron_hook_costs',
+			'shared_reports',
+			'retention_days',
+			'trust_proxy_headers',
+			'user_scope',
+			'exclude_paths',
+			'hmac_pepper',
+			'stats_retention_days',
+		);
+
+		foreach ( $option_keys as $suffix ) {
+			$old_key = 'scrutinizer_' . $suffix;
+			$new_key = 'scrutoscope_' . $suffix;
+			$old_val = get_option( $old_key, null );
+
+			if ( null !== $old_val && false === get_option( $new_key, false ) ) {
+				update_option( $new_key, $old_val, true );
+				delete_option( $old_key );
+			}
+		}
+
+		// Migrate the mu-plugin file.
+		if ( defined( 'WPMU_PLUGIN_DIR' ) ) {
+			$old_mu = WPMU_PLUGIN_DIR . '/scrutinizer-early.php';
+			$new_mu = WPMU_PLUGIN_DIR . '/scrutoscope-early.php';
+			if ( file_exists( $old_mu ) && ! file_exists( $new_mu ) ) {
+				// phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename
+				rename( $old_mu, $new_mu );
+			}
+		}
 	}
 }

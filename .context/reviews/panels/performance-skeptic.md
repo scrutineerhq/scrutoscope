@@ -45,7 +45,7 @@ This is the core question — does the profiler change what it measures?
 ### Database Overhead
 - How much time does storing a profile add to the request?
 - Is the DB write synchronous (blocks response) or deferred?
-- Table growth — how fast does `wp_scrutinizer_profiles` grow? Is there auto-pruning?
+- Table growth — how fast does `wp_scrutoscope_profiles` grow? Is there auto-pruning?
 - Does the profile storage query itself show up in the profiler's own query list?
 
 ### Worst Case Scenarios

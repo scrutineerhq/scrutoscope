@@ -1,9 +1,9 @@
-# Scrutinizer Submission Readiness Review
+# Scrutoscope Submission Readiness Review
 
 Scope:
 
-- `scrutinizer` WordPress plugin
-- `scrutinizer-relay` Cloudflare Worker relay/viewer
+- `scrutoscope` WordPress plugin
+- `scrutoscope-relay` Cloudflare Worker relay/viewer
 - `.context` project constitution, invariants, backlog, decisions, and review panel personas
 
 Review stance:
@@ -18,7 +18,7 @@ The remaining issues are not primarily failing tests or broken implementation. T
 
 1. Make the early boot MU plugin explicit opt-in instead of auto-installed on activation.
 2. Reconsider default-on `SAVEQUERIES`, or disclose its overhead more clearly.
-3. Add a WordPress.org-style external-services disclosure for `https://scrutinizer.dev`.
+3. Add a WordPress.org-style external-services disclosure for `https://scrutoscope.dev`.
 4. Correct readme claims that conflict with code behavior or the project constitution.
 5. Finish the release hygiene items still listed in `.context/BACKLOG.md`: JS i18n sweep and final screenshot preparation.
 
@@ -58,20 +58,20 @@ Severity: High
 Personas: wp.org Plugin Reviewer, Security Reviewer, Agency CTO, Hosting Support, HN Heckler  
 Files:
 
-- `scrutinizer.php:119`
-- `scrutinizer.php:142`
+- `scrutoscope.php:119`
+- `scrutoscope.php:142`
 - `uninstall.php:68`
-- `assets/mu-plugin/scrutinizer-early.php`
+- `assets/mu-plugin/scrutoscope-early.php`
 - `readme.txt:44`
 - `readme.txt:103`
 
 What:
 
-On activation, Scrutinizer copies `assets/mu-plugin/scrutinizer-early.php` into `WPMU_PLUGIN_DIR . '/scrutinizer-early.php'`. That means activating the normal plugin also writes executable code into `wp-content/mu-plugins`, causing Scrutinizer code to run as a must-use plugin until removed.
+On activation, Scrutoscope copies `assets/mu-plugin/scrutoscope-early.php` into `WPMU_PLUGIN_DIR . '/scrutoscope-early.php'`. That means activating the normal plugin also writes executable code into `wp-content/mu-plugins`, causing Scrutoscope code to run as a must-use plugin until removed.
 
 Why it matters:
 
-- The readme says: “Scrutinizer measures. It never modifies your site.”
+- The readme says: “Scrutoscope measures. It never modifies your site.”
 - The constitution frames the product as read-only and local-first.
 - A must-use plugin write is a meaningful site modification, even if it is plugin-owned and removed on deactivation.
 - WordPress.org reviewers and managed-hosting reviewers will notice direct filesystem writes and executable code copied outside the plugin directory.
@@ -85,7 +85,7 @@ Suggested behavior:
 
 - Activation creates tables and schedules cleanup only.
 - Dashboard shows an “Enable early boot timing” control with a short explanation.
-- WP-CLI keeps `wp scrutinizer mu-plugin install|status|remove`.
+- WP-CLI keeps `wp scrutoscope mu-plugin install|status|remove`.
 - If the user enables it, show exactly what file will be written and where.
 - If writing fails, surface an admin notice rather than silently degrading.
 - If retained, disclose it in readme, FAQ, uninstall behavior, and privacy/trust copy.
@@ -98,8 +98,8 @@ Severity: High/Medium
 Personas: Performance Skeptic, Hosting Support, Agency CTO, Plugin Author  
 Files:
 
-- `scrutinizer.php:30`
-- `scrutinizer.php:46`
+- `scrutoscope.php:30`
+- `scrutoscope.php:46`
 - `includes/Admin/Dashboard.php:111`
 - `includes/Profiler/Profiler.php:193`
 - `includes/Profiler/Profiler.php:1209`
@@ -107,16 +107,16 @@ Files:
 
 What:
 
-If `SAVEQUERIES` is not already defined, Scrutinizer defines it as true by default via:
+If `SAVEQUERIES` is not already defined, Scrutoscope defines it as true by default via:
 
 ```php
-get_option( 'scrutinizer_query_profiling', true )
+get_option( 'scrutoscope_query_profiling', true )
 ```
 
 Background profiling itself defaults off:
 
 ```php
-get_option( 'scrutinizer_background_profiling', false )
+get_option( 'scrutoscope_background_profiling', false )
 ```
 
 So a fresh activation can enable WordPress query logging for every request even when full background profiling is disabled.
@@ -158,7 +158,7 @@ What:
 The dashboard sends encrypted report payloads and revocation requests to:
 
 ```js
-https://scrutinizer.dev
+https://scrutoscope.dev
 ```
 
 The UI mentions a zero-knowledge relay, and the FAQ says sharing is optional and encrypted, but the readme does not provide a formal external-services disclosure.
@@ -171,7 +171,7 @@ Recommendation:
 
 Add an `External Services` section to `readme.txt` covering:
 
-- Service name and URL: `Scrutinizer relay`, `https://scrutinizer.dev`
+- Service name and URL: `Scrutoscope relay`, `https://scrutoscope.dev`
 - Operator: The Scrutineer Project
 - When it is contacted:
   - only when an admin clicks Encrypt & Share
@@ -214,7 +214,7 @@ What:
 Several readme statements are too broad or stale:
 
 - “It never modifies your site” conflicts with custom tables, options, cron events, app passwords, and the MU plugin copy.
-- “Profiles begin capturing automatically at 10% sample rate” conflicts with `scrutinizer_background_profiling` defaulting false.
+- “Profiles begin capturing automatically at 10% sample rate” conflicts with `scrutoscope_background_profiling` defaulting false.
 - “HTTP Calls — External requests with URL” should say host/destination, not full URL, because HTTP paths are now intentionally stripped.
 - The overhead section mentions default 10% background profiling, but the code defaults background profiling off.
 
@@ -222,7 +222,7 @@ Recommendation:
 
 Rewrite the trust/default language with narrower, defensible claims:
 
-- “Scrutinizer does not change content, themes, plugins, or site behavior; it stores its own profiling data and settings.”
+- “Scrutoscope does not change content, themes, plugins, or site behavior; it stores its own profiling data and settings.”
 - “Background measurement is optional and defaults off.”
 - “Outbound HTTP calls are reduced to scheme and host before storage/output.”
 - “Query details require query profiling, which can add overhead because it uses WordPress `SAVEQUERIES`.”
@@ -238,7 +238,7 @@ Files:
 - `.context/BACKLOG.md:47`
 - `.context/BACKLOG.md:70`
 - `includes/Admin/Dashboard.php:87`
-- `languages/scrutinizer.pot`
+- `languages/scrutoscope.pot`
 - `languages/.gitkeep`
 
 What:
@@ -309,7 +309,7 @@ Files:
 
 What:
 
-`/scrutinizer/v1/manifest` is public by design. That is reasonable if it only exposes non-sensitive API metadata. It should remain intentionally sparse and avoid precise patch/build details.
+`/scrutoscope/v1/manifest` is public by design. That is reasonable if it only exposes non-sensitive API metadata. It should remain intentionally sparse and avoid precise patch/build details.
 
 Recommendation:
 
@@ -334,7 +334,7 @@ Application Password hardening:
 
 - Scrutineer-owned Application Passwords are captured and checked.
 - Non-REST use is rejected through both `authenticate` and `determine_current_user`.
-- REST route scope is restricted to `/scrutinizer/v1/*`.
+- REST route scope is restricted to `/scrutoscope/v1/*`.
 - TTL is enforced and expired credentials are revoked.
 
 Data minimization:
@@ -366,7 +366,7 @@ Estimated first-submission outcome: likely returned for revisions unless disclos
 Top concerns:
 
 - Auto-installing a MU plugin on activation.
-- Missing external-services disclosure for `scrutinizer.dev`.
+- Missing external-services disclosure for `scrutoscope.dev`.
 - Overbroad readme claims.
 - Incomplete i18n/screenshot checklist.
 
@@ -396,7 +396,7 @@ The plugin should not change global query logging by default while claiming low 
 
 Suggested doc language:
 
-“Like all profilers, Scrutinizer changes the request it observes. Use it for attribution and relative comparisons, not as a zero-overhead benchmark. Query detail requires WordPress `SAVEQUERIES`, which adds memory and timing overhead.”
+“Like all profilers, Scrutoscope changes the request it observes. Use it for attribution and relative comparisons, not as a zero-overhead benchmark. Query detail requires WordPress `SAVEQUERIES`, which adds memory and timing overhead.”
 
 ### Hosting Support
 
@@ -606,11 +606,11 @@ Pitch it honestly as:
 
 Replace:
 
-> Scrutinizer measures. It never modifies your site.
+> Scrutoscope measures. It never modifies your site.
 
 With:
 
-> Scrutinizer does not change content, themes, plugins, or site behavior. It stores its own profiling tables, settings, scheduled cleanup events, and optional sharing records. Early boot timing is optional and uses a small must-use plugin when enabled.
+> Scrutoscope does not change content, themes, plugins, or site behavior. It stores its own profiling tables, settings, scheduled cleanup events, and optional sharing records. Early boot timing is optional and uses a small must-use plugin when enabled.
 
 Replace:
 
@@ -618,7 +618,7 @@ Replace:
 
 With:
 
-> Background measurement is optional and defaults off. To capture a profile, open Tools -> Scrutinizer and start a profiling session or enable background measurement with a sample rate you choose.
+> Background measurement is optional and defaults off. To capture a profile, open Tools -> Scrutoscope and start a profiling session or enable background measurement with a sample rate you choose.
 
 Replace:
 

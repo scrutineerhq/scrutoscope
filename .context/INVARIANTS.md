@@ -51,7 +51,7 @@
 - [ ] **Profiling cookie is HttpOnly, Secure, SameSite=Strict.** No JavaScript access, no cross-site leakage.
   - _Verify:_ `setcookie()` call in `Session::handle_activation()` sets all three flags.
 
-- [ ] **Only cookied requests are instrumented.** No request without a valid `scrutinizer_session` cookie hits the instrumentation path.
+- [ ] **Only cookied requests are instrumented.** No request without a valid `scrutoscope_session` cookie hits the instrumentation path.
   - _Verify:_ `Profiler::init()` bails early without valid cookie.
 
 - [ ] **No `all` hook.** Instrumentation wraps individual callbacks. Never registers a WordPress `all` hook. Never uses `declare(ticks=1)`.
@@ -75,10 +75,10 @@
 - [ ] **Shared reports expire and auto-delete.** R2 lifecycle rules remove artifacts at user-selected expiry (1-30 days). No indefinite storage.
   - _Verify:_ R2 lifecycle policy matches object key path prefix scheme.
 
-- [ ] **Report viewer never executes uploaded content.** Hosted viewer at scrutinizer.dev renders structured data. No HTML injection, no script execution from report content.
+- [ ] **Report viewer never executes uploaded content.** Hosted viewer at scrutoscope.dev renders structured data. No HTML injection, no script execution from report content.
   - _Verify:_ Viewer uses escaped template rendering, not `innerHTML` or `eval`.
 
-- [ ] **Revocation is immediate.** Revoking a shared report blocks all future retrieval from scrutinizer.dev. No cache window, no grace period.
+- [ ] **Revocation is immediate.** Revoking a shared report blocks all future retrieval from scrutoscope.dev. No cache window, no grace period.
   - _Verify:_ Revocation updates control plane and purges edge cache in same request.
 
 ## Build & Quality
@@ -90,7 +90,7 @@
   - _Verify:_ CI matrix includes PHP 7.4 and tests pass.
 
 - [ ] **No remote code loading.** Plugin never loads JavaScript, CSS, or PHP from external URLs at runtime. All assets bundled locally.
-  - _Verify:_ `grep -r 'wp_enqueue_script\|wp_enqueue_style' --include="*.php"` — all URLs use `SCRUTINIZER_URL` prefix or `plugins_url()`.
+  - _Verify:_ `grep -r 'wp_enqueue_script\|wp_enqueue_style' --include="*.php"` — all URLs use `SCRUTOSCOPE_URL` prefix or `plugins_url()`.
 
-- [ ] **i18n-ready.** All user-facing strings wrapped in `__()`, `_e()`, `esc_html__()`, etc. with text domain `scrutinizer`.
+- [ ] **i18n-ready.** All user-facing strings wrapped in `__()`, `_e()`, `esc_html__()`, etc. with text domain `scrutoscope`.
   - _Verify:_ `phpcs` i18n sniffs pass. `grep -r "echo '" --include="*.php" includes/Admin/` — zero bare English strings in templates.

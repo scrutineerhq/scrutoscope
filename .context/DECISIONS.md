@@ -3,10 +3,10 @@
 Locked design decisions. Each has a rationale. Reversals require explicit discussion.
 
 ## D1: Read-only product — no remediations
-Scrutinizer does not fix things. No "disable this plugin" buttons, no "try deactivating X" suggestions, no AI recommendations. If plugin devs want those features, they can build them in their own plugin. Rationale: the profiler's credibility depends on not having opinions about what to do with its data.
+Scrutoscope does not fix things. No "disable this plugin" buttons, no "try deactivating X" suggestions, no AI recommendations. If plugin devs want those features, they can build them in their own plugin. Rationale: the profiler's credibility depends on not having opinions about what to do with its data.
 
 ## D2: No scan triggering from WP-CLI
-`wp scrutinizer` manages data only (list, view, delete, compare, share, revoke). No `wp scrutinizer scan`. Loopback requests miss lazy-loaded components, and requiring a headless browser is too heavy for CLI. Scans happen through the admin UI in a real browser.
+`wp scrutoscope` manages data only (list, view, delete, compare, share, revoke). No `wp scrutoscope scan`. Loopback requests miss lazy-loaded components, and requiring a headless browser is too heavy for CLI. Scans happen through the admin UI in a real browser.
 
 ## D5: Profiling cookie activation model
 Profiling is activated via HMAC-signed short-lived URL → sets HttpOnly/Secure/SameSite cookie → immediate redirect strips token from URL. Only requests carrying the valid cookie are instrumented. One active session at a time.
@@ -42,10 +42,10 @@ Individual query log is always sorted slowest-first in the dashboard. The raw da
 `/v1/prompt` returns a self-bootstrapping prompt tied to the API version. New API version = new prompt. No separate API docs to drift. The prompt teaches the consuming agent measurement terminology, available endpoints, tone guidance, and interpretation context.
 
 ## D23: Two share paths, one data pipeline
-"Send to Agent" (clipboard copy of one-liner prompt + scoped 24h Application Password) and "Send to Support" (encrypted report via scrutinizer.dev relay) use the same user-controlled diagnostics checkbox panel. Same data selection, different destinations.
+"Send to Agent" (clipboard copy of one-liner prompt + scoped 24h Application Password) and "Send to Support" (encrypted report via scrutoscope.dev relay) use the same user-controlled diagnostics checkbox panel. Same data selection, different destinations.
 
 ## D24: Zero-knowledge relay for report sharing
-scrutinizer.dev stores only ciphertext. Encryption/decryption is client-side (AES-256-GCM via Web Crypto API). Decryption key lives in URL fragment (#key) — never sent to server. Scrutineer (the org) cannot view shared reports.
+scrutoscope.dev stores only ciphertext. Encryption/decryption is client-side (AES-256-GCM via Web Crypto API). Decryption key lives in URL fragment (#key) — never sent to server. Scrutineer (the org) cannot view shared reports.
 
 ## D25: Application Passwords — unscoped by core, gated by permission_callback
 WordPress Application Passwords have NO endpoint scoping in core (scoping is "future development" per the Integration Guide). An app password inherits the full capabilities of the user it belongs to. Our real access control is `permission_callback` on each `register_rest_route` call — that's the gate, not the password's capabilities. We document that a dedicated least-privilege user is recommended but don't enforce it.
@@ -69,7 +69,7 @@ Reports can be set to auto-delete after first successful decryption. Viewer POST
 Client-side decryption means brute-force happens offline — server rate limiting is irrelevant. 256-bit fragment keys are uncrackable. Passphrase layer (if offered) needs high PBKDF2 iterations + minimum strength. The real attack vector is URL leakage, mitigated by Referrer-Policy, short TTL, expire-after-reading, and revocation.
 
 ## D29: Report viewer is human-only — no AI analysis
-The viewer at scrutinizer.dev is for humans (support, consultants, site owners' helpers). No AI analysis in the viewer. "Send to Agent" IS the AI analysis path.
+The viewer at scrutoscope.dev is for humans (support, consultants, site owners' helpers). No AI analysis in the viewer. "Send to Agent" IS the AI analysis path.
 
 ## D30: Sample rate snap points with custom override
 Background measurement uses labeled snap points: 0.1% (very busy site), 1% (busy site), 10% (lower traffic), 100% (debug mode, not recommended). Users can set any value between 0.0 and 100.0 — the control isn't a simple slider, it's a hybrid input (buttons for common values + numeric input for custom). Default: 10%.
@@ -96,7 +96,7 @@ The detail AJAX endpoint (`get_profile_detail`) accepts `lightweight=1` to strip
 The Trace tab is a flat, filterable, sortable table. Features: text search (callbacks, hooks, sources), built-in filter pills (Top 10 Slowest, DB Heavy, HTTP Calls, AJAX, plus context-aware Checkout/Login/Auth), source-type filter dropdown, duration and query-count thresholds, sortable columns, client-side pagination (200 per page), and saved searches in localStorage. Entries are enriched client-side by cross-referencing with sources, queries, and HTTP calls.
 
 ## D39: Viewer accepts local file uploads
-The scrutinizer.dev/view SPA has two entry points: (1) `/r/{id}#key` for relay-hosted encrypted reports, and (2) a drop zone for local JSON exports. Both feed the same rendering engine. No WordPress, no auth, no network — just drag, drop, explore. The JSON export includes `_scrutinizer.viewer` pointing to the viewer URL so recipients know where to go.
+The scrutoscope.dev/view SPA has two entry points: (1) `/r/{id}#key` for relay-hosted encrypted reports, and (2) a drop zone for local JSON exports. Both feed the same rendering engine. No WordPress, no auth, no network — just drag, drop, explore. The JSON export includes `_scrutoscope.viewer` pointing to the viewer URL so recipients know where to go.
 
 ## D40: Gzip before encryption, R2 for storage
 Report payloads are gzip-compressed before AES-256-GCM encryption. R2 storage (no practical size limit) handles profiles that were previously too large to share. The viewer decompresses after decryption. Client-side DOM pagination handles rendering.
@@ -111,7 +111,7 @@ We will not instrument the object cache (hit/miss ratios, per-group stats). WP c
 We classify and report a regression **verdict** (`likely_regression` / `difference_observed` / `within_noise` / `insufficient_data`); we never block, fail, or stop anything. An enforcement gate would be prescriptive — it contradicts "Profiler only. Measures, does not remediate. Read-only" (philosophy #1). The word "gate" applies only internally, to the **three-threshold check** in `build_verdict()` that holds back the "Likely Regression" label until the evidence clears all three thresholds — a gate on the *label*, not on an action. A downstream consumer (a CI job, the "Send to Agent" path) MAY call `GET /v1/regression` and choose to fail its own build on the verdict — we are gate-*enabling*, never the gate. Name the feature "regression detection / verdict," not "regression gate."
 
 ## D44: Early-boot timing is opt-in, not auto-installed (1.1.0)
-Activation no longer copies `scrutinizer-early.php` into `wp-content/mu-plugins`. Writing executable code outside the plugin directory on activation contradicts the read-only / "does not modify your site" posture and is exactly what wp.org + managed-host reviewers flag. Early-boot timing is now a Settings toggle (default off) with an explainer of what's written where, a one-time dismissable nudge on the dashboard home, and the existing WP-CLI path; the opt-in preference is restored on reactivation. Boot-phase capture degrades gracefully when the MU plugin is absent. Owner of the install/remove logic: `Scrutinizer\Admin\EarlyBoot`.
+Activation no longer copies `scrutoscope-early.php` into `wp-content/mu-plugins`. Writing executable code outside the plugin directory on activation contradicts the read-only / "does not modify your site" posture and is exactly what wp.org + managed-host reviewers flag. Early-boot timing is now a Settings toggle (default off) with an explainer of what's written where, a one-time dismissable nudge on the dashboard home, and the existing WP-CLI path; the opt-in preference is restored on reactivation. Boot-phase capture degrades gracefully when the MU plugin is absent. Owner of the install/remove logic: `Scrutoscope\Admin\EarlyBoot`.
 
 ## D45: Query profiling (`SAVEQUERIES`) defaults off (1.1.0)
 A fresh activation no longer defines `SAVEQUERIES` for every request. It makes WordPress retain query text/timing/caller on *every* request — real overhead paid even when background profiling is off, weakening the "low inactive overhead" claim. The basic query *count* stays available via `$wpdb->num_queries`; full SQL timing/detail now requires opting in (Settings → Query Profiling). Default to the safe, low-overhead state; make the costly layer a deliberate choice.

@@ -1,7 +1,7 @@
 /*!
- * Scrutinizer Timeline — shared, framework-agnostic request-timeline renderer.
+ * Scrutoscope Timeline — shared, framework-agnostic request-timeline renderer.
  *
- * Faithful vanilla-JS port of the "Scrutinizer Timeline" design comp (fresh theme,
+ * Faithful vanilla-JS port of the "Scrutoscope Timeline" design comp (fresh theme,
  * dual treatment, rail phase style). Zero dependencies. Safe to embed in the WP-admin
  * dashboard and in a Cloudflare Worker viewer.
  *
@@ -9,7 +9,7 @@
  * attribute via setAttribute. No innerHTML / insertAdjacentHTML is ever used with a
  * data-derived string. Source names, callbacks, hosts, SQL etc. are all untrusted.
  *
- * Public API (window.ScrutinizerTimeline):
+ * Public API (window.ScrutoscopeTimeline):
  *   render(container, profileData, opts)
  *   deriveModel(profileData)  -> { T, spans, phases, bands, http, mem, qbins, read, sources, ... }
  */
@@ -1257,6 +1257,6 @@
     };
   }
 
-  global.ScrutinizerTimeline = { render: render, deriveModel: deriveModel };
+  global.ScrutoscopeTimeline = { render: render, deriveModel: deriveModel };
 
 })(typeof window !== 'undefined' ? window : this);

@@ -1,6 +1,6 @@
 # PATTERNS
 
-> Operational coding guide. Follow these when working in the Scrutinizer codebase.
+> Operational coding guide. Follow these when working in the Scrutoscope codebase.
 
 ## Project Layout
 
@@ -38,21 +38,21 @@ scrutineer/
 ├── languages/              # i18n .pot/.po/.mo
 ├── tests/                  # PHPUnit tests
 ├── uninstall.php           # Clean removal (table, options, cron, app passwords)
-├── scrutinizer.php         # Plugin entry point, autoloader, bootstrap hooks
+├── scrutoscope.php         # Plugin entry point, autoloader, bootstrap hooks
 ├── composer.json           # Dev dependencies: phpcs, phpunit
 └── phpcs.xml.dist          # WordPress-Extra coding standards
 ```
 
 ## Namespace & Autoloading
 
-PSR-4 autoloading: `Scrutinizer\` namespace maps to `includes/`.
+PSR-4 autoloading: `Scrutoscope\` namespace maps to `includes/`.
 
 ```php
-// Scrutinizer\Profiler\Profiler → includes/Profiler/Profiler.php
-// Scrutinizer\Admin\Dashboard   → includes/Admin/Dashboard.php
+// Scrutoscope\Profiler\Profiler → includes/Profiler/Profiler.php
+// Scrutoscope\Admin\Dashboard   → includes/Admin/Dashboard.php
 ```
 
-The autoloader is in `scrutinizer.php`. No Composer autoload — wp.org plugins can't require `composer install`.
+The autoloader is in `scrutoscope.php`. No Composer autoload — wp.org plugins can't require `composer install`.
 
 ## Data Flow: Instrumentation → Report
 
@@ -144,10 +144,10 @@ Children's time is accumulated on the parent's stack frame, not looked up afterw
 
 ## Storage Schema
 
-Single custom table: `{$wpdb->prefix}scrutinizer_profiles`
+Single custom table: `{$wpdb->prefix}scrutoscope_profiles`
 
 ```sql
-CREATE TABLE {prefix}scrutinizer_profiles (
+CREATE TABLE {prefix}scrutoscope_profiles (
     id              BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     session_id      VARCHAR(64)     NOT NULL DEFAULT '',
     profile_type    VARCHAR(20)     NOT NULL DEFAULT 'session',  -- 'session' or 'background'
@@ -180,15 +180,15 @@ All AJAX handlers follow this pattern:
 ```php
 class Ajax {
     public static function register() {
-        add_action( 'wp_ajax_scrutinizer_start', array( __CLASS__, 'start_profiling' ) );
+        add_action( 'wp_ajax_scrutoscope_start', array( __CLASS__, 'start_profiling' ) );
         // ...
     }
 
     public static function start_profiling() {
-        check_ajax_referer( 'scrutinizer_nonce', 'nonce' );
+        check_ajax_referer( 'scrutoscope_nonce', 'nonce' );
 
         if ( ! current_user_can( 'manage_options' ) ) {
-            wp_send_json_error( array( 'message' => __( 'Insufficient permissions.', 'scrutinizer' ) ) );
+            wp_send_json_error( array( 'message' => __( 'Insufficient permissions.', 'scrutoscope' ) ) );
         }
 
         // ... do work ...
@@ -207,7 +207,7 @@ Every handler: nonce check first, capability check second, work third. No except
 - Yoda conditions: `if ( 'value' === $var )`
 - Tabs for indentation (WordPress standard)
 - PHP 7.4 compatibility floor — no typed properties, no enums, no readonly, no union types in signatures
-- All user-facing strings use `__()` / `_e()` / `esc_html__()` with text domain `scrutinizer`
+- All user-facing strings use `__()` / `_e()` / `esc_html__()` with text domain `scrutoscope`
 - No bare `echo` of unescaped output — `esc_html()`, `esc_attr()`, `wp_kses()` as appropriate
 
 ## Security Patterns
@@ -270,7 +270,7 @@ Tests are PHPUnit, following WP test conventions:
 | Output sanitization (paths/creds) | `includes/Api/Sanitizer.php` |
 | Diagnostics data collector | `includes/Api/Diagnostics.php` |
 | Cron inventory | `includes/Diagnostics/Cron.php` |
-| Plugin constants/bootstrap | `scrutinizer.php` |
+| Plugin constants/bootstrap | `scrutoscope.php` |
 | Clean uninstall | `uninstall.php` |
 | Coding standards config | `phpcs.xml.dist` |
 | CI workflow | `.github/workflows/ci.yml` |
@@ -284,7 +284,7 @@ The expanded content is one sentence in muted text (`color: #787c82; font-size: 
 Never use modals, popovers, or separate help pages for terminology.
 
 ```html
-<details class="scrutinizer-term">
+<details class="scrutoscope-term">
     <summary>Server Request Duration</summary>
     Wall-clock time the server spent on this PHP request — not the same as what
     the browser shows, which includes network, DNS, and rendering.
@@ -325,7 +325,7 @@ the numbers; never present them as a guarantee.
 
 Clicking a snap button sets the value and highlights it. Typing a custom value
 deselects all snap buttons. Valid range: 0.0–100.0, one decimal place.
-Store as float in option `scrutinizer_sample_rate`.
+Store as float in option `scrutoscope_sample_rate`.
 
 ## Profile Retention (D31)
 
@@ -334,8 +334,8 @@ Settings (in gear panel):
 - Pinned profiles: always kept
 - Shared profiles: always kept (exempt from TTL)
 
-Cleanup runs on a twice-daily WP cron event (`scrutinizer_cleanup_profiles`).
-Option key: `scrutinizer_retention_days`.
+Cleanup runs on a twice-daily WP cron event (`scrutoscope_cleanup_profiles`).
+Option key: `scrutoscope_retention_days`.
 
 ## Route Labels (F9)
 

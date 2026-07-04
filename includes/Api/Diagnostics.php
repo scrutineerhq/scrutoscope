@@ -6,10 +6,10 @@
  * respecting user opt-in preferences. All output passes through Sanitizer
  * before leaving the plugin.
  *
- * @package Scrutinizer
+ * @package Scrutoscope
  */
 
-namespace Scrutinizer\Api;
+namespace Scrutoscope\Api;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -23,7 +23,7 @@ class Diagnostics {
 	 *
 	 * @var string
 	 */
-	const OPTION_FIELDS = 'scrutinizer_diagnostics_fields';
+	const OPTION_FIELDS = 'scrutoscope_diagnostics_fields';
 
 	/**
 	 * Opt-in field keys and their display labels.

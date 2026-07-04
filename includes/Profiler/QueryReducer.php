@@ -16,11 +16,11 @@
  * @see .context/INVARIANTS.md  "SQL query reduction" invariant.
  * @see .context/GOTCHAS.md     "Query sanitization must reduce, not mask" entry.
  *
- * @package Scrutinizer\Profiler
+ * @package Scrutoscope\Profiler
  * @since   1.0.0
  */
 
-namespace Scrutinizer\Profiler;
+namespace Scrutoscope\Profiler;
 
 defined( 'ABSPATH' ) || exit;
 

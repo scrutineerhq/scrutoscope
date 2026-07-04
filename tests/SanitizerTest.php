@@ -6,14 +6,14 @@
  * constants from anything before it leaves the plugin — regardless of user
  * settings (D26). These guard that contract directly.
  *
- * @package Scrutinizer
+ * @package Scrutoscope
  */
 
 use PHPUnit\Framework\TestCase;
-use Scrutinizer\Api\Sanitizer;
+use Scrutoscope\Api\Sanitizer;
 
 /**
- * @covers \Scrutinizer\Api\Sanitizer
+ * @covers \Scrutoscope\Api\Sanitizer
  */
 class SanitizerTest extends TestCase {
 

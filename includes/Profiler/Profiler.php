@@ -2,10 +2,10 @@
 /**
  * Profiler orchestrator.
  *
- * @package Scrutinizer
+ * @package Scrutoscope
  */
 
-namespace Scrutinizer\Profiler;
+namespace Scrutoscope\Profiler;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -184,7 +184,7 @@ class Profiler {
 				// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 				$action = sanitize_text_field( wp_unslash( $_REQUEST['action'] ) );
 			}
-			if ( 0 === strpos( $action, 'scrutinizer_' ) ) {
+			if ( 0 === strpos( $action, 'scrutoscope_' ) ) {
 				return;
 			}
 		}
@@ -210,7 +210,7 @@ class Profiler {
 	 * @return bool
 	 */
 	private static function should_background_sample() {
-		$enabled = get_option( 'scrutinizer_background_profiling', false );
+		$enabled = get_option( 'scrutoscope_background_profiling', false );
 		if ( ! $enabled ) {
 			return false;
 		}
@@ -221,12 +221,12 @@ class Profiler {
 		}
 
 		// Cron is excluded by default; profile it only when explicitly enabled.
-		if ( defined( 'DOING_CRON' ) && DOING_CRON && ! get_option( 'scrutinizer_profile_cron', false ) ) {
+		if ( defined( 'DOING_CRON' ) && DOING_CRON && ! get_option( 'scrutoscope_profile_cron', false ) ) {
 			return false;
 		}
 
 		// User scope filter.
-		$user_scope = get_option( 'scrutinizer_user_scope', 'all' );
+		$user_scope = get_option( 'scrutoscope_user_scope', 'all' );
 		if ( 'anonymous' === $user_scope && is_user_logged_in() ) {
 			return false;
 		}
@@ -235,7 +235,7 @@ class Profiler {
 		}
 
 		// Exclude paths filter.
-		$exclude_paths = get_option( 'scrutinizer_exclude_paths', '' );
+		$exclude_paths = get_option( 'scrutoscope_exclude_paths', '' );
 		if ( ! empty( $exclude_paths ) && isset( $_SERVER['REQUEST_URI'] ) ) {
 			$request_path = wp_parse_url( wp_unslash( $_SERVER['REQUEST_URI'] ), PHP_URL_PATH );
 			if ( $request_path ) {
@@ -248,7 +248,7 @@ class Profiler {
 			}
 		}
 
-		$rate = (float) get_option( 'scrutinizer_sample_rate', 10 );
+		$rate = (float) get_option( 'scrutoscope_sample_rate', 10 );
 		$rate = max( 0.0, min( 100.0, $rate ) );
 
 		if ( $rate <= 0.0 ) {
@@ -315,7 +315,7 @@ class Profiler {
 			return;
 		}
 
-		$store = get_option( 'scrutinizer_cron_hook_costs', array() );
+		$store = get_option( 'scrutoscope_cron_hook_costs', array() );
 		if ( ! is_array( $store ) ) {
 			$store = array();
 		}
@@ -343,7 +343,7 @@ class Profiler {
 			$store = array_slice( $store, 0, 50, true );
 		}
 
-		update_option( 'scrutinizer_cron_hook_costs', $store, false );
+		update_option( 'scrutoscope_cron_hook_costs', $store, false );
 	}
 
 	/**
@@ -360,8 +360,8 @@ class Profiler {
 		$this->request_start_microtime = microtime( true );
 
 		// Capture pre-plugin boot timestamp from the mu-plugin.
-		if ( defined( 'SCRUTINIZER_BOOT_NS' ) && SCRUTINIZER_BOOT_NS > 0 ) {
-			$this->boot_ns = (int) SCRUTINIZER_BOOT_NS;
+		if ( defined( 'SCRUTOSCOPE_BOOT_NS' ) && SCRUTOSCOPE_BOOT_NS > 0 ) {
+			$this->boot_ns = (int) SCRUTOSCOPE_BOOT_NS;
 		}
 
 		// Record the start as the first phase marker.
@@ -369,7 +369,7 @@ class Profiler {
 		$this->phase_memory['profiler_start']  = memory_get_usage();
 
 		$this->call_stack  = new CallStack();
-		$this->lightweight = (bool) get_option( 'scrutinizer_lightweight_mode', false );
+		$this->lightweight = (bool) get_option( 'scrutoscope_lightweight_mode', false );
 		$this->call_stack->set_lightweight( $this->lightweight );
 		$this->instrumentor = new Instrumentor( $this->call_stack );
 
@@ -538,7 +538,7 @@ class Profiler {
 		}
 
 		// Skip non-successful responses when the filter is enabled.
-		if ( get_option( 'scrutinizer_only_successful', false ) && 200 !== $response_status ) {
+		if ( get_option( 'scrutoscope_only_successful', false ) && 200 !== $response_status ) {
 			return;
 		}
 
@@ -627,7 +627,7 @@ class Profiler {
 			// Fail silently — never break the site.
 			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
 				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-				error_log( 'Scrutinizer profiler error: ' . $e->getMessage() );
+				error_log( 'Scrutoscope profiler error: ' . $e->getMessage() );
 			}
 		}
 	}
@@ -904,10 +904,10 @@ class Profiler {
 				continue;
 			}
 			// Instrumentor.php: skip only if it's our own class, not the user callback.
-			if ( false !== strpos( $file, 'Instrumentor.php' ) && 0 === strpos( $class, 'Scrutinizer\\' ) ) {
+			if ( false !== strpos( $file, 'Instrumentor.php' ) && 0 === strpos( $class, 'Scrutoscope\\' ) ) {
 				continue;
 			}
-			if ( 0 === strpos( $class, 'Scrutinizer\\' ) ) {
+			if ( 0 === strpos( $class, 'Scrutoscope\\' ) ) {
 				continue;
 			}
 
@@ -1155,8 +1155,8 @@ class Profiler {
 		if ( $this->boot_ns <= 0 || $this->request_start_ns <= 0 ) {
 			return array();
 		}
-		if ( defined( 'SCRUTINIZER_MUPLUGINS_LOADED_NS' ) ) {
-			$mu = (int) SCRUTINIZER_MUPLUGINS_LOADED_NS;
+		if ( defined( 'SCRUTOSCOPE_MUPLUGINS_LOADED_NS' ) ) {
+			$mu = (int) SCRUTOSCOPE_MUPLUGINS_LOADED_NS;
 			return array(
 				array(
 					'phase' => 'Must-use plugins',

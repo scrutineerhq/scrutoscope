@@ -8,21 +8,21 @@
  * blocks unauthorized callers and verifies the nonce, using lightweight stubs
  * of the WordPress functions it calls.
  *
- * @package Scrutinizer
+ * @package Scrutoscope
  */
 
 // Global stubs for the WP functions guard() calls (resolved via namespace
-// fallback from Scrutinizer\Admin).
+// fallback from Scrutoscope\Admin).
 if ( ! function_exists( 'check_ajax_referer' ) ) {
 	function check_ajax_referer( $action, $query_arg = false, $die = true ) {
-		$GLOBALS['scrutinizer_test_nonce_checked'] = array( $action, $query_arg );
+		$GLOBALS['scrutoscope_test_nonce_checked'] = array( $action, $query_arg );
 		return true;
 	}
 }
 if ( ! function_exists( 'current_user_can' ) ) {
 	function current_user_can( $capability ) {
-		$GLOBALS['scrutinizer_test_last_cap'] = $capability;
-		return ! empty( $GLOBALS['scrutinizer_test_can'] );
+		$GLOBALS['scrutoscope_test_last_cap'] = $capability;
+		return ! empty( $GLOBALS['scrutoscope_test_can'] );
 	}
 }
 if ( ! function_exists( 'wp_send_json_error' ) ) {
@@ -39,10 +39,10 @@ if ( ! function_exists( '__' ) ) {
 require_once __DIR__ . '/../includes/Admin/Ajax.php';
 
 use PHPUnit\Framework\TestCase;
-use Scrutinizer\Admin\Ajax;
+use Scrutoscope\Admin\Ajax;
 
 /**
- * @covers \Scrutinizer\Admin\Ajax::guard
+ * @covers \Scrutoscope\Admin\Ajax::guard
  */
 class AjaxGuardTest extends TestCase {
 
@@ -53,28 +53,28 @@ class AjaxGuardTest extends TestCase {
 	}
 
 	public function test_guard_verifies_the_nonce_and_allows_a_capable_user() {
-		$GLOBALS['scrutinizer_test_can']           = true;
-		$GLOBALS['scrutinizer_test_nonce_checked'] = null;
+		$GLOBALS['scrutoscope_test_can']           = true;
+		$GLOBALS['scrutoscope_test_nonce_checked'] = null;
 
 		$this->invoke_guard(); // must not throw
 
 		$this->assertSame(
-			array( 'scrutinizer_nonce', 'nonce' ),
-			$GLOBALS['scrutinizer_test_nonce_checked'],
-			'guard() must verify the scrutinizer nonce on the "nonce" field'
+			array( 'scrutoscope_nonce', 'nonce' ),
+			$GLOBALS['scrutoscope_test_nonce_checked'],
+			'guard() must verify the scrutoscope nonce on the "nonce" field'
 		);
 	}
 
 	public function test_guard_blocks_a_user_without_manage_options() {
-		$GLOBALS['scrutinizer_test_can']      = false;
-		$GLOBALS['scrutinizer_test_last_cap'] = null;
+		$GLOBALS['scrutoscope_test_can']      = false;
+		$GLOBALS['scrutoscope_test_last_cap'] = null;
 
 		try {
 			$this->invoke_guard();
 			$this->fail( 'guard() must block when the user lacks the capability' );
 		} catch ( \RuntimeException $e ) {
 			$this->assertSame( 'blocked:403', $e->getMessage() );
-			$this->assertSame( 'manage_options', $GLOBALS['scrutinizer_test_last_cap'] );
+			$this->assertSame( 'manage_options', $GLOBALS['scrutoscope_test_last_cap'] );
 		}
 	}
 

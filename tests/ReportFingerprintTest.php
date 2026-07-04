@@ -6,18 +6,18 @@
  * checkout, not homepage); match_samples() pulls the matched durations; and
  * compare_route() wires them into classify_change().
  *
- * @package Scrutinizer
+ * @package Scrutoscope
  */
 
 use PHPUnit\Framework\TestCase;
-use Scrutinizer\Profiler\Report;
+use Scrutoscope\Profiler\Report;
 
 require_once __DIR__ . '/../includes/Profiler/Report.php';
 
 /**
- * @covers \Scrutinizer\Profiler\Report::route_fingerprint
- * @covers \Scrutinizer\Profiler\Report::match_samples
- * @covers \Scrutinizer\Profiler\Report::compare_route
+ * @covers \Scrutoscope\Profiler\Report::route_fingerprint
+ * @covers \Scrutoscope\Profiler\Report::match_samples
+ * @covers \Scrutoscope\Profiler\Report::compare_route
  */
 class ReportFingerprintTest extends TestCase {
 

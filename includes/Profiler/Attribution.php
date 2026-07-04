@@ -2,10 +2,10 @@
 /**
  * Callback-to-source attribution utility.
  *
- * @package Scrutinizer
+ * @package Scrutoscope
  */
 
-namespace Scrutinizer\Profiler;
+namespace Scrutoscope\Profiler;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -376,7 +376,7 @@ class Attribution {
 	}
 
 	/**
-	 * Check whether a callback belongs to the Scrutinizer plugin.
+	 * Check whether a callback belongs to the Scrutoscope plugin.
 	 *
 	 * @param array $attribution  Result from resolve().
 	 * @return bool
@@ -385,14 +385,14 @@ class Attribution {
 		// Match by the plugin's own directory rather than a hardcoded slug, so
 		// a renamed plugin folder doesn't cause us to instrument (and double-
 		// wrap) our own callbacks.
-		if ( ! empty( $attribution['file'] ) && defined( 'SCRUTINIZER_DIR' ) ) {
-			$dir  = wp_normalize_path( SCRUTINIZER_DIR );
+		if ( ! empty( $attribution['file'] ) && defined( 'SCRUTOSCOPE_DIR' ) ) {
+			$dir  = wp_normalize_path( SCRUTOSCOPE_DIR );
 			$file = wp_normalize_path( $attribution['file'] );
 			if ( '' !== $dir && 0 === strpos( $file, $dir ) ) {
 				return true;
 			}
 		}
-		return 'plugin' === $attribution['type'] && 'scrutinizer' === $attribution['slug'];
+		return 'plugin' === $attribution['type'] && 'scrutoscope' === $attribution['slug'];
 	}
 
 	/**

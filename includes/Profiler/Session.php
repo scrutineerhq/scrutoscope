@@ -2,10 +2,10 @@
 /**
  * Profiling session manager.
  *
- * @package Scrutinizer
+ * @package Scrutoscope
  */
 
-namespace Scrutinizer\Profiler;
+namespace Scrutoscope\Profiler;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -20,7 +20,7 @@ class Session {
 	 *
 	 * @var string
 	 */
-	const COOKIE_NAME = 'scrutinizer_session';
+	const COOKIE_NAME = 'scrutoscope_session';
 
 	/**
 	 * Default session TTL in seconds (30 minutes).
@@ -41,14 +41,14 @@ class Session {
 	 *
 	 * @var string
 	 */
-	const TRANSIENT_KEY = 'scrutinizer_active_session';
+	const TRANSIENT_KEY = 'scrutoscope_active_session';
 
 	/**
 	 * Option key for the HMAC pepper.
 	 *
 	 * @var string
 	 */
-	const PEPPER_OPTION = 'scrutinizer_hmac_pepper';
+	const PEPPER_OPTION = 'scrutoscope_hmac_pepper';
 
 	/**
 	 * Create an HMAC-signed activation URL.
@@ -75,10 +75,10 @@ class Session {
 
 		return add_query_arg(
 			array(
-				'scrutinizer_activate' => $token,
-				'scrutinizer_session'  => $session_id,
-				'scrutinizer_expires'  => $expires,
-				'scrutinizer_uid'      => $user_id,
+				'scrutoscope_activate' => $token,
+				'scrutoscope_session'  => $session_id,
+				'scrutoscope_expires'  => $expires,
+				'scrutoscope_uid'      => $user_id,
 			),
 			$target_url
 		);
@@ -90,14 +90,14 @@ class Session {
 	 */
 	public static function handle_activation() {
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended
-		if ( empty( $_GET['scrutinizer_activate'] ) ) {
+		if ( empty( $_GET['scrutoscope_activate'] ) ) {
 			return;
 		}
 
-		$token      = sanitize_text_field( wp_unslash( $_GET['scrutinizer_activate'] ) );
-		$session_id = isset( $_GET['scrutinizer_session'] ) ? sanitize_text_field( wp_unslash( $_GET['scrutinizer_session'] ) ) : '';
-		$expires    = isset( $_GET['scrutinizer_expires'] ) ? absint( $_GET['scrutinizer_expires'] ) : 0;
-		$user_id    = isset( $_GET['scrutinizer_uid'] ) ? absint( $_GET['scrutinizer_uid'] ) : 0;
+		$token      = sanitize_text_field( wp_unslash( $_GET['scrutoscope_activate'] ) );
+		$session_id = isset( $_GET['scrutoscope_session'] ) ? sanitize_text_field( wp_unslash( $_GET['scrutoscope_session'] ) ) : '';
+		$expires    = isset( $_GET['scrutoscope_expires'] ) ? absint( $_GET['scrutoscope_expires'] ) : 0;
+		$user_id    = isset( $_GET['scrutoscope_uid'] ) ? absint( $_GET['scrutoscope_uid'] ) : 0;
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 		// Validate expiry.
@@ -149,7 +149,7 @@ class Session {
 
 		// Redirect to a clean URL.
 		$clean_url = remove_query_arg(
-			array( 'scrutinizer_activate', 'scrutinizer_session', 'scrutinizer_expires', 'scrutinizer_uid' )
+			array( 'scrutoscope_activate', 'scrutoscope_session', 'scrutoscope_expires', 'scrutoscope_uid' )
 		);
 
 		wp_safe_redirect( $clean_url );

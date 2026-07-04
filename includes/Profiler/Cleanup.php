@@ -2,10 +2,10 @@
 /**
  * Profile retention and pruning.
  *
- * @package Scrutinizer
+ * @package Scrutoscope
  */
 
-namespace Scrutinizer\Profiler;
+namespace Scrutoscope\Profiler;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -27,7 +27,7 @@ class Cleanup {
 		global $wpdb;
 
 		if ( 0 === $keep ) {
-			$keep = (int) get_option( 'scrutinizer_max_per_route', 100 );
+			$keep = (int) get_option( 'scrutoscope_max_per_route', 100 );
 		}
 		if ( $keep <= 0 ) {
 			return 0; // Unlimited.
@@ -95,7 +95,7 @@ class Cleanup {
 			$cutoff_date = gmdate( 'Y-m-d H:i:s', time() - ( $retention_days * DAY_IN_SECONDS ) );
 
 			// Exempt shared profiles — their data is referenced by relay links.
-			$shared_reports = get_option( 'scrutinizer_shared_reports', array() );
+			$shared_reports = get_option( 'scrutoscope_shared_reports', array() );
 			$shared_ids     = array_filter(
 				array_map(
 					function ( $r ) {

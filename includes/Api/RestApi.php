@@ -3,19 +3,19 @@
  * REST API route registration and controllers.
  *
  * Registers all Scrutineer REST API endpoints under the
- * scrutinizer/v1 namespace with permission callbacks and
+ * scrutoscope/v1 namespace with permission callbacks and
  * response formatting.
  *
- * @package Scrutinizer
+ * @package Scrutoscope
  */
 
-namespace Scrutinizer\Api;
+namespace Scrutoscope\Api;
 
 defined( 'ABSPATH' ) || exit;
 
-use Scrutinizer\Profiler\Storage;
-use Scrutinizer\Profiler\Report;
-use Scrutinizer\Profiler\Regression;
+use Scrutoscope\Profiler\Storage;
+use Scrutoscope\Profiler\Report;
+use Scrutoscope\Profiler\Regression;
 
 /**
  * Registers and handles REST API routes.
@@ -27,7 +27,7 @@ class RestApi {
 	 *
 	 * @var string
 	 */
-	const NAMESPACE = 'scrutinizer/v1';
+	const NAMESPACE = 'scrutoscope/v1';
 
 	/**
 	 * Register hooks.
@@ -151,8 +151,8 @@ class RestApi {
 	public static function check_permission() {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return new \WP_Error(
-				'scrutinizer_forbidden',
-				__( 'You do not have permission to access Scrutineer data.', 'scrutinizer' ),
+				'scrutoscope_forbidden',
+				__( 'You do not have permission to access Scrutineer data.', 'scrutoscope' ),
 				array( 'status' => 403 )
 			);
 		}
@@ -174,7 +174,7 @@ class RestApi {
 
 		self::maybe_create_log_table();
 
-		$table = $wpdb->prefix . 'scrutinizer_api_log';
+		$table = $wpdb->prefix . 'scrutoscope_api_log';
 
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$wpdb->insert(
@@ -212,7 +212,7 @@ class RestApi {
 	 * unless the site genuinely sits behind a trusted proxy that overwrites
 	 * them — and a spoofed value would poison the audit log. So we use
 	 * REMOTE_ADDR by default and only consult proxy headers when the site
-	 * opts in via the `scrutinizer_trust_proxy_headers` filter.
+	 * opts in via the `scrutoscope_trust_proxy_headers` filter.
 	 *
 	 * @return string
 	 */
@@ -225,7 +225,7 @@ class RestApi {
 		 *
 		 * @param bool $trust Default false.
 		 */
-		if ( apply_filters( 'scrutinizer_trust_proxy_headers', (bool) get_option( 'scrutinizer_trust_proxy_headers', false ) ) ) {
+		if ( apply_filters( 'scrutoscope_trust_proxy_headers', (bool) get_option( 'scrutoscope_trust_proxy_headers', false ) ) ) {
 			$headers = array( 'HTTP_CF_CONNECTING_IP', 'HTTP_X_FORWARDED_FOR', 'HTTP_X_REAL_IP', 'REMOTE_ADDR' );
 			foreach ( $headers as $header ) {
 				if ( ! empty( $_SERVER[ $header ] ) ) {
@@ -297,7 +297,7 @@ class RestApi {
 	public static function get_access_log( $limit = 100 ) {
 		global $wpdb;
 
-		$table = $wpdb->prefix . 'scrutinizer_api_log';
+		$table = $wpdb->prefix . 'scrutoscope_api_log';
 
 		// Check if the table exists — return legacy option data during migration.
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -305,7 +305,7 @@ class RestApi {
 
 		if ( ! $table_exists ) {
 			// Fall back to legacy option if table not yet created.
-			return get_option( 'scrutinizer_api_log', array() );
+			return get_option( 'scrutoscope_api_log', array() );
 		}
 
 		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -326,13 +326,13 @@ class RestApi {
 	public static function clear_access_log() {
 		global $wpdb;
 
-		$table = $wpdb->prefix . 'scrutinizer_api_log';
+		$table = $wpdb->prefix . 'scrutoscope_api_log';
 
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$wpdb->query( "TRUNCATE TABLE {$table}" );
 
 		// Also clean up legacy option if it exists.
-		delete_option( 'scrutinizer_api_log' );
+		delete_option( 'scrutoscope_api_log' );
 	}
 
 	/**
@@ -351,7 +351,7 @@ class RestApi {
 
 		global $wpdb;
 
-		$table   = $wpdb->prefix . 'scrutinizer_api_log';
+		$table   = $wpdb->prefix . 'scrutoscope_api_log';
 		$charset = $wpdb->get_charset_collate();
 
 		// Quick existence check — avoid dbDelta overhead on every request.
@@ -377,7 +377,7 @@ class RestApi {
 		dbDelta( $sql );
 
 		// Migrate legacy option data into the table.
-		$legacy = get_option( 'scrutinizer_api_log', array() );
+		$legacy = get_option( 'scrutoscope_api_log', array() );
 		if ( ! empty( $legacy ) && is_array( $legacy ) ) {
 			foreach ( $legacy as $entry ) {
 				$wpdb->insert(
@@ -392,7 +392,7 @@ class RestApi {
 					array( '%s', '%s', '%s', '%d', '%s' )
 				);
 			}
-			delete_option( 'scrutinizer_api_log' );
+			delete_option( 'scrutoscope_api_log' );
 		}
 	}
 
@@ -424,7 +424,7 @@ class RestApi {
 			// Major series only — the public manifest should not disclose the
 			// exact patch version (aids targeted fingerprinting). API
 			// compatibility is conveyed by schema_version above.
-			'version'        => ( defined( 'SCRUTINIZER_VERSION' ) ? (int) SCRUTINIZER_VERSION : 1 ) . '.x',
+			'version'        => ( defined( 'SCRUTOSCOPE_VERSION' ) ? (int) SCRUTOSCOPE_VERSION : 1 ) . '.x',
 			'auth'           => array(
 				'type'        => 'http',
 				'scheme'      => 'basic',
@@ -538,7 +538,7 @@ class RestApi {
 
 		// Only intercept our prompt endpoint.
 		$route = $request->get_route();
-		if ( '/scrutinizer/v1/prompt' !== $route ) {
+		if ( '/scrutoscope/v1/prompt' !== $route ) {
 			return $served;
 		}
 
@@ -638,8 +638,8 @@ class RestApi {
 
 		if ( null === $profile ) {
 			return new \WP_Error(
-				'scrutinizer_not_found',
-				__( 'Profile not found.', 'scrutinizer' ),
+				'scrutoscope_not_found',
+				__( 'Profile not found.', 'scrutoscope' ),
 				array( 'status' => 404 )
 			);
 		}
@@ -762,8 +762,8 @@ class RestApi {
 
 		if ( null === $comparison ) {
 			return new \WP_Error(
-				'scrutinizer_not_found',
-				__( 'One or both profiles not found.', 'scrutinizer' ),
+				'scrutoscope_not_found',
+				__( 'One or both profiles not found.', 'scrutoscope' ),
 				array( 'status' => 404 )
 			);
 		}

@@ -2,10 +2,10 @@
 /**
  * Profile data storage.
  *
- * @package Scrutinizer
+ * @package Scrutoscope
  */
 
-namespace Scrutinizer\Profiler;
+namespace Scrutoscope\Profiler;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -21,7 +21,7 @@ class Storage {
 	 */
 	public static function table_name() {
 		global $wpdb;
-		return $wpdb->prefix . 'scrutinizer_profiles';
+		return $wpdb->prefix . 'scrutoscope_profiles';
 	}
 
 	/**
@@ -34,7 +34,7 @@ class Storage {
 	 * stay legible without persisting the sensitive tail.
 	 *
 	 * Applied at write time (here) so raw values never reach the database,
-	 * complementing the read-time \Scrutinizer\Api\Sanitizer as
+	 * complementing the read-time \Scrutoscope\Api\Sanitizer as
 	 * defense-in-depth.
 	 *
 	 * @param array $profile_data Compiled report from Report::compile().

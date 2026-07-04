@@ -1,9 +1,26 @@
 # Changelog
 
-All notable changes to Scrutinizer will be documented in this file.
+All notable changes to Scrutoscope will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.3.0] - 2026-07-04
+
+Product rename: Scrutinizer → Scrutoscope.
+
+### Changed
+- Renamed plugin from "Scrutinizer" to "Scrutoscope" across the entire codebase
+- PHP namespace changed from `Scrutinizer\` to `Scrutoscope\`
+- Database tables renamed: `scrutinizer_profiles` → `scrutoscope_profiles`, `scrutinizer_route_stats` → `scrutoscope_route_stats`
+- REST API namespace changed from `scrutinizer/v1` to `scrutoscope/v1`
+- WP-CLI command changed from `wp scrutinizer` to `wp scrutoscope`
+- All option keys, CSS/JS handles, text domain, and cookie names updated
+- Relay endpoint moved to scrutoscope.dev
+- mu-plugin renamed to `scrutoscope-early.php`
+
+### Added
+- Automatic migration from old "Scrutinizer" table and option names on activation/upgrade
 
 ## [1.2.7] - 2026-07-04
 
@@ -101,7 +118,7 @@ Capture experience polish.
 
 ### Added
 
-- **Capture feedback banner** - floating bottom bar on every profiled page shows "Profiling active - keep browsing to capture more pages." Works across admin, front-end logged in, and front-end logged out. Dismiss persists for the browser session. Skips the Scrutinizer dashboard (which already has session UI).
+- **Capture feedback banner** - floating bottom bar on every profiled page shows "Profiling active - keep browsing to capture more pages." Works across admin, front-end logged in, and front-end logged out. Dismiss persists for the browser session. Skips the Scrutoscope dashboard (which already has session UI).
 
 ### Changed
 
@@ -123,7 +140,7 @@ This release focuses on trust — opt-in defaults and honest disclosure — alon
 ### Added
 
 - **Redesigned Request Timeline** — a cost-sorted "who owns the time" bar names the culprit at a glance, over a chronological timeline with WordPress lifecycle phase markers. Unattributed time is always shown; HTTP waits and database-query density get their own lanes; memory is drawn as a growth curve. Colour-blind-safe (Okabe–Ito) palette, with zoom and pan.
-- **One shared timeline renderer** (`scrutinizer-timeline.js`) drives both the dashboard and the relay viewer — byte-identical, checksum-guarded in CI. The shared-report viewer also gained a dark mode.
+- **One shared timeline renderer** (`scrutoscope-timeline.js`) drives both the dashboard and the relay viewer — byte-identical, checksum-guarded in CI. The shared-report viewer also gained a dark mode.
 - **Core-developer attribution** — the single "core" bucket splits into WordPress subsystems (Query, Options, Blocks, REST, i18n…); `deprecated_*` / `_doing_it_wrong()` notices are captured with the source that triggered them; just-in-time textdomain loads are surfaced with the hook that caused them; and the pre-plugin bootstrap is split into must-use vs. active-plugin loading. All aggregate-only.
 - **Accurate outbound-HTTP timing** — the real `blocking` request arg is captured (via `http_api_debug`, so fire-and-forget calls are recorded too), and the timeline shows blocking vs. async distinctly instead of inferring it from duration.
 - **Memory-over-time sampling** — `memory_get_usage()` is sampled at each lifecycle phase marker, emitting an honest `memory_samples[]` curve (peak reported separately).
@@ -132,7 +149,7 @@ This release focuses on trust — opt-in defaults and honest disclosure — alon
 
 ### Changed
 
-- **Early-boot timing is opt-in.** Activation no longer writes `scrutinizer-early.php` into `wp-content/mu-plugins`; enable it from Settings (with a one-time dismissable nudge) or WP-CLI, and it's restored on reactivation.
+- **Early-boot timing is opt-in.** Activation no longer writes `scrutoscope-early.php` into `wp-content/mu-plugins`; enable it from Settings (with a one-time dismissable nudge) or WP-CLI, and it's restored on reactivation.
 - **Query profiling (`SAVEQUERIES`) defaults off.** Enable it from Settings for per-query detail; the basic query count stays available via `$wpdb->num_queries`.
 - **Outbound HTTP URLs are reduced to scheme + host** (paths and query strings stripped) on write, read, and output — paths can carry secret tokens.
 
@@ -229,29 +246,30 @@ This release focuses on trust — opt-in defaults and honest disclosure — alon
   - `GET /v1/compare/{a}/{b}` — Two profiles with computed deltas
   - `GET /v1/manifest` — Public API manifest for agent discovery
 - **Send to Agent** — One-click prompt generation with short-lived Application Password credentials. Auto-revokes previous access on each generation.
-- **Send to Support** — Zero-knowledge encrypted report sharing via `scrutinizer.dev` relay. Client-side AES-256-GCM encryption, configurable expiry (1–30 days), optional passphrase protection, expire-after-reading, and instant revocation.
-- **WP-CLI Integration** — Eight commands: `wp scrutinizer status`, `list`, `show`, `delete`, `export`, `clear`, `rebuild-stats`, `mu-plugin`.
+- **Send to Support** — Zero-knowledge encrypted report sharing via `scrutoscope.dev` relay. Client-side AES-256-GCM encryption, configurable expiry (1–30 days), optional passphrase protection, expire-after-reading, and instant revocation.
+- **WP-CLI Integration** — Eight commands: `wp scrutoscope status`, `list`, `show`, `delete`, `export`, `clear`, `rebuild-stats`, `mu-plugin`.
 - **Diagnostics Sharing Controls** — Per-field opt-in checkboxes for environment details shared via the API.
 - **Settings Panel** — Gear icon reveals capture rate, retention, and query profiling controls without cluttering the data-first layout.
 
 ### Design Principles
 
-- **Read-only** — Scrutinizer measures. It never modifies your site, changes configuration, or makes recommendations.
+- **Read-only** — Scrutoscope measures. It never modifies your site, changes configuration, or makes recommendations.
 - **Data first** — The dashboard leads with profiling data. Controls are one click away behind the gear panel.
 - **Trustworthy defaults** — 10% sample rate, 30-day retention, 100 profiles per route. Safe to activate and forget.
 - **WordPress native** — Standard admin card patterns, semantic borders, WP color palette. No dark custom themes.
 - **Privacy by design** — SQL queries sanitized with literal stripping. No telemetry. No external calls except opt-in encrypted sharing.
 
-[1.2.7]: https://github.com/scrutineerhq/scrutinizer/releases/tag/v1.2.7
-[1.2.6]: https://github.com/scrutineerhq/scrutinizer/releases/tag/v1.2.6
-[1.2.5]: https://github.com/scrutineerhq/scrutinizer/releases/tag/v1.2.5
-[1.2.4]: https://github.com/scrutineerhq/scrutinizer/releases/tag/v1.2.4
-[1.2.3]: https://github.com/scrutineerhq/scrutinizer/releases/tag/v1.2.3
-[1.2.2]: https://github.com/scrutineerhq/scrutinizer/releases/tag/v1.2.2
-[1.2.1]: https://github.com/scrutineerhq/scrutinizer/releases/tag/v1.2.1
-[1.2.0]: https://github.com/scrutineerhq/scrutinizer/releases/tag/v1.2.0
-[1.1.0]: https://github.com/scrutineerhq/scrutinizer/releases/tag/v1.1.0
-[1.0.3]: https://github.com/scrutineerhq/scrutinizer/releases/tag/v1.0.3
-[1.0.2]: https://github.com/scrutineerhq/scrutinizer/releases/tag/v1.0.2
-[1.0.1]: https://github.com/scrutineerhq/scrutinizer/releases/tag/v1.0.1
-[1.0.0]: https://github.com/scrutineerhq/scrutinizer/releases/tag/v1.0.0
+[1.3.0]: https://github.com/scrutineerhq/scrutoscope/releases/tag/v1.3.0
+[1.2.7]: https://github.com/scrutineerhq/scrutoscope/releases/tag/v1.2.7
+[1.2.6]: https://github.com/scrutineerhq/scrutoscope/releases/tag/v1.2.6
+[1.2.5]: https://github.com/scrutineerhq/scrutoscope/releases/tag/v1.2.5
+[1.2.4]: https://github.com/scrutineerhq/scrutoscope/releases/tag/v1.2.4
+[1.2.3]: https://github.com/scrutineerhq/scrutoscope/releases/tag/v1.2.3
+[1.2.2]: https://github.com/scrutineerhq/scrutoscope/releases/tag/v1.2.2
+[1.2.1]: https://github.com/scrutineerhq/scrutoscope/releases/tag/v1.2.1
+[1.2.0]: https://github.com/scrutineerhq/scrutoscope/releases/tag/v1.2.0
+[1.1.0]: https://github.com/scrutineerhq/scrutoscope/releases/tag/v1.1.0
+[1.0.3]: https://github.com/scrutineerhq/scrutoscope/releases/tag/v1.0.3
+[1.0.2]: https://github.com/scrutineerhq/scrutoscope/releases/tag/v1.0.2
+[1.0.1]: https://github.com/scrutineerhq/scrutoscope/releases/tag/v1.0.1
+[1.0.0]: https://github.com/scrutineerhq/scrutoscope/releases/tag/v1.0.0

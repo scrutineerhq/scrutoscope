@@ -1,5 +1,5 @@
 blank_issues_enabled: false
 contact_links:
   - name: Documentation
-    url: https://scrutineer.dev/scrutinizer
-    about: Read the Scrutinizer docs before opening an issue
+    url: https://scrutoscope.dev
+    about: Read the Scrutoscope docs before opening an issue

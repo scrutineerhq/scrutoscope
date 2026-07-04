@@ -5,16 +5,16 @@
  * Guards the constitution terminology contract: the exact approved terms
  * ("Likely Regression", "Difference observed") and never causal language.
  *
- * @package Scrutinizer
+ * @package Scrutoscope
  */
 
 use PHPUnit\Framework\TestCase;
-use Scrutinizer\Profiler\Report;
+use Scrutoscope\Profiler\Report;
 
 require_once __DIR__ . '/../includes/Profiler/Report.php';
 
 /**
- * @covers \Scrutinizer\Profiler\Report::describe_change
+ * @covers \Scrutoscope\Profiler\Report::describe_change
  */
 class ReportDescribeTest extends TestCase {
 

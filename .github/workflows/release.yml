@@ -27,7 +27,7 @@ jobs:
       - name: Build release zip
         run: |
           VERSION="${GITHUB_REF#refs/tags/v}"
-          SLUG="scrutinizer"
+          SLUG="scrutoscope"
           DIST_DIR="/tmp/${SLUG}"
           
           mkdir -p "${DIST_DIR}"
@@ -46,13 +46,13 @@ jobs:
           files: ${{ env.ZIP_PATH }}
           generate_release_notes: false
           body: |
-            ## Scrutinizer v${{ env.VERSION }}
+            ## Scrutoscope v${{ env.VERSION }}
             
-            See [CHANGELOG.md](https://github.com/scrutineerhq/scrutinizer/blob/main/CHANGELOG.md) for details.
+            See [CHANGELOG.md](https://github.com/scrutineerhq/scrutoscope/blob/main/CHANGELOG.md) for details.
             
             ### Installation
             
-            1. Download `scrutinizer-${{ env.VERSION }}.zip` below
+            1. Download `scrutoscope-${{ env.VERSION }}.zip` below
             2. WordPress admin → Plugins → Add New → Upload Plugin
             3. Upload the zip and activate
-            4. Go to Tools → Scrutinizer
+            4. Go to Tools → Scrutoscope

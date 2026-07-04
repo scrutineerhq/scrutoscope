@@ -2,10 +2,10 @@
 /**
  * Hook callback instrumentor.
  *
- * @package Scrutinizer
+ * @package Scrutoscope
  */
 
-namespace Scrutinizer\Profiler;
+namespace Scrutoscope\Profiler;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -112,7 +112,7 @@ class Instrumentor {
 		// Resolve attribution once at wrap time (not in the hot path).
 		$attribution = Attribution::resolve( $original );
 
-		// Skip Scrutinizer's own callbacks.
+		// Skip Scrutoscope's own callbacks.
 		if ( Attribution::is_self( $attribution ) ) {
 			return;
 		}

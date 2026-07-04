@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Authoritative agent context for the **Scrutinizer** plugin lives in [`.context/`](.context/).
+Authoritative agent context for the **Scrutoscope** plugin lives in [`.context/`](.context/).
 Read the relevant files there **before** making changes — they exist to keep agents from introducing entropy.
 
 Start with [`.context/README.md`](.context/README.md), which indexes everything and gives the reading order.

@@ -1,18 +1,18 @@
 <?php
 /**
- * WP-CLI commands for Scrutinizer.
+ * WP-CLI commands for Scrutoscope.
  *
- * @package Scrutinizer
+ * @package Scrutoscope
  */
 
-namespace Scrutinizer\Cli;
+namespace Scrutoscope\Cli;
 
 defined( 'ABSPATH' ) || exit;
 
-use Scrutinizer\Profiler\Storage;
-use Scrutinizer\Profiler\StorageRouteAggregates;
-use Scrutinizer\Profiler\Session;
-use Scrutinizer\Api\Sanitizer;
+use Scrutoscope\Profiler\Storage;
+use Scrutoscope\Profiler\StorageRouteAggregates;
+use Scrutoscope\Profiler\Session;
+use Scrutoscope\Api\Sanitizer;
 use WP_CLI;
 use WP_CLI\Utils;
 
@@ -22,19 +22,19 @@ use WP_CLI\Utils;
  * ## EXAMPLES
  *
  *     # List recent profiles
- *     wp scrutinizer list
+ *     wp scrutoscope list
  *
  *     # Show pinned profiles for a specific route
- *     wp scrutinizer list --route="GET:/wp-admin/index.php" --pinned
+ *     wp scrutoscope list --route="GET:/wp-admin/index.php" --pinned
  *
  *     # View profile detail
- *     wp scrutinizer show 42
+ *     wp scrutoscope show 42
  *
  *     # Export a profile as JSON
- *     wp scrutinizer export 42 --file=profile-42.json
+ *     wp scrutoscope export 42 --file=profile-42.json
  *
  *     # Check profiler status
- *     wp scrutinizer status
+ *     wp scrutoscope status
  */
 class Commands {
 
@@ -67,9 +67,9 @@ class Commands {
 	 *
 	 * ## EXAMPLES
 	 *
-	 *     wp scrutinizer list --limit=10
-	 *     wp scrutinizer list --route="POST:/wp-admin/admin-ajax.php" --format=json
-	 *     wp scrutinizer list --pinned
+	 *     wp scrutoscope list --limit=10
+	 *     wp scrutoscope list --route="POST:/wp-admin/admin-ajax.php" --format=json
+	 *     wp scrutoscope list --pinned
 	 *
 	 * @subcommand list
 	 *
@@ -133,8 +133,8 @@ class Commands {
 	 *
 	 * ## EXAMPLES
 	 *
-	 *     wp scrutinizer show 42
-	 *     wp scrutinizer show 42 --format=json
+	 *     wp scrutoscope show 42
+	 *     wp scrutoscope show 42 --format=json
 	 *
 	 * @param array $args       Positional arguments.
 	 * @param array $assoc_args Associative arguments.
@@ -273,8 +273,8 @@ class Commands {
 	 *
 	 * ## EXAMPLES
 	 *
-	 *     wp scrutinizer delete 42
-	 *     wp scrutinizer delete 42 --yes
+	 *     wp scrutoscope delete 42
+	 *     wp scrutoscope delete 42 --yes
 	 *
 	 * @param array $args       Positional arguments.
 	 * @param array $assoc_args Associative arguments.
@@ -320,8 +320,8 @@ class Commands {
 	 *
 	 * ## EXAMPLES
 	 *
-	 *     wp scrutinizer export 42
-	 *     wp scrutinizer export 42 --file=profile-42.json
+	 *     wp scrutoscope export 42
+	 *     wp scrutoscope export 42 --file=profile-42.json
 	 *
 	 * @param array $args       Positional arguments.
 	 * @param array $assoc_args Associative arguments.
@@ -379,8 +379,8 @@ class Commands {
 	 *
 	 * ## EXAMPLES
 	 *
-	 *     wp scrutinizer clear --yes
-	 *     wp scrutinizer clear --keep-pinned --yes
+	 *     wp scrutoscope clear --yes
+	 *     wp scrutoscope clear --keep-pinned --yes
 	 *
 	 * @param array $args       Positional arguments.
 	 * @param array $assoc_args Associative arguments.
@@ -413,7 +413,7 @@ class Commands {
 	 *
 	 * ## EXAMPLES
 	 *
-	 *     wp scrutinizer rebuild-stats
+	 *     wp scrutoscope rebuild-stats
 	 *
 	 * @subcommand rebuild-stats
 	 *
@@ -441,15 +441,15 @@ class Commands {
 	 *
 	 * ## EXAMPLES
 	 *
-	 *     wp scrutinizer status
-	 *     wp scrutinizer status --format=json
+	 *     wp scrutoscope status
+	 *     wp scrutoscope status --format=json
 	 *
 	 * @param array $args       Positional arguments.
 	 * @param array $assoc_args Associative arguments.
 	 */
 	public function status( $args, $assoc_args ) {
 		$stats = Storage::get_table_stats();
-		$qp    = scrutinizer_query_profiling_state();
+		$qp    = scrutoscope_query_profiling_state();
 
 		// Query profiling state label.
 		if ( $qp['managed'] ) {
@@ -465,11 +465,11 @@ class Commands {
 			),
 			array(
 				'Key'   => 'Background Profiling',
-				'Value' => get_option( 'scrutinizer_background_profiling', false ) ? 'Enabled' : 'Disabled',
+				'Value' => get_option( 'scrutoscope_background_profiling', false ) ? 'Enabled' : 'Disabled',
 			),
 			array(
 				'Key'   => 'Sample Rate',
-				'Value' => get_option( 'scrutinizer_sample_rate', 5 ) . '%',
+				'Value' => get_option( 'scrutoscope_sample_rate', 5 ) . '%',
 			),
 			array(
 				'Key'   => 'Query Profiling',
@@ -493,7 +493,7 @@ class Commands {
 			),
 			array(
 				'Key'   => 'Plugin Version',
-				'Value' => SCRUTINIZER_VERSION,
+				'Value' => SCRUTOSCOPE_VERSION,
 			),
 		);
 
@@ -509,7 +509,7 @@ class Commands {
 		}
 
 		WP_CLI::log( '' );
-		WP_CLI::log( WP_CLI::colorize( '%BScrutinizer Status%n' ) );
+		WP_CLI::log( WP_CLI::colorize( '%BScrutoscope Status%n' ) );
 		WP_CLI::log( str_repeat( '─', 50 ) );
 		Utils\format_items( 'table', $rows, array( 'Key', 'Value' ) );
 	}
@@ -517,7 +517,7 @@ class Commands {
 	/**
 	 * Manage the early boot mu-plugin.
 	 *
-	 * Installs or removes the Scrutinizer mu-plugin that captures
+	 * Installs or removes the Scrutoscope mu-plugin that captures
 	 * pre-plugin bootstrap timing.
 	 *
 	 * ## OPTIONS
@@ -527,9 +527,9 @@ class Commands {
 	 *
 	 * ## EXAMPLES
 	 *
-	 *     wp scrutinizer mu-plugin install
-	 *     wp scrutinizer mu-plugin status
-	 *     wp scrutinizer mu-plugin remove
+	 *     wp scrutoscope mu-plugin install
+	 *     wp scrutoscope mu-plugin status
+	 *     wp scrutoscope mu-plugin remove
 	 *
 	 * @subcommand mu-plugin
 	 *
@@ -537,32 +537,32 @@ class Commands {
 	 */
 	public function mu_plugin( $args ) {
 		$action  = $args[0];
-		$mu_file = \Scrutinizer\Admin\EarlyBoot::target_path();
+		$mu_file = \Scrutoscope\Admin\EarlyBoot::target_path();
 
 		switch ( $action ) {
 			case 'status':
-				if ( \Scrutinizer\Admin\EarlyBoot::is_installed() ) {
-					$active = defined( 'SCRUTINIZER_BOOT_NS' );
+				if ( \Scrutoscope\Admin\EarlyBoot::is_installed() ) {
+					$active = defined( 'SCRUTOSCOPE_BOOT_NS' );
 					\WP_CLI::success( "Installed at {$mu_file}" . ( $active ? ' (active this request)' : '' ) );
 				} else {
-					\WP_CLI::log( 'Not installed. Run: wp scrutinizer mu-plugin install' );
+					\WP_CLI::log( 'Not installed. Run: wp scrutoscope mu-plugin install' );
 				}
 				break;
 
 			case 'install':
-				$result = \Scrutinizer\Admin\EarlyBoot::install();
+				$result = \Scrutoscope\Admin\EarlyBoot::install();
 				if ( is_wp_error( $result ) ) {
 					\WP_CLI::error( $result->get_error_message() );
 				}
-				update_option( \Scrutinizer\Admin\EarlyBoot::OPTION, true, false );
+				update_option( \Scrutoscope\Admin\EarlyBoot::OPTION, true, false );
 				\WP_CLI::success( 'Early boot timer installed. New profiles will include bootstrap timing.' );
 				break;
 
 			case 'remove':
-				if ( ! \Scrutinizer\Admin\EarlyBoot::remove() ) {
+				if ( ! \Scrutoscope\Admin\EarlyBoot::remove() ) {
 					\WP_CLI::error( "Failed to remove {$mu_file}" );
 				}
-				update_option( \Scrutinizer\Admin\EarlyBoot::OPTION, false, false );
+				update_option( \Scrutoscope\Admin\EarlyBoot::OPTION, false, false );
 				\WP_CLI::success( 'Early boot timer removed.' );
 				break;
 

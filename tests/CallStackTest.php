@@ -2,14 +2,14 @@
 /**
  * Unit tests for the call stack's exclusive/inclusive time accounting.
  *
- * @package Scrutinizer
+ * @package Scrutoscope
  */
 
 use PHPUnit\Framework\TestCase;
-use Scrutinizer\Profiler\CallStack;
+use Scrutoscope\Profiler\CallStack;
 
 /**
- * @covers \Scrutinizer\Profiler\CallStack
+ * @covers \Scrutoscope\Profiler\CallStack
  */
 class CallStackTest extends TestCase {
 

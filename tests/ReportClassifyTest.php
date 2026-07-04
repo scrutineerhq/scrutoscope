@@ -7,16 +7,16 @@
  * slower direction in >=3 of 5 quantiles. If any one fails, the strongest
  * verdict is `difference_observed`. These tests pin each threshold boundary.
  *
- * @package Scrutinizer
+ * @package Scrutoscope
  */
 
 use PHPUnit\Framework\TestCase;
-use Scrutinizer\Profiler\Report;
+use Scrutoscope\Profiler\Report;
 
 require_once __DIR__ . '/../includes/Profiler/Report.php';
 
 /**
- * @covers \Scrutinizer\Profiler\Report::classify_change
+ * @covers \Scrutoscope\Profiler\Report::classify_change
  */
 class ReportClassifyTest extends TestCase {
 

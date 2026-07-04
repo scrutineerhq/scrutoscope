@@ -126,7 +126,7 @@ The warnings were the visible symptom, but the real problem is deeper: even with
 
 ### Duplicate delegated click handlers fire on same CSS class
 
-**What happened:** Two separate `$( document ).on( 'click', '.scrutinizer-sortable', ... )` handlers were registered at lines 183 and 289. One handled detail-view table sorts (queries, http calls, assets via `data-sort-table`), the other handled list-view sorts (grouped, route, history, cron via `data-sort`). Every sort click fired both handlers — one did useful work, the other did a wasted no-op lookup.
+**What happened:** Two separate `$( document ).on( 'click', '.scrutoscope-sortable', ... )` handlers were registered at lines 183 and 289. One handled detail-view table sorts (queries, http calls, assets via `data-sort-table`), the other handled list-view sorts (grouped, route, history, cron via `data-sort`). Every sort click fired both handlers — one did useful work, the other did a wasted no-op lookup.
 
 **Don't:** Bind multiple delegated handlers to the same CSS class selector when they handle different concerns.
 **Do:** Use attribute selectors to namespace: `[data-sort-table]` for detail-view tables, `[data-sort]` for list-view tables. The CSS class stays shared for styling, but event delegation targets only the relevant elements.

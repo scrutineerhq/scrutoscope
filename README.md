@@ -1,10 +1,10 @@
-# Scrutinizer
+# Scrutoscope
 
 **WordPress Performance Profiler — See where your server request duration is spent.**
 
-Scrutinizer is a read-only profiling plugin for WordPress. It instruments every hook callback during a page request and attributes the time to its source — plugin, theme, core, mu-plugin, or drop-in — so you can see exactly what's slow and why.
+Scrutoscope is a read-only profiling plugin for WordPress. It instruments every hook callback during a page request and attributes the time to its source — plugin, theme, core, mu-plugin, or drop-in — so you can see exactly what's slow and why.
 
-> By the author of the [P3 (Plugin Performance Profiler)](https://wordpress.org/plugins/p3-profiler/). Scrutinizer is the spiritual successor: rebuilt from scratch for modern WordPress, with real attribution, SQL analysis, and zero-knowledge sharing.
+> By the author of the [P3 (Plugin Performance Profiler)](https://wordpress.org/plugins/p3-profiler/). Scrutoscope is the spiritual successor: rebuilt from scratch for modern WordPress, with real attribution, SQL analysis, and zero-knowledge sharing.
 
 ## What It Measures
 
@@ -28,8 +28,8 @@ Scrutinizer is a read-only profiling plugin for WordPress. It instruments every 
 - **Cron inventory** — all registered WordPress cron events at a glance
 - **REST API** — seven read-only endpoints for AI agent integration
 - **Send to Agent** — one-click prompt with short-lived credentials
-- **Send to Support** — zero-knowledge encrypted sharing via [scrutinizer.dev](https://scrutinizer.dev)
-- **WP-CLI** — `wp scrutinizer status|list|show|delete|export|clear|rebuild-stats|mu-plugin`
+- **Send to Support** — zero-knowledge encrypted sharing via [scrutoscope.dev](https://scrutoscope.dev)
+- **WP-CLI** — `wp scrutoscope status|list|show|delete|export|clear|rebuild-stats|mu-plugin`
 
 ## Requirements
 
@@ -40,31 +40,31 @@ Scrutinizer is a read-only profiling plugin for WordPress. It instruments every 
 
 ### From GitHub Release
 
-1. Download the latest `.zip` from [Releases](https://github.com/scrutineerhq/scrutinizer/releases)
+1. Download the latest `.zip` from [Releases](https://github.com/scrutineerhq/scrutoscope/releases)
 2. In WordPress admin → Plugins → Add New → Upload Plugin
 3. Upload the zip and activate
 
 ### From Source
 
 ```bash
-git clone https://github.com/scrutineerhq/scrutinizer.git
-cd scrutinizer
+git clone https://github.com/scrutineerhq/scrutoscope.git
+cd scrutoscope
 composer install --no-dev
 ```
 
-Copy or symlink the `scrutinizer` directory into `wp-content/plugins/`.
+Copy or symlink the `scrutoscope` directory into `wp-content/plugins/`.
 
 ## Quick Start
 
 1. Activate the plugin
-2. Go to **Tools → Scrutinizer**
+2. Go to **Tools → Scrutoscope**
 3. Profiles start capturing automatically at 10% sample rate
 4. Click any route to see the full profile detail
 5. Use the **⚙️** gear to adjust capture rate and retention
 
 ## REST API
 
-Scrutinizer exposes seven read-only REST endpoints under `wp-json/scrutinizer/`:
+Scrutoscope exposes seven read-only REST endpoints under `wp-json/scrutoscope/`:
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
@@ -87,11 +87,11 @@ Share a performance report with your support team or plugin developer:
 3. Choose expiry, sections to include, and optional passphrase
 4. Click **Encrypt & Share**
 
-The report is encrypted in your browser with AES-256-GCM before upload. The relay server at `scrutinizer.dev` stores only ciphertext it cannot read. The decryption key lives in the URL fragment (`#key`) and never leaves your browser. Links are revocable and auto-expire.
+The report is encrypted in your browser with AES-256-GCM before upload. The relay server at `scrutoscope.dev` stores only ciphertext it cannot read. The decryption key lives in the URL fragment (`#key`) and never leaves your browser. Links are revocable and auto-expire.
 
 ## Design Philosophy
 
-- **Read-only** — Scrutinizer measures. It never modifies your site.
+- **Read-only** — Scrutoscope measures. It never modifies your site.
 - **Data first** — The dashboard leads with profiling data, not settings.
 - **Trustworthy defaults** — Safe to activate and forget.
 - **WordPress native** — Standard admin patterns, no custom dark themes.
@@ -109,4 +109,4 @@ GPL-2.0-or-later. See [LICENSE](LICENSE).
 
 - [scrutineer.dev](https://scrutineer.dev) — Project home
 - [@scrutineer.dev](https://bsky.app/profile/scrutineer.dev) — Bluesky
-- [GitHub](https://github.com/scrutineerhq/scrutinizer) — Source
+- [GitHub](https://github.com/scrutineerhq/scrutoscope) — Source

@@ -5,10 +5,10 @@
  * Handles auto-creation, rotation, TTL enforcement, and cleanup
  * of WordPress Application Passwords for Scrutineer API access.
  *
- * @package Scrutinizer
+ * @package Scrutoscope
  */
 
-namespace Scrutinizer\Api;
+namespace Scrutoscope\Api;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -31,7 +31,7 @@ class ApplicationPassword {
 	/**
 	 * Option key for storing TTL setting.
 	 */
-	const OPTION_TTL = 'scrutinizer_api_password_ttl';
+	const OPTION_TTL = 'scrutoscope_api_password_ttl';
 
 	/**
 	 * Default TTL in seconds (1 hour).
@@ -63,13 +63,13 @@ class ApplicationPassword {
 		// which never fires for XML-RPC), so the XML-RPC/login paths are covered.
 		add_filter( 'authenticate', array( __CLASS__, 'reject_non_rest_use' ), 30 );
 		add_filter( 'determine_current_user', array( __CLASS__, 'reject_non_rest_user_id' ), 30 );
-		add_action( 'scrutinizer_cleanup_passwords', array( __CLASS__, 'garbage_collect' ) );
+		add_action( 'scrutoscope_cleanup_passwords', array( __CLASS__, 'garbage_collect' ) );
 
 		// Schedule garbage collection — only check on admin/cron to avoid
 		// a wp_next_scheduled() DB query on every frontend page load.
 		if ( is_admin() || wp_doing_cron() ) {
-			if ( ! wp_next_scheduled( 'scrutinizer_cleanup_passwords' ) ) {
-				wp_schedule_event( time(), 'hourly', 'scrutinizer_cleanup_passwords' );
+			if ( ! wp_next_scheduled( 'scrutoscope_cleanup_passwords' ) ) {
+				wp_schedule_event( time(), 'hourly', 'scrutoscope_cleanup_passwords' );
 			}
 		}
 	}
@@ -168,7 +168,7 @@ class ApplicationPassword {
 	 *
 	 * If the current request is authenticated via a Scrutineer password:
 	 * 1. Check TTL — reject if expired.
-	 * 2. Check route — only allow scrutinizer/v1/* endpoints.
+	 * 2. Check route — only allow scrutoscope/v1/* endpoints.
 	 */
 	public static function enforce_scope() {
 		// REST scope + TTL. The non-REST block (XML-RPC etc.) is registered
@@ -188,8 +188,8 @@ class ApplicationPassword {
 		}
 
 		return new \WP_Error(
-			'scrutinizer_rest_only',
-			__( 'This Scrutineer API key is restricted to the Scrutineer REST API.', 'scrutinizer' ),
+			'scrutoscope_rest_only',
+			__( 'This Scrutineer API key is restricted to the Scrutineer REST API.', 'scrutoscope' ),
 			array( 'status' => 403 )
 		);
 	}
@@ -251,18 +251,18 @@ class ApplicationPassword {
 			}
 
 			return new \WP_Error(
-				'scrutinizer_password_expired',
-				__( 'This Scrutineer API key has expired. Please generate a new one from the Scrutineer dashboard.', 'scrutinizer' ),
+				'scrutoscope_password_expired',
+				__( 'This Scrutineer API key has expired. Please generate a new one from the Scrutineer dashboard.', 'scrutoscope' ),
 				array( 'status' => 401 )
 			);
 		}
 
-		// Check scope — only allow scrutinizer/v1/* routes.
+		// Check scope — only allow scrutoscope/v1/* routes.
 		$route = $request->get_route();
-		if ( 0 !== strpos( $route, '/scrutinizer/v1/' ) && '/scrutinizer/v1' !== $route ) {
+		if ( 0 !== strpos( $route, '/scrutoscope/v1/' ) && '/scrutoscope/v1' !== $route ) {
 			return new \WP_Error(
-				'scrutinizer_scope_restricted',
-				__( 'This API key is scoped to Scrutineer endpoints only.', 'scrutinizer' ),
+				'scrutoscope_scope_restricted',
+				__( 'This API key is scoped to Scrutineer endpoints only.', 'scrutoscope' ),
 				array( 'status' => 403 )
 			);
 		}
@@ -339,6 +339,6 @@ class ApplicationPassword {
 			self::revoke_all_for_user( $user_id );
 		}
 
-		wp_clear_scheduled_hook( 'scrutinizer_cleanup_passwords' );
+		wp_clear_scheduled_hook( 'scrutoscope_cleanup_passwords' );
 	}
 }

@@ -7,14 +7,14 @@
  * call paths carry webhook/bot secrets. These assert the reduction happens
  * before anything is persisted.
  *
- * @package Scrutinizer
+ * @package Scrutoscope
  */
 
 use PHPUnit\Framework\TestCase;
-use Scrutinizer\Profiler\Storage;
+use Scrutoscope\Profiler\Storage;
 
 /**
- * @covers \Scrutinizer\Profiler\Storage
+ * @covers \Scrutoscope\Profiler\Storage
  */
 class StorageSanitizeTest extends TestCase {
 

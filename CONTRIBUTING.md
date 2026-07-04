@@ -1,12 +1,12 @@
-# Contributing to Scrutinizer
+# Contributing to Scrutoscope
 
-Thank you for considering contributing to Scrutinizer.
+Thank you for considering contributing to Scrutoscope.
 
 ## Development Setup
 
 ```bash
-git clone https://github.com/scrutineerhq/scrutinizer.git
-cd scrutinizer
+git clone https://github.com/scrutineerhq/scrutoscope.git
+cd scrutoscope
 composer install
 ```
 
@@ -33,7 +33,7 @@ composer lint:fix    # PHPCBF auto-fix
 
 ## Reporting Issues
 
-Use [GitHub Issues](https://github.com/scrutineerhq/scrutinizer/issues). Include:
+Use [GitHub Issues](https://github.com/scrutineerhq/scrutoscope/issues). Include:
 
 - WordPress version
 - PHP version

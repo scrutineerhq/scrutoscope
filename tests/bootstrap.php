@@ -7,7 +7,7 @@
  * exercised against lightweight stubs defined here — no full WP test suite
  * required. Integration tests that need WP_UnitTestCase remain a future suite.
  *
- * @package Scrutinizer
+ * @package Scrutoscope
  */
 
 // --- Minimal WordPress stubs -------------------------------------------------

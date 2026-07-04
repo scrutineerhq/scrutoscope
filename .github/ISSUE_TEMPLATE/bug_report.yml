@@ -1,5 +1,5 @@
 name: Bug Report
-description: Report a problem with Scrutinizer
+description: Report a problem with Scrutoscope
 labels: ["bug"]
 body:
   - type: markdown
@@ -23,7 +23,7 @@ body:
   - type: input
     id: plugin-version
     attributes:
-      label: Scrutinizer Version
+      label: Scrutoscope Version
       placeholder: "e.g. 1.0.0"
     validations:
       required: true
@@ -33,7 +33,7 @@ body:
       label: What happened?
       description: Describe the bug clearly. Include steps to reproduce.
       placeholder: |
-        1. Go to Tools → Scrutinizer
+        1. Go to Tools → Scrutoscope
         2. Click "Capture Profile"
         3. ...
     validations:
@@ -54,4 +54,4 @@ body:
     id: screenshots
     attributes:
       label: Screenshots or profile export
-      description: Attach screenshots or a Scrutinizer JSON export if relevant
+      description: Attach screenshots or a Scrutoscope JSON export if relevant

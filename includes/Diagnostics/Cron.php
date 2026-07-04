@@ -5,14 +5,14 @@
  * Walks _get_cron_array() and reports all scheduled events with
  * overdue detection, duplicate identification, and source attribution.
  *
- * @package Scrutinizer\Diagnostics
+ * @package Scrutoscope\Diagnostics
  */
 
-namespace Scrutinizer\Diagnostics;
+namespace Scrutoscope\Diagnostics;
 
 defined( 'ABSPATH' ) || exit;
 
-use Scrutinizer\Profiler\Attribution;
+use Scrutoscope\Profiler\Attribution;
 
 /**
  * Cron inventory diagnostic.
@@ -309,7 +309,7 @@ class Cron {
 		foreach ( $active_plugins as $plugin_file ) {
 			$parts = explode( '/', $plugin_file );
 			$slug  = $parts[0];
-			// Normalize: scrutinizer_ → scrutinizer, woocommerce_ → woocommerce.
+			// Normalize: scrutoscope_ → scrutoscope, woocommerce_ → woocommerce.
 			$prefix = str_replace( '-', '_', $slug );
 			if ( 0 === strpos( $hook, $prefix . '_' ) || 0 === strpos( $hook, $slug . '_' ) ) {
 				$plugin_data = get_plugin_data( WP_PLUGIN_DIR . '/' . $plugin_file, false, false );

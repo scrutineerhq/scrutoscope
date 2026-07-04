@@ -1,8 +1,8 @@
 {
-  "name": "scrutinizer-e2e",
+  "name": "scrutoscope-e2e",
   "version": "1.0.0",
   "private": true,
-  "description": "Browser QA tooling for the Scrutinizer dashboard (dev-only; excluded from the wp.org build via .distignore).",
+  "description": "Browser QA tooling for the Scrutoscope dashboard (dev-only; excluded from the wp.org build via .distignore).",
   "scripts": {
     "test:e2e": "playwright test"
   },

@@ -7,14 +7,14 @@
  * "no structure leaks" rule). Edge cases (comments, comma joins, qualified
  * names) are exercised by their own changesets.
  *
- * @package Scrutinizer
+ * @package Scrutoscope
  */
 
 use PHPUnit\Framework\TestCase;
-use Scrutinizer\Profiler\QueryReducer;
+use Scrutoscope\Profiler\QueryReducer;
 
 /**
- * @covers \Scrutinizer\Profiler\QueryReducer
+ * @covers \Scrutoscope\Profiler\QueryReducer
  */
 class QueryReducerTest extends TestCase {
 

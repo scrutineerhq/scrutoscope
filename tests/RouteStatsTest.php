@@ -2,18 +2,18 @@
 /**
  * Tests for the RouteStats duration histogram.
  *
- * @package Scrutinizer
+ * @package Scrutoscope
  */
 
 use PHPUnit\Framework\TestCase;
-use Scrutinizer\Profiler\RouteStats;
+use Scrutoscope\Profiler\RouteStats;
 
 require_once __DIR__ . '/../includes/Profiler/RouteStats.php';
 
 /**
  * Covers the mergeable duration histogram + quantile extraction.
  *
- * @covers \Scrutinizer\Profiler\RouteStats
+ * @covers \Scrutoscope\Profiler\RouteStats
  */
 class RouteStatsTest extends TestCase {
 

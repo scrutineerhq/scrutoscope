@@ -102,7 +102,7 @@ Walk through each relevant guideline:
 ### Prefix Uniqueness
 - Are all functions, classes, constants, and hooks prefixed with a unique prefix?
 - No generic names that could conflict? (`Profile`, `Report`, `Storage` — these need namespacing)
-- Is the namespace `Scrutinizer\\` unique enough? (Check wp.org for conflicts)
+- Is the namespace `Scrutoscope\\` unique enough? (Check wp.org for conflicts)
 
 ### Uninstall
 - Is there an `uninstall.php` or a registered uninstall hook?

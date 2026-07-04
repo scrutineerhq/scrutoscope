@@ -13,7 +13,7 @@
 
 Regression detection reads stored profiles, which roll off at the 7-day TTL — so the raw path can only compare **inside** that window. The aggregate decouples the signal from the samples (tiny mergeable histograms survive after the raw profiles expire).
 
-- [x] **Capture** — `RouteStats` mergeable duration histogram + a `scrutinizer_route_stats` (fingerprint, day) table; recorded on save (best-effort); `wp scrutinizer rebuild-stats` backfill. Pure aggregate (output-boundary clean), persists past the profile TTL.
+- [x] **Capture** — `RouteStats` mergeable duration histogram + a `scrutoscope_route_stats` (fingerprint, day) table; recorded on save (best-effort); `wp scrutoscope rebuild-stats` backfill. Pure aggregate (output-boundary clean), persists past the profile TTL.
 - [x] **Classifier reads windows** — `classify_histograms()` + `Regression::for_route()` read merged aggregate windows (recent vs an older baseline), falling back to raw when history is thin, so the verdict works **across deploys**, not just within 7 days. Quantiles come from the merged histogram; thresholds/direction unchanged.
 - [ ] **Aggregate retention** — keep daily buckets for months (a few MB/year); prune very old.
 - [ ] **Trends** — long-term sparklines from the aggregate after profiles expire (folds in the M5.6 trend items).
@@ -27,7 +27,7 @@ Regression detection reads stored profiles, which roll off at the 7-day TTL — 
 Connect the cron inventory to actual profiler data, surfaced in the cron view.
 
 - [x] **Opt-in capture** — Settings → "Profile Cron Jobs" lifts the WP-Cron sampling exclusion (cron is normally skipped). Cron hook names are snapshotted at request start, since single events vanish from the cron array once they fire.
-- [x] **Per-hook cost column** — exclusive time per hook from profiled cron runs, with the worst (peak) run flagged. Stored in a bounded `scrutinizer_cron_hook_costs` option (last/max/runs per hook, capped at 50).
+- [x] **Per-hook cost column** — exclusive time per hook from profiled cron runs, with the worst (peak) run flagged. Stored in a bounded `scrutoscope_cron_hook_costs` option (last/max/runs per hook, capped at 50).
 - [ ] Click-through to per-hook profile history (deferred)
 - [ ] Trend line per hook + statistical spike detection (deferred)
 
@@ -38,7 +38,7 @@ Connect the cron inventory to actual profiler data, surfaced in the cron view.
 - [x] Delete empty `includes/Share/` directory
 - [x] Delete duplicate `includes/CLI/` (correct path is `includes/Cli/`)
 - [x] `handle_prompt` — replace raw `echo`/`exit` with proper WP REST response
-- [x] API access log — move from `wp_options` to new `wp_scrutinizer_api_log` table
+- [x] API access log — move from `wp_options` to new `wp_scrutoscope_api_log` table
 - [x] Cron registration — avoid re-registering on every `plugins_loaded`
 - [x] Timeline milestone label clipping at edges
 - [x] Queries tab "—" source pill → meaningful label ("Core" or "Unattributed")
@@ -46,7 +46,7 @@ Connect the cron inventory to actual profiler data, surfaced in the cron view.
 
 ### i18n
 - [x] Generate `.pot` file + `languages/` directory
-- [x] Set up `wp_set_script_translations()` loading; dashboard reads `scrutinizerAdmin.i18n.*`
+- [x] Set up `wp_set_script_translations()` loading; dashboard reads `scrutoscopeAdmin.i18n.*`
 - [x] **JS dashboard strings wrapped for translation** — all user-facing JS strings now go through `wp.i18n` `__()`/`sprintf()` (swept incrementally during the timeline/dashboard work; the last block, the Query Profiling details panel, wrapped in the 1.1.0 release prep). Verified: 0 unwrapped inline UI strings remain.
 - [x] PHP strings wrapped in `__()` / `esc_html__()`.
 - [x] `.pot` regenerated (510 msgids, no warnings). JS translation JSON is left to WordPress.org language packs post-release (the standard path) rather than shipping generated `-js.json` files.

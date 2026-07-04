@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Scrutinizer Share Payload",
+  "title": "Scrutoscope Share Payload",
   "description": "Contract between the plugin share builder (dashboard.js) and the relay viewer (worker.js). Both sides MUST validate against this schema. Field names match the profiler's native format — no renaming.",
   "type": "object",
   "required": ["summary", "request", "captured_at"],

@@ -80,7 +80,7 @@
   ],
   "http_calls": [
     {
-      "url": "https://httpbin.org/get?scrutinizer=test",
+      "url": "https://httpbin.org/get?scrutoscope=test",
       "method": "GET",
       "status": 200,
       "duration_ms": 393.12,

@@ -2,10 +2,10 @@
 /**
  * Long-term route-stats aggregate storage.
  *
- * @package Scrutinizer
+ * @package Scrutoscope
  */
 
-namespace Scrutinizer\Profiler;
+namespace Scrutoscope\Profiler;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -21,7 +21,7 @@ class StorageRouteAggregates {
 	 */
 	public static function route_stats_table() {
 		global $wpdb;
-		return $wpdb->prefix . 'scrutinizer_route_stats';
+		return $wpdb->prefix . 'scrutoscope_route_stats';
 	}
 
 	/**

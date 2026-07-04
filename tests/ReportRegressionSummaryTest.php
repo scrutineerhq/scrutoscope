@@ -3,18 +3,18 @@
  * Tests for Report::regression_summary() — the shared payload builder used by
  * both the REST endpoint and the dashboard AJAX handler.
  *
- * @package Scrutinizer
+ * @package Scrutoscope
  */
 
 use PHPUnit\Framework\TestCase;
-use Scrutinizer\Profiler\Report;
+use Scrutoscope\Profiler\Report;
 
 require_once __DIR__ . '/../includes/Profiler/Report.php';
 
 /**
  * Covers the regression-verdict payload builder.
  *
- * @covers \Scrutinizer\Profiler\Report::regression_summary
+ * @covers \Scrutoscope\Profiler\Report::regression_summary
  */
 class ReportRegressionSummaryTest extends TestCase {
 

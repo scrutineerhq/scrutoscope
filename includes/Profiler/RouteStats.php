@@ -2,10 +2,10 @@
 /**
  * Mergeable duration histogram for long-term route statistics.
  *
- * @package Scrutinizer
+ * @package Scrutoscope
  */
 
-namespace Scrutinizer\Profiler;
+namespace Scrutoscope\Profiler;
 
 defined( 'ABSPATH' ) || exit;
 

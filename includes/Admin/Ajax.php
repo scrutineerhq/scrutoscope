@@ -2,21 +2,21 @@
 /**
  * Admin AJAX handlers.
  *
- * @package Scrutinizer
+ * @package Scrutoscope
  */
 
-namespace Scrutinizer\Admin;
+namespace Scrutoscope\Admin;
 
 defined( 'ABSPATH' ) || exit;
 
-use Scrutinizer\Profiler\Session;
-use Scrutinizer\Profiler\Storage;
-use Scrutinizer\Profiler\Report;
-use Scrutinizer\Profiler\Regression;
-use Scrutinizer\Api\Sanitizer;
+use Scrutoscope\Profiler\Session;
+use Scrutoscope\Profiler\Storage;
+use Scrutoscope\Profiler\Report;
+use Scrutoscope\Profiler\Regression;
+use Scrutoscope\Api\Sanitizer;
 
 // Every action in this file is registered through self::add_ajax(), which runs
-// self::guard() — check_ajax_referer( 'scrutinizer_nonce', 'nonce' ) plus a
+// self::guard() — check_ajax_referer( 'scrutoscope_nonce', 'nonce' ) plus a
 // manage_options check — before the handler. The nonce is therefore verified
 // centrally for every entry point (proven by AjaxGuardTest), but WPCS's
 // per-function NonceVerification sniff can't see across the wrapper, so it is
@@ -97,7 +97,7 @@ class Ajax {
 	 */
 	private static function add_ajax( $action ) {
 		add_action(
-			'wp_ajax_scrutinizer_' . $action,
+			'wp_ajax_scrutoscope_' . $action,
 			function () use ( $action ) {
 				self::guard();
 				call_user_func( array( __CLASS__, $action ) );
@@ -112,11 +112,11 @@ class Ajax {
 	 * wrapped handler never runs for an unauthenticated or unauthorized request.
 	 */
 	private static function guard() {
-		check_ajax_referer( 'scrutinizer_nonce', 'nonce' );
+		check_ajax_referer( 'scrutoscope_nonce', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error(
-				array( 'message' => __( 'Permission denied.', 'scrutinizer' ) ),
+				array( 'message' => __( 'Permission denied.', 'scrutoscope' ) ),
 				403
 			);
 		}
@@ -136,7 +136,7 @@ class Ajax {
 		wp_send_json_success(
 			array(
 				'activation_url' => $activation_url,
-				'message'        => __( 'Profiling session created. Visit the activation URL to begin capturing.', 'scrutinizer' ),
+				'message'        => __( 'Profiling session created. Visit the activation URL to begin capturing.', 'scrutoscope' ),
 			)
 		);
 	}
@@ -158,7 +158,7 @@ class Ajax {
 				'session_id'    => $session_id,
 				'profile_count' => count( $profiles ),
 				'profiles'      => $profiles,
-				'message'       => __( 'Profiling session stopped.', 'scrutinizer' ),
+				'message'       => __( 'Profiling session stopped.', 'scrutoscope' ),
 			)
 		);
 	}
@@ -222,7 +222,7 @@ class Ajax {
 
 		if ( empty( $route_key ) ) {
 			wp_send_json_error(
-				array( 'message' => __( 'No route specified.', 'scrutinizer' ) ),
+				array( 'message' => __( 'No route specified.', 'scrutoscope' ) ),
 				400
 			);
 		}
@@ -243,7 +243,7 @@ class Ajax {
 
 		if ( empty( $route_key ) ) {
 			wp_send_json_error(
-				array( 'message' => __( 'No route specified.', 'scrutinizer' ) ),
+				array( 'message' => __( 'No route specified.', 'scrutoscope' ) ),
 				400
 			);
 		}
@@ -264,16 +264,16 @@ class Ajax {
 			$rate = round( $rate, 1 );
 		}
 
-		update_option( 'scrutinizer_background_profiling', $enabled, true );
-		update_option( 'scrutinizer_sample_rate', $rate, true );
+		update_option( 'scrutoscope_background_profiling', $enabled, true );
+		update_option( 'scrutoscope_sample_rate', $rate, true );
 
 		wp_send_json_success(
 			array(
 				'enabled' => $enabled,
 				'rate'    => $rate,
 				'message' => $enabled
-					? __( 'Background profiling enabled.', 'scrutinizer' )
-					: __( 'Background profiling disabled.', 'scrutinizer' ),
+					? __( 'Background profiling enabled.', 'scrutoscope' )
+					: __( 'Background profiling disabled.', 'scrutoscope' ),
 			)
 		);
 	}
@@ -283,14 +283,14 @@ class Ajax {
 	 */
 	public static function toggle_only_successful() {
 		$enabled = ! empty( $_POST['enabled'] );
-		update_option( 'scrutinizer_only_successful', $enabled, true );
+		update_option( 'scrutoscope_only_successful', $enabled, true );
 
 		wp_send_json_success(
 			array(
 				'enabled' => $enabled,
 				'message' => $enabled
-					? __( 'Only capturing successful (200) requests.', 'scrutinizer' )
-					: __( 'Capturing all requests regardless of status.', 'scrutinizer' ),
+					? __( 'Only capturing successful (200) requests.', 'scrutoscope' )
+					: __( 'Capturing all requests regardless of status.', 'scrutoscope' ),
 			)
 		);
 	}
@@ -302,21 +302,21 @@ class Ajax {
 	 * takes effect on the next request.
 	 */
 	public static function toggle_query_profiling() {
-		if ( ! SCRUTINIZER_SAVEQUERIES_MANAGED ) {
+		if ( ! SCRUTOSCOPE_SAVEQUERIES_MANAGED ) {
 			wp_send_json_error(
-				array( 'message' => __( 'Query profiling is managed by wp-config.php and cannot be toggled here.', 'scrutinizer' ) )
+				array( 'message' => __( 'Query profiling is managed by wp-config.php and cannot be toggled here.', 'scrutoscope' ) )
 			);
 		}
 
 		$enabled = ! empty( $_POST['enabled'] );
-		update_option( 'scrutinizer_query_profiling', $enabled, true );
+		update_option( 'scrutoscope_query_profiling', $enabled, true );
 
 		wp_send_json_success(
 			array(
 				'enabled' => $enabled,
 				'message' => $enabled
-					? __( 'Query profiling enabled. New captures will include SQL timing.', 'scrutinizer' )
-					: __( 'Query profiling disabled. New captures will skip SQL timing.', 'scrutinizer' ),
+					? __( 'Query profiling enabled. New captures will include SQL timing.', 'scrutoscope' )
+					: __( 'Query profiling disabled. New captures will skip SQL timing.', 'scrutoscope' ),
 			)
 		);
 	}
@@ -324,7 +324,7 @@ class Ajax {
 	/**
 	 * Toggle early-boot timing — installs / removes the must-use plugin.
 	 *
-	 * Enabling writes scrutinizer-early.php into wp-content/mu-plugins (the only
+	 * Enabling writes scrutoscope-early.php into wp-content/mu-plugins (the only
 	 * write outside the plugin dir). On a filesystem failure the option is NOT
 	 * set and the error is returned so the UI can show an admin notice.
 	 */
@@ -340,7 +340,7 @@ class Ajax {
 			wp_send_json_success(
 				array(
 					'enabled' => true,
-					'message' => __( 'Early-boot timing enabled. The next profiled request will include the pre-plugin bootstrap.', 'scrutinizer' ),
+					'message' => __( 'Early-boot timing enabled. The next profiled request will include the pre-plugin bootstrap.', 'scrutoscope' ),
 				)
 			);
 		}
@@ -350,7 +350,7 @@ class Ajax {
 		wp_send_json_success(
 			array(
 				'enabled' => false,
-				'message' => __( 'Early-boot timing disabled and the must-use plugin removed.', 'scrutinizer' ),
+				'message' => __( 'Early-boot timing disabled and the must-use plugin removed.', 'scrutoscope' ),
 			)
 		);
 	}
@@ -359,7 +359,7 @@ class Ajax {
 	 * Persist dismissal of the early-boot discovery banner (per user).
 	 */
 	public static function dismiss_early_boot_banner() {
-		update_user_meta( get_current_user_id(), 'scrutinizer_early_boot_banner_dismissed', 1 );
+		update_user_meta( get_current_user_id(), 'scrutoscope_early_boot_banner_dismissed', 1 );
 		wp_send_json_success();
 	}
 
@@ -368,14 +368,14 @@ class Ajax {
 	 */
 	public static function toggle_lightweight_mode() {
 		$enabled = ! empty( $_POST['enabled'] );
-		update_option( 'scrutinizer_lightweight_mode', $enabled, true );
+		update_option( 'scrutoscope_lightweight_mode', $enabled, true );
 
 		wp_send_json_success(
 			array(
 				'enabled' => $enabled,
 				'message' => $enabled
-					? __( 'Lightweight mode on. New captures record source totals only — no timeline or per-callback trace — for much smaller profiles, safe for always-on production sampling.', 'scrutinizer' )
-					: __( 'Lightweight mode off. New captures include the full timeline and trace.', 'scrutinizer' ),
+					? __( 'Lightweight mode on. New captures record source totals only — no timeline or per-callback trace — for much smaller profiles, safe for always-on production sampling.', 'scrutoscope' )
+					: __( 'Lightweight mode off. New captures include the full timeline and trace.', 'scrutoscope' ),
 			)
 		);
 	}
@@ -385,14 +385,14 @@ class Ajax {
 	 */
 	public static function toggle_profile_cron() {
 		$enabled = ! empty( $_POST['enabled'] );
-		update_option( 'scrutinizer_profile_cron', $enabled, true );
+		update_option( 'scrutoscope_profile_cron', $enabled, true );
 
 		wp_send_json_success(
 			array(
 				'enabled' => $enabled,
 				'message' => $enabled
-					? __( 'Cron profiling on. WP-Cron runs are now sampled (at your background sample rate), so the Cron tab can show per-hook cost.', 'scrutinizer' )
-					: __( 'Cron profiling off. WP-Cron runs are no longer sampled.', 'scrutinizer' ),
+					? __( 'Cron profiling on. WP-Cron runs are now sampled (at your background sample rate), so the Cron tab can show per-hook cost.', 'scrutoscope' )
+					: __( 'Cron profiling off. WP-Cron runs are no longer sampled.', 'scrutoscope' ),
 			)
 		);
 	}
@@ -408,7 +408,7 @@ class Ajax {
 
 		if ( empty( $profile_id ) ) {
 			wp_send_json_error(
-				array( 'message' => __( 'No profile ID specified.', 'scrutinizer' ) ),
+				array( 'message' => __( 'No profile ID specified.', 'scrutoscope' ) ),
 				400
 			);
 		}
@@ -417,7 +417,7 @@ class Ajax {
 
 		if ( null === $profile ) {
 			wp_send_json_error(
-				array( 'message' => __( 'Profile not found.', 'scrutinizer' ) ),
+				array( 'message' => __( 'Profile not found.', 'scrutoscope' ) ),
 				404
 			);
 		}
@@ -455,7 +455,7 @@ class Ajax {
 
 		if ( empty( $profile_id ) ) {
 			wp_send_json_error(
-				array( 'message' => __( 'No profile ID specified.', 'scrutinizer' ) ),
+				array( 'message' => __( 'No profile ID specified.', 'scrutoscope' ) ),
 				400
 			);
 		}
@@ -464,7 +464,7 @@ class Ajax {
 
 		if ( null === $profile ) {
 			wp_send_json_error(
-				array( 'message' => __( 'Profile not found.', 'scrutinizer' ) ),
+				array( 'message' => __( 'Profile not found.', 'scrutoscope' ) ),
 				404
 			);
 		}
@@ -486,7 +486,7 @@ class Ajax {
 
 		if ( empty( $profile_id ) ) {
 			wp_send_json_error(
-				array( 'message' => __( 'No profile ID specified.', 'scrutinizer' ) ),
+				array( 'message' => __( 'No profile ID specified.', 'scrutoscope' ) ),
 				400
 			);
 		}
@@ -495,7 +495,7 @@ class Ajax {
 
 		if ( null === $profile ) {
 			wp_send_json_error(
-				array( 'message' => __( 'Profile not found.', 'scrutinizer' ) ),
+				array( 'message' => __( 'Profile not found.', 'scrutoscope' ) ),
 				404
 			);
 		}
@@ -525,7 +525,7 @@ class Ajax {
 
 		if ( empty( $profile_id ) ) {
 			wp_send_json_error(
-				array( 'message' => __( 'No profile ID specified.', 'scrutinizer' ) ),
+				array( 'message' => __( 'No profile ID specified.', 'scrutoscope' ) ),
 				400
 			);
 		}
@@ -534,13 +534,13 @@ class Ajax {
 
 		if ( ! $deleted ) {
 			wp_send_json_error(
-				array( 'message' => __( 'Failed to delete profile.', 'scrutinizer' ) ),
+				array( 'message' => __( 'Failed to delete profile.', 'scrutoscope' ) ),
 				500
 			);
 		}
 
 		wp_send_json_success(
-			array( 'message' => __( 'Profile deleted.', 'scrutinizer' ) )
+			array( 'message' => __( 'Profile deleted.', 'scrutoscope' ) )
 		);
 	}
 
@@ -553,7 +553,7 @@ class Ajax {
 
 		if ( empty( $ids ) ) {
 			wp_send_json_error(
-				array( 'message' => __( 'No profile IDs specified.', 'scrutinizer' ) ),
+				array( 'message' => __( 'No profile IDs specified.', 'scrutoscope' ) ),
 				400
 			);
 		}
@@ -562,7 +562,7 @@ class Ajax {
 
 		if ( false === $deleted ) {
 			wp_send_json_error(
-				array( 'message' => __( 'Failed to delete profiles.', 'scrutinizer' ) ),
+				array( 'message' => __( 'Failed to delete profiles.', 'scrutoscope' ) ),
 				500
 			);
 		}
@@ -571,7 +571,7 @@ class Ajax {
 			array(
 				'message' => sprintf(
 					/* translators: %d: number of deleted profiles */
-					__( '%d profile(s) deleted.', 'scrutinizer' ),
+					__( '%d profile(s) deleted.', 'scrutoscope' ),
 					$deleted
 				),
 				'deleted' => $deleted,
@@ -590,7 +590,7 @@ class Ajax {
 
 		if ( empty( $profile_id ) ) {
 			wp_send_json_error(
-				array( 'message' => __( 'No profile ID specified.', 'scrutinizer' ) ),
+				array( 'message' => __( 'No profile ID specified.', 'scrutoscope' ) ),
 				400
 			);
 		}
@@ -609,13 +609,13 @@ class Ajax {
 
 		if ( ! $result ) {
 			wp_send_json_error(
-				array( 'message' => __( 'Failed to pin profile.', 'scrutinizer' ) ),
+				array( 'message' => __( 'Failed to pin profile.', 'scrutoscope' ) ),
 				500
 			);
 		}
 
 		wp_send_json_success(
-			array( 'message' => __( 'Profile pinned.', 'scrutinizer' ) )
+			array( 'message' => __( 'Profile pinned.', 'scrutoscope' ) )
 		);
 	}
 
@@ -628,7 +628,7 @@ class Ajax {
 
 		if ( empty( $ids ) ) {
 			wp_send_json_error(
-				array( 'message' => __( 'No profile IDs specified.', 'scrutinizer' ) ),
+				array( 'message' => __( 'No profile IDs specified.', 'scrutoscope' ) ),
 				400
 			);
 		}
@@ -637,7 +637,7 @@ class Ajax {
 
 		if ( false === $updated ) {
 			wp_send_json_error(
-				array( 'message' => __( 'Failed to pin profiles.', 'scrutinizer' ) ),
+				array( 'message' => __( 'Failed to pin profiles.', 'scrutoscope' ) ),
 				500
 			);
 		}
@@ -646,7 +646,7 @@ class Ajax {
 			array(
 				'message' => sprintf(
 					/* translators: %d: number of pinned profiles */
-					__( '%d profile(s) pinned.', 'scrutinizer' ),
+					__( '%d profile(s) pinned.', 'scrutoscope' ),
 					$updated
 				),
 			)
@@ -664,7 +664,7 @@ class Ajax {
 
 		if ( empty( $profile_id ) ) {
 			wp_send_json_error(
-				array( 'message' => __( 'No profile ID specified.', 'scrutinizer' ) ),
+				array( 'message' => __( 'No profile ID specified.', 'scrutoscope' ) ),
 				400
 			);
 		}
@@ -673,13 +673,13 @@ class Ajax {
 
 		if ( ! $result ) {
 			wp_send_json_error(
-				array( 'message' => __( 'Failed to unpin profile.', 'scrutinizer' ) ),
+				array( 'message' => __( 'Failed to unpin profile.', 'scrutoscope' ) ),
 				500
 			);
 		}
 
 		wp_send_json_success(
-			array( 'message' => __( 'Profile unpinned.', 'scrutinizer' ) )
+			array( 'message' => __( 'Profile unpinned.', 'scrutoscope' ) )
 		);
 	}
 
@@ -692,7 +692,7 @@ class Ajax {
 
 		if ( empty( $ids ) ) {
 			wp_send_json_error(
-				array( 'message' => __( 'No profile IDs specified.', 'scrutinizer' ) ),
+				array( 'message' => __( 'No profile IDs specified.', 'scrutoscope' ) ),
 				400
 			);
 		}
@@ -701,7 +701,7 @@ class Ajax {
 
 		if ( false === $updated ) {
 			wp_send_json_error(
-				array( 'message' => __( 'Failed to unpin profiles.', 'scrutinizer' ) ),
+				array( 'message' => __( 'Failed to unpin profiles.', 'scrutoscope' ) ),
 				500
 			);
 		}
@@ -710,7 +710,7 @@ class Ajax {
 			array(
 				'message' => sprintf(
 					/* translators: %d: number of unpinned profiles */
-					__( '%d profile(s) unpinned.', 'scrutinizer' ),
+					__( '%d profile(s) unpinned.', 'scrutoscope' ),
 					$updated
 				),
 			)
@@ -728,7 +728,7 @@ class Ajax {
 
 		if ( empty( $profile_id ) ) {
 			wp_send_json_error(
-				array( 'message' => __( 'No profile ID specified.', 'scrutinizer' ) ),
+				array( 'message' => __( 'No profile ID specified.', 'scrutoscope' ) ),
 				400
 			);
 		}
@@ -747,13 +747,13 @@ class Ajax {
 
 		if ( ! $result ) {
 			wp_send_json_error(
-				array( 'message' => __( 'Failed to update annotation.', 'scrutinizer' ) ),
+				array( 'message' => __( 'Failed to update annotation.', 'scrutoscope' ) ),
 				500
 			);
 		}
 
 		wp_send_json_success(
-			array( 'message' => __( 'Annotation updated.', 'scrutinizer' ) )
+			array( 'message' => __( 'Annotation updated.', 'scrutoscope' ) )
 		);
 	}
 
@@ -772,7 +772,7 @@ class Ajax {
 
 		if ( empty( $id_a ) || empty( $id_b ) ) {
 			wp_send_json_error(
-				array( 'message' => __( 'Two profile IDs required.', 'scrutinizer' ) ),
+				array( 'message' => __( 'Two profile IDs required.', 'scrutoscope' ) ),
 				400
 			);
 		}
@@ -781,7 +781,7 @@ class Ajax {
 
 		if ( null === $comparison ) {
 			wp_send_json_error(
-				array( 'message' => __( 'One or both profiles not found.', 'scrutinizer' ) ),
+				array( 'message' => __( 'One or both profiles not found.', 'scrutoscope' ) ),
 				404
 			);
 		}
@@ -892,10 +892,10 @@ class Ajax {
 	 * overdue detection, and duplicate warnings.
 	 */
 	public static function get_cron_inventory() {
-		$inventory = \Scrutinizer\Diagnostics\Cron::collect();
+		$inventory = \Scrutoscope\Diagnostics\Cron::collect();
 
 		// Attach measured per-hook cost (from profiled cron runs) to each event.
-		$costs = get_option( 'scrutinizer_cron_hook_costs', array() );
+		$costs = get_option( 'scrutoscope_cron_hook_costs', array() );
 		if ( is_array( $costs ) && ! empty( $inventory['events'] ) && is_array( $inventory['events'] ) ) {
 			foreach ( $inventory['events'] as &$event ) {
 				$hook = isset( $event['hook'] ) ? $event['hook'] : '';
@@ -909,7 +909,7 @@ class Ajax {
 			}
 			unset( $event );
 		}
-		$inventory['profiling_enabled'] = (bool) get_option( 'scrutinizer_profile_cron', false );
+		$inventory['profiling_enabled'] = (bool) get_option( 'scrutoscope_profile_cron', false );
 
 		wp_send_json_success( $inventory );
 	}
@@ -920,9 +920,9 @@ class Ajax {
 	public static function save_diagnostics_fields() {
 		$fields = isset( $_POST['fields'] ) ? array_map( 'sanitize_text_field', (array) wp_unslash( $_POST['fields'] ) ) : array();
 
-		\Scrutinizer\Api\Diagnostics::set_enabled_fields( $fields );
+		\Scrutoscope\Api\Diagnostics::set_enabled_fields( $fields );
 
-		wp_send_json_success( array( 'fields' => \Scrutinizer\Api\Diagnostics::get_enabled_fields() ) );
+		wp_send_json_success( array( 'fields' => \Scrutoscope\Api\Diagnostics::get_enabled_fields() ) );
 	}
 
 	/**
@@ -931,7 +931,7 @@ class Ajax {
 	 * Revokes any existing one first (auto-rotate per D25a).
 	 */
 	public static function create_api_password() {
-		$result = \Scrutinizer\Api\ApplicationPassword::create_for_user( get_current_user_id() );
+		$result = \Scrutoscope\Api\ApplicationPassword::create_for_user( get_current_user_id() );
 
 		if ( is_wp_error( $result ) ) {
 			wp_send_json_error(
@@ -944,9 +944,9 @@ class Ajax {
 		// at the self-documenting /v1/prompt endpoint. The agent reads the
 		// full API contract from there — no need to inline it.
 		$username = wp_get_current_user()->user_login;
-		$site_url = rest_url( 'scrutinizer/v1/prompt' );
+		$site_url = rest_url( 'scrutoscope/v1/prompt' );
 		$prompt   = sprintf(
-			"Help me understand my WordPress site's performance.\n\nUse these credentials to authenticate all API calls:\n\nUsername: %s\nPassword: %s\n\nFirst, start by reading the Scrutinizer API guide here:\ncurl -u \"%s:%s\" %s",
+			"Help me understand my WordPress site's performance.\n\nUse these credentials to authenticate all API calls:\n\nUsername: %s\nPassword: %s\n\nFirst, start by reading the Scrutoscope API guide here:\ncurl -u \"%s:%s\" %s",
 			$username,
 			$result['password'],
 			$username,
@@ -971,7 +971,7 @@ class Ajax {
 	 * AJAX: Revoke all Scrutineer Application Passwords for the current user.
 	 */
 	public static function revoke_api_password() {
-		$revoked = \Scrutinizer\Api\ApplicationPassword::revoke_all_for_user( get_current_user_id() );
+		$revoked = \Scrutoscope\Api\ApplicationPassword::revoke_all_for_user( get_current_user_id() );
 
 		wp_send_json_success( array( 'revoked' => $revoked ) );
 	}
@@ -980,7 +980,7 @@ class Ajax {
 	 * AJAX: Get the API access audit log.
 	 */
 	public static function get_api_log() {
-		$log = \Scrutinizer\Api\RestApi::get_access_log();
+		$log = \Scrutoscope\Api\RestApi::get_access_log();
 
 		wp_send_json_success( array( 'log' => array_reverse( $log ) ) );
 	}
@@ -989,7 +989,7 @@ class Ajax {
 	 * AJAX: Clear the API access audit log.
 	 */
 	public static function clear_api_log() {
-		\Scrutinizer\Api\RestApi::clear_access_log();
+		\Scrutoscope\Api\RestApi::clear_access_log();
 
 		wp_send_json_success();
 	}
@@ -1007,7 +1007,7 @@ class Ajax {
 		}
 		if ( empty( $share_id ) ) {
 			wp_send_json_error(
-				array( 'message' => __( 'Missing share ID.', 'scrutinizer' ) ),
+				array( 'message' => __( 'Missing share ID.', 'scrutoscope' ) ),
 				400
 			);
 		}
@@ -1022,7 +1022,7 @@ class Ajax {
 			'profile_route' => isset( $_POST['profile_route'] ) ? sanitize_text_field( wp_unslash( $_POST['profile_route'] ) ) : '',
 		);
 
-		$shares   = get_option( 'scrutinizer_shared_reports', array() );
+		$shares   = get_option( 'scrutoscope_shared_reports', array() );
 		$shares[] = $record;
 
 		// Cap at 100 entries to prevent option bloat.
@@ -1030,7 +1030,7 @@ class Ajax {
 			$shares = array_slice( $shares, -100 );
 		}
 
-		update_option( 'scrutinizer_shared_reports', $shares, false );
+		update_option( 'scrutoscope_shared_reports', $shares, false );
 
 		wp_send_json_success( array( 'record' => $record ) );
 	}
@@ -1041,7 +1041,7 @@ class Ajax {
 	 * Auto-prunes expired shares before returning.
 	 */
 	public static function get_shares() {
-		$shares = get_option( 'scrutinizer_shared_reports', array() );
+		$shares = get_option( 'scrutoscope_shared_reports', array() );
 
 		// Auto-prune expired shares.
 		$now    = time();
@@ -1059,7 +1059,7 @@ class Ajax {
 		}
 
 		if ( $pruned ) {
-			update_option( 'scrutinizer_shared_reports', $active, false );
+			update_option( 'scrutoscope_shared_reports', $active, false );
 		}
 
 		wp_send_json_success( array( 'shares' => $active ) );
@@ -1079,12 +1079,12 @@ class Ajax {
 
 		if ( empty( $share_id ) ) {
 			wp_send_json_error(
-				array( 'message' => __( 'Missing share ID.', 'scrutinizer' ) ),
+				array( 'message' => __( 'Missing share ID.', 'scrutoscope' ) ),
 				400
 			);
 		}
 
-		$shares = get_option( 'scrutinizer_shared_reports', array() );
+		$shares = get_option( 'scrutoscope_shared_reports', array() );
 		$shares = array_values(
 			array_filter(
 				$shares,
@@ -1094,10 +1094,10 @@ class Ajax {
 			)
 		);
 
-		update_option( 'scrutinizer_shared_reports', $shares, false );
+		update_option( 'scrutoscope_shared_reports', $shares, false );
 
 		wp_send_json_success(
-			array( 'message' => __( 'Share record removed.', 'scrutinizer' ) )
+			array( 'message' => __( 'Share record removed.', 'scrutoscope' ) )
 		);
 	}
 
@@ -1113,16 +1113,16 @@ class Ajax {
 			$days = 7;
 		}
 
-		update_option( 'scrutinizer_retention_days', $days, true );
+		update_option( 'scrutoscope_retention_days', $days, true );
 
 		wp_send_json_success(
 			array(
 				'retention_days' => $days,
 				'message'        => 0 === $days
-					? __( 'Profile retention disabled — profiles kept indefinitely.', 'scrutinizer' )
+					? __( 'Profile retention disabled — profiles kept indefinitely.', 'scrutoscope' )
 					: sprintf(
 						/* translators: %d: number of days */
-						__( 'Profiles will auto-expire after %d days.', 'scrutinizer' ),
+						__( 'Profiles will auto-expire after %d days.', 'scrutoscope' ),
 						$days
 					),
 			)
@@ -1134,14 +1134,14 @@ class Ajax {
 	 */
 	public static function save_proxy_trust() {
 		$enabled = ! empty( $_POST['enabled'] );
-		update_option( 'scrutinizer_trust_proxy_headers', $enabled, true );
+		update_option( 'scrutoscope_trust_proxy_headers', $enabled, true );
 
 		wp_send_json_success(
 			array(
 				'enabled' => $enabled,
 				'message' => $enabled
-					? __( 'Proxy headers will be trusted for client IP detection.', 'scrutinizer' )
-					: __( 'Only REMOTE_ADDR will be used for client IP detection.', 'scrutinizer' ),
+					? __( 'Proxy headers will be trusted for client IP detection.', 'scrutoscope' )
+					: __( 'Only REMOTE_ADDR will be used for client IP detection.', 'scrutoscope' ),
 			)
 		);
 	}
@@ -1163,14 +1163,14 @@ class Ajax {
 			$exclude_paths = implode( "\n", $lines );
 		}
 
-		update_option( 'scrutinizer_user_scope', $user_scope, true );
-		update_option( 'scrutinizer_exclude_paths', $exclude_paths, true );
+		update_option( 'scrutoscope_user_scope', $user_scope, true );
+		update_option( 'scrutoscope_exclude_paths', $exclude_paths, true );
 
 		wp_send_json_success(
 			array(
 				'user_scope'    => $user_scope,
 				'exclude_paths' => $exclude_paths,
-				'message'       => __( 'Background profiling filters saved.', 'scrutinizer' ),
+				'message'       => __( 'Background profiling filters saved.', 'scrutoscope' ),
 			)
 		);
 	}

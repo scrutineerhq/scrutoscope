@@ -4,14 +4,14 @@
  * invariant: outbound URLs are reduced to scheme + host, never the full path.
  * This wording has regressed before, so assert the contract directly.
  *
- * @package Scrutinizer
+ * @package Scrutoscope
  */
 
 use PHPUnit\Framework\TestCase;
-use Scrutinizer\Api\Prompt;
+use Scrutoscope\Api\Prompt;
 
 /**
- * @covers \Scrutinizer\Api\Prompt
+ * @covers \Scrutoscope\Api\Prompt
  */
 class PromptTest extends TestCase {
 

@@ -1,19 +1,19 @@
 <?php
 /**
- * Plugin Name:       Scrutinizer
- * Plugin URI:        https://scrutineer.dev/scrutinizer
+ * Plugin Name:       Scrutoscope
+ * Plugin URI:        https://scrutoscope.dev
  * Description:       WordPress Performance Profiler — See where your server request duration is spent.
- * Version:           1.2.7
+ * Version:           1.3.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            The Scrutineer Project
  * Author URI:        https://scrutineer.dev
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain:       scrutinizer
+ * Text Domain:       scrutoscope
  * Domain Path:       /languages
  *
- * @package Scrutinizer
+ * @package Scrutoscope
  */
 
 // Exit if accessed directly.
@@ -21,10 +21,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'SCRUTINIZER_VERSION', '1.2.7' );
-define( 'SCRUTINIZER_FILE', __FILE__ );
-define( 'SCRUTINIZER_DIR', plugin_dir_path( __FILE__ ) );
-define( 'SCRUTINIZER_URL', plugin_dir_url( __FILE__ ) );
+define( 'SCRUTOSCOPE_VERSION', '1.3.0' );
+define( 'SCRUTOSCOPE_FILE', __FILE__ );
+define( 'SCRUTOSCOPE_DIR', plugin_dir_path( __FILE__ ) );
+define( 'SCRUTOSCOPE_URL', plugin_dir_url( __FILE__ ) );
 
 /*
  * Query profiling: manage the SAVEQUERIES constant.
@@ -39,14 +39,14 @@ define( 'SCRUTINIZER_URL', plugin_dir_url( __FILE__ ) );
  */
 if ( defined( 'SAVEQUERIES' ) ) {
 	// Externally managed — respect whatever wp-config.php set.
-	define( 'SCRUTINIZER_SAVEQUERIES_MANAGED', false );
+	define( 'SCRUTOSCOPE_SAVEQUERIES_MANAGED', false );
 } else {
 	// We control it. Default OFF: SAVEQUERIES makes WordPress retain query text,
 	// timing, and caller for every request — real overhead that shouldn't be
 	// paid until the admin opts in (Settings → Query Profiling). The basic query
 	// COUNT is always available via $wpdb->num_queries regardless.
-	define( 'SCRUTINIZER_SAVEQUERIES_MANAGED', true );
-	if ( get_option( 'scrutinizer_query_profiling', false ) ) {
+	define( 'SCRUTOSCOPE_SAVEQUERIES_MANAGED', true );
+	if ( get_option( 'scrutoscope_query_profiling', false ) ) {
 		define( 'SAVEQUERIES', true );
 	}
 }
@@ -56,10 +56,10 @@ if ( defined( 'SAVEQUERIES' ) ) {
  *
  * @return array{state: string, active: bool, managed: bool}
  */
-function scrutinizer_query_profiling_state() {
+function scrutoscope_query_profiling_state() {
 	$active = defined( 'SAVEQUERIES' ) && SAVEQUERIES;
 
-	if ( SCRUTINIZER_SAVEQUERIES_MANAGED ) {
+	if ( SCRUTOSCOPE_SAVEQUERIES_MANAGED ) {
 		return array(
 			'state'   => $active ? 'controllable_on' : 'controllable_off',
 			'active'  => $active,
@@ -77,12 +77,12 @@ function scrutinizer_query_profiling_state() {
 /**
  * Autoloader.
  *
- * Maps the Scrutinizer\ namespace to the includes/ directory using PSR-4
+ * Maps the Scrutoscope\ namespace to the includes/ directory using PSR-4
  * conventions with directory separators derived from the namespace path.
  */
 spl_autoload_register(
 	function ( $class_name ) {
-		$prefix = 'Scrutinizer\\';
+		$prefix = 'Scrutoscope\\';
 		$len    = strlen( $prefix );
 
 		if ( strncmp( $prefix, $class_name, $len ) !== 0 ) {
@@ -98,7 +98,7 @@ spl_autoload_register(
 			return;
 		}
 
-		$file = SCRUTINIZER_DIR . 'includes/' . str_replace( '\\', '/', $relative ) . '.php';
+		$file = SCRUTOSCOPE_DIR . 'includes/' . str_replace( '\\', '/', $relative ) . '.php';
 
 		if ( file_exists( $file ) ) {
 			require $file;
@@ -111,22 +111,25 @@ spl_autoload_register(
  *
  * Creates the profiles database table and schedules cleanup cron.
  */
-function scrutinizer_activate() {
-	\Scrutinizer\Profiler\Schema::create_table();
+function scrutoscope_activate() {
+	// Migrate from old "Scrutinizer" table/option names first.
+	\Scrutoscope\Profiler\Schema::maybe_migrate_from_scrutinizer();
+
+	\Scrutoscope\Profiler\Schema::create_table();
 
 	// Schedule twice-daily profile cleanup if not already scheduled.
-	if ( ! wp_next_scheduled( 'scrutinizer_cleanup_profiles' ) ) {
-		wp_schedule_event( time(), 'twicedaily', 'scrutinizer_cleanup_profiles' );
+	if ( ! wp_next_scheduled( 'scrutoscope_cleanup_profiles' ) ) {
+		wp_schedule_event( time(), 'twicedaily', 'scrutoscope_cleanup_profiles' );
 	}
 
 	// Early-boot timing is OPT-IN: a fresh activation writes nothing outside the
 	// plugin directory. Only restore the must-use plugin if the admin previously
 	// enabled it (e.g. reactivating after a deactivate, or a plugin update).
-	if ( get_option( \Scrutinizer\Admin\EarlyBoot::OPTION, false ) ) {
-		\Scrutinizer\Admin\EarlyBoot::install();
+	if ( get_option( \Scrutoscope\Admin\EarlyBoot::OPTION, false ) ) {
+		\Scrutoscope\Admin\EarlyBoot::install();
 	}
 }
-register_activation_hook( __FILE__, 'scrutinizer_activate' );
+register_activation_hook( __FILE__, 'scrutoscope_activate' );
 
 /**
  * Plugin deactivation callback.
@@ -134,17 +137,17 @@ register_activation_hook( __FILE__, 'scrutinizer_activate' );
  * Stops any active profiling session, cleans up API credentials,
  * and removes the cleanup cron schedule.
  */
-function scrutinizer_deactivate() {
-	\Scrutinizer\Profiler\Session::stop_session();
-	\Scrutinizer\Api\ApplicationPassword::deactivate();
-	wp_clear_scheduled_hook( 'scrutinizer_cleanup_profiles' );
+function scrutoscope_deactivate() {
+	\Scrutoscope\Profiler\Session::stop_session();
+	\Scrutoscope\Api\ApplicationPassword::deactivate();
+	wp_clear_scheduled_hook( 'scrutoscope_cleanup_profiles' );
 
 	// Remove the early-boot mu-plugin so no Scrutineer code keeps running on
 	// every request while the plugin is deactivated. The opt-in preference is
 	// kept, so reactivation restores it.
-	\Scrutinizer\Admin\EarlyBoot::remove();
+	\Scrutoscope\Admin\EarlyBoot::remove();
 }
-register_deactivation_hook( __FILE__, 'scrutinizer_deactivate' );
+register_deactivation_hook( __FILE__, 'scrutoscope_deactivate' );
 
 /**
  * Start the profiler early.
@@ -152,18 +155,18 @@ register_deactivation_hook( __FILE__, 'scrutinizer_deactivate' );
  * Hooked at `plugins_loaded` priority 0 so that instrumentation wraps as
  * many callbacks as possible before they fire.
  */
-function scrutinizer_boot_profiler() {
-	\Scrutinizer\Profiler\Profiler::instance()->init();
+function scrutoscope_boot_profiler() {
+	\Scrutoscope\Profiler\Profiler::instance()->init();
 }
-add_action( 'plugins_loaded', 'scrutinizer_boot_profiler', 0 );
+add_action( 'plugins_loaded', 'scrutoscope_boot_profiler', 0 );
 
 /**
  * Handle session activation tokens on `init`.
  */
-function scrutinizer_handle_activation() {
-	\Scrutinizer\Profiler\Session::handle_activation();
+function scrutoscope_handle_activation() {
+	\Scrutoscope\Profiler\Session::handle_activation();
 }
-add_action( 'init', 'scrutinizer_handle_activation' );
+add_action( 'init', 'scrutoscope_handle_activation' );
 
 
 /**
@@ -174,8 +177,8 @@ add_action( 'init', 'scrutinizer_handle_activation' );
  *
  * @param WP_Admin_Bar $wp_admin_bar  The admin bar instance.
  */
-function scrutinizer_admin_bar_menu( $wp_admin_bar ) {
-	if ( empty( $_COOKIE['scrutinizer_session'] ) ) {
+function scrutoscope_admin_bar_menu( $wp_admin_bar ) {
+	if ( empty( $_COOKIE['scrutoscope_session'] ) ) {
 		return;
 	}
 
@@ -185,16 +188,16 @@ function scrutinizer_admin_bar_menu( $wp_admin_bar ) {
 
 	$wp_admin_bar->add_node(
 		array(
-			'id'    => 'scrutinizer-profiling',
-			'title' => '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#00ba37;margin-right:6px;vertical-align:middle;"></span>Scrutinizer',
-			'href'  => admin_url( 'tools.php?page=scrutinizer' ),
+			'id'    => 'scrutoscope-profiling',
+			'title' => '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#00ba37;margin-right:6px;vertical-align:middle;"></span>Scrutoscope',
+			'href'  => admin_url( 'tools.php?page=scrutoscope' ),
 			'meta'  => array(
-				'title' => __( 'Profiling active - click to view dashboard', 'scrutinizer' ),
+				'title' => __( 'Profiling active - click to view dashboard', 'scrutoscope' ),
 			),
 		)
 	);
 }
-add_action( 'admin_bar_menu', 'scrutinizer_admin_bar_menu', 100 );
+add_action( 'admin_bar_menu', 'scrutoscope_admin_bar_menu', 100 );
 
 /**
  * Show a floating capture banner on profiled pages.
@@ -203,91 +206,94 @@ add_action( 'admin_bar_menu', 'scrutinizer_admin_bar_menu', 100 );
  * across all three capture contexts: admin pages, front-end logged-in,
  * and front-end logged-out/incognito.
  */
-function scrutinizer_capture_banner() {
-	if ( ! \Scrutinizer\Profiler\Session::has_valid_cookie() ) {
+function scrutoscope_capture_banner() {
+	if ( ! \Scrutoscope\Profiler\Session::has_valid_cookie() ) {
 		return;
 	}
 
-	// Skip the Scrutinizer dashboard itself — it already has session UI.
+	// Skip the Scrutoscope dashboard itself — it already has session UI.
 	// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-	if ( is_admin() && isset( $_GET['page'] ) && 'scrutinizer' === $_GET['page'] ) {
+	if ( is_admin() && isset( $_GET['page'] ) && 'scrutoscope' === $_GET['page'] ) {
 		return;
 	}
 
-	$text     = esc_html__( 'Profiling active - keep browsing to capture more pages.', 'scrutinizer' );
-	$cta_url  = esc_url( admin_url( 'tools.php?page=scrutinizer' ) );
-	$cta_text = esc_html__( 'Return to Scrutinizer to stop.', 'scrutinizer' );
+	$text     = esc_html__( 'Profiling active - keep browsing to capture more pages.', 'scrutoscope' );
+	$cta_url  = esc_url( admin_url( 'tools.php?page=scrutoscope' ) );
+	$cta_text = esc_html__( 'Return to Scrutoscope to stop.', 'scrutoscope' );
 	?>
-	<div id="scrutinizer-capture-banner" role="status" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:100001;background:#1d2327;color:#f0f0f1;font:13px/1.4 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,sans-serif;padding:10px 16px;align-items:center;gap:10px;box-shadow:0 -1px 4px rgba(0,0,0,.15);justify-content:center;border-top:2px solid #00ba37;">
+	<div id="scrutoscope-capture-banner" role="status" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:100001;background:#1d2327;color:#f0f0f1;font:13px/1.4 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,sans-serif;padding:10px 16px;align-items:center;gap:10px;box-shadow:0 -1px 4px rgba(0,0,0,.15);justify-content:center;border-top:2px solid #00ba37;">
 		<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#00ba37;flex-shrink:0;"></span>
 		<span><?php echo esc_html( $text ); ?> <a href="<?php echo esc_url( $cta_url ); ?>" style="color:#72aee6;text-decoration:none;"><?php echo esc_html( $cta_text ); ?></a></span>
-		<button type="button" id="scrutinizer-capture-dismiss" style="background:none;border:none;color:#c3c4c7;cursor:pointer;font-size:18px;line-height:1;padding:8px 12px;min-width:32px;min-height:32px;margin-left:4px;display:inline-flex;align-items:center;justify-content:center;" aria-label="<?php esc_attr_e( 'Dismiss', 'scrutinizer' ); ?>">&times;</button>
+		<button type="button" id="scrutoscope-capture-dismiss" style="background:none;border:none;color:#c3c4c7;cursor:pointer;font-size:18px;line-height:1;padding:8px 12px;min-width:32px;min-height:32px;margin-left:4px;display:inline-flex;align-items:center;justify-content:center;" aria-label="<?php esc_attr_e( 'Dismiss', 'scrutoscope' ); ?>">&times;</button>
 	</div>
 	<?php
-	wp_register_script( 'scrutinizer-capture-banner', false, array(), SCRUTINIZER_VERSION, true );
+	wp_register_script( 'scrutoscope-capture-banner', false, array(), SCRUTOSCOPE_VERSION, true );
 	wp_add_inline_script(
-		'scrutinizer-capture-banner',
+		'scrutoscope-capture-banner',
 		'(function(){' .
-			"if(sessionStorage.getItem('scrutinizer_banner_off'))return;" .
-			"var b=document.getElementById('scrutinizer-capture-banner');" .
+			"if(sessionStorage.getItem('scrutoscope_banner_off'))return;" .
+			"var b=document.getElementById('scrutoscope-capture-banner');" .
 			'if(!b)return;' .
 			"b.style.display='flex';" .
 			"document.documentElement.style.paddingBottom='42px';" .
-			"var d=document.getElementById('scrutinizer-capture-dismiss');" .
+			"var d=document.getElementById('scrutoscope-capture-dismiss');" .
 			"d.addEventListener('click',function(){" .
 				"b.style.display='none';" .
 				"document.documentElement.style.paddingBottom='';" .
-				"sessionStorage.setItem('scrutinizer_banner_off','1');" .
+				"sessionStorage.setItem('scrutoscope_banner_off','1');" .
 			'});' .
 			"d.addEventListener('mouseenter',function(){d.style.color='#f0f0f1';});" .
 			"d.addEventListener('mouseleave',function(){d.style.color='#c3c4c7';});" .
 		'})();'
 	);
-	wp_enqueue_script( 'scrutinizer-capture-banner' );
+	wp_enqueue_script( 'scrutoscope-capture-banner' );
 	?>
 	<?php
 }
-add_action( 'wp_footer', 'scrutinizer_capture_banner', PHP_INT_MAX );
-add_action( 'admin_footer', 'scrutinizer_capture_banner', PHP_INT_MAX );
+add_action( 'wp_footer', 'scrutoscope_capture_banner', PHP_INT_MAX );
+add_action( 'admin_footer', 'scrutoscope_capture_banner', PHP_INT_MAX );
 
 /**
  * Register admin page, AJAX handlers, and REST API.
  */
-function scrutinizer_admin_init() {
-	\Scrutinizer\Admin\Dashboard::register();
-	\Scrutinizer\Admin\Ajax::register();
-	\Scrutinizer\Profiler\Schema::maybe_upgrade_table();
-	\Scrutinizer\Api\RestApi::register();
-	\Scrutinizer\Api\ApplicationPassword::register();
+function scrutoscope_admin_init() {
+	// Run migration from old "Scrutinizer" names on upgrade (not just activation).
+	\Scrutoscope\Profiler\Schema::maybe_migrate_from_scrutinizer();
+
+	\Scrutoscope\Admin\Dashboard::register();
+	\Scrutoscope\Admin\Ajax::register();
+	\Scrutoscope\Profiler\Schema::maybe_upgrade_table();
+	\Scrutoscope\Api\RestApi::register();
+	\Scrutoscope\Api\ApplicationPassword::register();
 
 	// Ensure cleanup cron is scheduled — only check on admin pages
 	// to avoid a wp_next_scheduled() DB hit on every frontend load.
 	if ( is_admin() || wp_doing_cron() ) {
-		if ( ! wp_next_scheduled( 'scrutinizer_cleanup_profiles' ) ) {
-			wp_schedule_event( time(), 'twicedaily', 'scrutinizer_cleanup_profiles' );
+		if ( ! wp_next_scheduled( 'scrutoscope_cleanup_profiles' ) ) {
+			wp_schedule_event( time(), 'twicedaily', 'scrutoscope_cleanup_profiles' );
 		}
 	}
 }
-add_action( 'plugins_loaded', 'scrutinizer_admin_init' );
+add_action( 'plugins_loaded', 'scrutoscope_admin_init' );
 
 /**
  * Handle profile cleanup cron event.
  *
- * Runs on `scrutinizer_cleanup_profiles` (twice daily).
+ * Runs on `scrutoscope_cleanup_profiles` (twice daily).
  * Uses configurable retention options. Pinned profiles are always kept.
  */
-function scrutinizer_run_cleanup() {
-	$retention_days = (int) get_option( 'scrutinizer_retention_days', 7 );
-	$max_per_route  = (int) get_option( 'scrutinizer_max_per_route', 100 );
+function scrutoscope_run_cleanup() {
+	$retention_days = (int) get_option( 'scrutoscope_retention_days', 7 );
+	$max_per_route  = (int) get_option( 'scrutoscope_max_per_route', 100 );
 
-	\Scrutinizer\Profiler\Cleanup::cleanup_profiles( $retention_days, $max_per_route );
+	\Scrutoscope\Profiler\Cleanup::cleanup_profiles( $retention_days, $max_per_route );
 
 	// Prune the long-term stats aggregate. Kept far longer than raw profiles
 	// (it's tiny and exists to outlive them), but still bounded.
-	$stats_retention = (int) get_option( 'scrutinizer_stats_retention_days', 365 );
-	\Scrutinizer\Profiler\StorageRouteAggregates::prune_route_stats( $stats_retention );
+	$stats_retention = (int) get_option( 'scrutoscope_stats_retention_days', 365 );
+	\Scrutoscope\Profiler\StorageRouteAggregates::prune_route_stats( $stats_retention );
 }
-add_action( 'scrutinizer_cleanup_profiles', 'scrutinizer_run_cleanup' );
+add_action( 'scrutoscope_cleanup_profiles', 'scrutoscope_run_cleanup' );
 
 /**
  * Register WP-CLI commands.
@@ -296,7 +302,7 @@ if ( defined( 'WP_CLI' ) && WP_CLI ) {
 	add_action(
 		'cli_init',
 		function () {
-			\WP_CLI::add_command( 'scrutinizer', 'Scrutinizer\\Cli\\Commands' );
+			\WP_CLI::add_command( 'scrutoscope', 'Scrutoscope\\Cli\\Commands' );
 		}
 	);
 }

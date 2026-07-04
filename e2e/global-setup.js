@@ -6,11 +6,11 @@ import fs from 'fs';
  * authenticated. Fails loudly if login is blocked (bad creds, Wordfence, etc.).
  */
 export default async function globalSetup() {
-  const baseURL = process.env.SCRUTINIZER_BASE_URL || 'http://localhost:8888';
+  const baseURL = process.env.SCRUTOSCOPE_BASE_URL || 'http://localhost:8888';
   const user = process.env.WP_ADMIN_USER || 'admin';
   const pass = process.env.WP_ADMIN_PASS;
   if (!pass) {
-    throw new Error('Set WP_ADMIN_PASS (and SCRUTINIZER_BASE_URL) — see .context/BROWSER_QA.md');
+    throw new Error('Set WP_ADMIN_PASS (and SCRUTOSCOPE_BASE_URL) — see .context/BROWSER_QA.md');
   }
 
   const browser = await chromium.launch();

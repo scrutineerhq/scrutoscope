@@ -3,12 +3,12 @@
  * Tests for Report::classify_histograms() — the aggregate (histogram) path of
  * the regression classifier.
  *
- * @package Scrutinizer
+ * @package Scrutoscope
  */
 
 use PHPUnit\Framework\TestCase;
-use Scrutinizer\Profiler\Report;
-use Scrutinizer\Profiler\RouteStats;
+use Scrutoscope\Profiler\Report;
+use Scrutoscope\Profiler\RouteStats;
 
 require_once __DIR__ . '/../includes/Profiler/RouteStats.php';
 require_once __DIR__ . '/../includes/Profiler/Report.php';
@@ -16,7 +16,7 @@ require_once __DIR__ . '/../includes/Profiler/Report.php';
 /**
  * Covers the histogram-based classifier path.
  *
- * @covers \Scrutinizer\Profiler\Report::classify_histograms
+ * @covers \Scrutoscope\Profiler\Report::classify_histograms
  */
 class ReportClassifyHistogramsTest extends TestCase {
 
