@@ -235,7 +235,7 @@ class RestApi {
 						$ip = trim( explode( ',', $ip )[0] );
 					}
 					if ( filter_var( $ip, FILTER_VALIDATE_IP ) ) {
-						return self::hash_ip( $ip );
+						return $ip;
 					}
 				}
 			}
@@ -245,7 +245,7 @@ class RestApi {
 		if ( ! empty( $_SERVER['REMOTE_ADDR'] ) ) {
 			$ip = sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
 			if ( filter_var( $ip, FILTER_VALIDATE_IP ) ) {
-				return self::hash_ip( $ip );
+				return $ip;
 			}
 		}
 
@@ -253,20 +253,14 @@ class RestApi {
 	}
 
 	/**
-	 * Hash an IP address for GDPR-compliant storage.
+	 * Hash an IP address (unused — raw IPs stored for security audit).
 	 *
-	 * Uses HMAC-SHA256 with the site's AUTH_SALT as key, producing a
-	 * consistent pseudonymous identifier that can't be reversed to the
-	 * original IP. The same IP always produces the same hash on this
-	 * installation, so log entries remain groupable.
-	 *
+	 * @deprecated Raw IPs are stored since the access log is a security
+	 *             audit tool for the site admin. Hashing defeats the purpose.
 	 * @param string $ip Raw IP address.
 	 * @return string First 16 hex chars of HMAC-SHA256 digest.
 	 */
 	private static function hash_ip( $ip ) {
-		// wp_salt() always returns a per-site secret (generating and storing
-		// one if the wp-config constants are absent), so there is never a
-		// guessable hardcoded fallback that would make the hash reversible.
 		$key = wp_salt( 'auth' );
 		return substr( hash_hmac( 'sha256', $ip, $key ), 0, 16 );
 	}
