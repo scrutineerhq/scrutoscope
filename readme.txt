@@ -3,7 +3,7 @@ Contributors: kurtpayne
 Tags: performance, profiler, p3, p3-profiler, profiling
 Requires at least: 6.0
 Tested up to: 7.0
-Stable tag: 1.2.5
+Stable tag: 1.2.6
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -106,6 +106,13 @@ It is never contacted during normal profiling, page loads, or background capture
 **Data retention:** a shared report expires after the TTL you choose, can be set to burn after its first read, and can be revoked manually at any time. The relay only ever stores ciphertext.
 
 == Changelog ==
+
+= 1.2.6 =
+* New: Inline trend sparklines in the routes overview table with regression coloring.
+* New: Sortable memory delta column in hook execution trace.
+* Fix: Routes tab first-load race condition — cached data renders immediately on tab switch.
+* Fix: Revoke button icon vertical alignment.
+* Fix: Client IP detection settings description reworded.
 
 = 1.2.5 =
 * Fix: Replace heredoc syntax in Prompt.php for Plugin Check compatibility.
@@ -237,6 +244,9 @@ This release focuses on trust — opt-in defaults and honest disclosure — alon
 15. AI agent terminal output diagnosing a blocking HTTP call as the top performance issue
 
 == Upgrade Notice ==
+
+= 1.2.6 =
+Dashboard enhancements: route sparklines, trace memory column, and tab-switch fix.
 
 = 1.2.5 =
 Plugin Check compatibility fixes for wp.org submission.

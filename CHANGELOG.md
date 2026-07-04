@@ -5,6 +5,30 @@ All notable changes to Scrutinizer will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.6] - 2026-07-04
+
+Dashboard enhancements and tab-switch fix.
+
+### Added
+- Inline trend sparklines in the routes overview table (last 20 data points, regression coloring)
+- Sortable memory delta column ("Mem") in the hook execution trace table
+
+### Fixed
+- Routes tab hangs on "Loading…" on first visit when user switches tabs before AJAX completes (race condition: cached data now renders immediately on tab switch)
+- Revoke button icon vertical alignment in API settings
+- Client IP detection settings description reworded for clarity
+
+## [1.2.5] - 2026-07-03
+
+Plugin Check compatibility fixes for wp.org submission.
+
+### Fixed
+- Replace heredoc syntax in Prompt.php for Plugin Check compatibility
+- Remove deprecated `load_plugin_textdomain` call (handled by wp.org since WP 4.6)
+- Sanitize `$_SERVER['REQUEST_URI']` with `wp_unslash`
+- Trim upgrade notice for 1.1.0 to under 300 characters
+- Update contributor slug to `kurtpayne`
+
 ## [1.2.4] - 2026-07-02
 
 Shared report privacy and breakdown bar fix.
