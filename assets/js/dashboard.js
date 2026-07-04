@@ -1368,7 +1368,7 @@
 		html += '<label class="scrutinizer-toggle-label">';
 		html += '<input type="checkbox" id="scrutinizer-proxy-toggle"' + ( trusted ? ' checked' : '' ) + '> ';
 		html += __( 'Trust proxy headers for client IP', 'scrutinizer' ) + '</label>';
-		html += '<p class="description">When enabled, Scrutineer reads headers like <code>X-Forwarded-For</code> or <code>CF-Connecting-IP</code> to identify the real client IP. Enable this only if your site is behind a reverse proxy or CDN (e.g. Cloudflare, Nginx, a load balancer). Otherwise, these headers can be spoofed by visitors.</p>';
+		html += '<p class="description">When enabled, the API access log records the real client IP from headers like <code>X-Forwarded-For</code> or <code>CF-Connecting-IP</code> instead of the proxy\'s address. This only affects logging \u2014 it does not add any security controls. Enable this if your site is behind a reverse proxy or CDN (e.g. Cloudflare, Nginx, a load balancer) so that log entries show the actual visitor IP. Otherwise, leave it disabled \u2014 these headers can be spoofed by visitors when no proxy is present.</p>';
 
 		// Auto-detect recommendation.
 		if ( detected.length > 0 ) {
@@ -3416,6 +3416,7 @@
 		html += '<th class="scrutinizer-trace-sortable' + ( 'source_name' === traceSortKey ? ( ' sort-' + traceSortDir ) : '' ) + '" data-sort-key="source_name" style="width:120px">' + __( 'Source', 'scrutinizer' ) + '</th>';
 		html += '<th class="scrutinizer-trace-sortable' + ( 'query_count' === traceSortKey ? ( ' sort-' + traceSortDir ) : '' ) + '" data-sort-key="query_count" style="width:60px">' + __( 'Qry', 'scrutinizer' ) + '</th>';
 		html += '<th class="scrutinizer-trace-sortable' + ( 'http_count' === traceSortKey ? ( ' sort-' + traceSortDir ) : '' ) + '" data-sort-key="http_count" style="width:60px">' + __( 'HTTP', 'scrutinizer' ) + '</th>';
+		html += '<th class="scrutinizer-trace-sortable' + ( 'mem_delta' === traceSortKey ? ( ' sort-' + traceSortDir ) : '' ) + '" data-sort-key="mem_delta" style="width:80px">' + __( 'Mem', 'scrutinizer' ) + '</th>';
 		html += '</tr></thead>';
 		html += '<tbody id="scrutinizer-trace-tbody"></tbody>';
 		html += '</table>';
@@ -3562,6 +3563,7 @@
 			html += '<td><span class="scrutinizer-source-dot" style="background:' + color + '"></span>' + esc( e.source_name ) + '</td>';
 			html += '<td class="scrutinizer-trace-num">' + ( e.query_count > 0 ? e.query_count : '<span class="scrutinizer-muted">-</span>' ) + '</td>';
 			html += '<td class="scrutinizer-trace-num">' + ( e.http_count > 0 ? e.http_count : '<span class="scrutinizer-muted">-</span>' ) + '</td>';
+			html += '<td class="scrutinizer-trace-num">' + ( e.mem_delta ? formatMemoryDelta( e.mem_delta ) : '<span class="scrutinizer-muted">-</span>' ) + '</td>';
 			html += '</tr>';
 		}
 
