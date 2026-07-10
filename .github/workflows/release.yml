@@ -9,50 +9,24 @@ permissions:
   contents: write
 
 jobs:
-  release:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.3'
-          tools: composer
-
-      - name: Install dependencies
-        run: composer install --no-dev --optimize-autoloader --no-interaction
-
-      - name: Build release zip
+      - name: Build distribution zip
         run: |
-          VERSION="${GITHUB_REF#refs/tags/v}"
-          SLUG="scrutoscope"
-          DIST_DIR="/tmp/${SLUG}"
-          
-          mkdir -p "${DIST_DIR}"
-          
-          # Copy everything, then remove excluded files
-          rsync -a --exclude-from=.distignore ./ "${DIST_DIR}/"
-          
-          cd /tmp
-          zip -r "${SLUG}-${VERSION}.zip" "${SLUG}/"
-          echo "ZIP_PATH=/tmp/${SLUG}-${VERSION}.zip" >> $GITHUB_ENV
-          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          mkdir -p /tmp/scrutoscope-build/scrutoscope
+          rsync -a --exclude-from=.distignore . /tmp/scrutoscope-build/scrutoscope/
+          cd /tmp/scrutoscope-build
+          zip -r scrutoscope.zip scrutoscope/ -q
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: ${{ env.ZIP_PATH }}
-          generate_release_notes: false
-          body: |
-            ## Scrutoscope v${{ env.VERSION }}
-            
-            See [CHANGELOG.md](https://github.com/scrutineerhq/scrutoscope/blob/main/CHANGELOG.md) for details.
-            
-            ### Installation
-            
-            1. Download `scrutoscope-${{ env.VERSION }}.zip` below
-            2. WordPress admin → Plugins → Add New → Upload Plugin
-            3. Upload the zip and activate
-            4. Go to Tools → Scrutoscope
+      - name: Create release with zip
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          gh release create "$TAG" /tmp/scrutoscope-build/scrutoscope.zip \
+            --title "$TAG" \
+            --generate-notes \
+            --latest
