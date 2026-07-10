@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.3.2] - 2026-07-10
 
 ### Fixed
+- Restore anonymous profiling: activation URL works in incognito/logged-out browsers again (regression from v1.2.4)
 - WP-CLI exports write to `uploads/scrutoscope/` subdirectory instead of uploads root
 - Absolute export paths validated to stay within the uploads tree
 - Replaced all `file_get_contents` with `WP_Filesystem::get_contents()` (EarlyBoot, Attribution, Prompt)

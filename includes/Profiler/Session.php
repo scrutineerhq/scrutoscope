@@ -87,6 +87,11 @@ class Session {
 	/**
 	 * Handle activation on `init`. Validates the URL token, sets the cookie,
 	 * stores the session ID, and redirects to a clean URL.
+	 *
+	 * No nonce: this URL is opened in incognito/logged-out browsers for anonymous
+	 * visitor profiling, so there is no WordPress login session to anchor a nonce
+	 * to. Security is provided by an HMAC-signed token (session_id + user_id +
+	 * expiry, signed with a server-side pepper) validated below.
 	 */
 	public static function handle_activation() {
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended
@@ -119,9 +124,12 @@ class Session {
 			return;
 		}
 
-		// The token is bound to the admin who created it — non-transferable.
-		// Reject if it isn't being redeemed by that same logged-in user.
-		if ( 0 === $user_id || get_current_user_id() !== $user_id ) {
+		// The user_id in the HMAC payload prevents one admin from replaying
+		// another's token, but we intentionally do NOT check
+		// get_current_user_id() here — the activation URL must work in
+		// incognito / logged-out browsers so admins can profile anonymous
+		// visitor page loads. The HMAC + expiry is the security boundary.
+		if ( 0 === $user_id ) {
 			return;
 		}
 

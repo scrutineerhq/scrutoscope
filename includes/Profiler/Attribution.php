@@ -99,6 +99,10 @@ class Attribution {
 	/**
 	 * Classify a source file path as plugin, theme, core, mu-plugin, drop-in, or unknown.
 	 *
+	 * Uses WP_PLUGIN_DIR, WPMU_PLUGIN_DIR, WP_CONTENT_DIR, and ABSPATH to match
+	 * callback file paths to their origin. A profiler must resolve these directories
+	 * to attribute hook execution time to the correct plugin, theme, or core subsystem.
+	 *
 	 * @param string $file  Absolute file path.
 	 * @return array{type: string, slug: string, name: string}
 	 */

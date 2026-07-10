@@ -108,6 +108,7 @@ It is never contacted during normal profiling, page loads, or background capture
 == Changelog ==
 
 = 1.3.2 =
+* Restore anonymous profiling — activation URL works in incognito/logged-out browsers again
 * WP-CLI exports now write to uploads/scrutoscope/ subdirectory (not uploads root)
 * Absolute export paths restricted to uploads tree
 * Replaced all file_get_contents with WP_Filesystem throughout
@@ -269,7 +270,7 @@ This release focuses on trust — opt-in defaults and honest disclosure — alon
 == Upgrade Notice ==
 
 = 1.3.2 =
-wp.org review compliance: exports namespaced to uploads/scrutoscope/, WP_Filesystem for all file reads.
+Anonymous profiling restored, wp.org review compliance fixes.
 
 = 1.3.1 =
 Path-only URLs, raw IPs in access log, updated screenshots.

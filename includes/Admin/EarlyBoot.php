@@ -40,6 +40,9 @@ class EarlyBoot {
 	/**
 	 * Absolute path where the MU plugin is installed.
 	 *
+	 * Uses WPMU_PLUGIN_DIR when defined; falls back to WP_CONTENT_DIR . '/mu-plugins'
+	 * for the rare case where the constant is not yet available.
+	 *
 	 * @return string
 	 */
 	public static function target_path() {
