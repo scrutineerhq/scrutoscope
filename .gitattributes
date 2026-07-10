@@ -1,0 +1,24 @@
+# Exclude dev/build files from GitHub's auto-generated source archives.
+.context/         export-ignore
+.github/          export-ignore
+.wordpress-org/   export-ignore
+.distignore       export-ignore
+.editorconfig     export-ignore
+.gitattributes    export-ignore
+.gitignore        export-ignore
+tests/            export-ignore
+test-plugins/     export-ignore
+e2e/              export-ignore
+test-results/     export-ignore
+playwright-report/ export-ignore
+node_modules/     export-ignore
+AGENTS.md         export-ignore
+CONTRIBUTING.md   export-ignore
+composer.json     export-ignore
+composer.lock     export-ignore
+package.json      export-ignore
+package-lock.json export-ignore
+playwright.config.js export-ignore
+phpcs.xml.dist    export-ignore
+phpunit.xml.dist  export-ignore
+scrutoscope_debug.php export-ignore
