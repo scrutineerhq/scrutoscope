@@ -31,8 +31,12 @@ class Prompt {
 
 		$plugin_count = count( get_option( 'active_plugins', array() ) );
 
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- local file read.
-		$template = file_get_contents( __DIR__ . '/prompt-template.txt' );
+		global $wp_filesystem;
+		if ( ! $wp_filesystem ) {
+			require_once ABSPATH . 'wp-admin/includes/file.php';
+			WP_Filesystem();
+		}
+		$template = $wp_filesystem->get_contents( __DIR__ . '/prompt-template.txt' );
 
 		return str_replace(
 			array( '{site_url}', '{api_base}', '{wp_ver}', '{php_ver}', '{plugin_count}' ),

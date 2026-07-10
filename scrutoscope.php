@@ -3,7 +3,7 @@
  * Plugin Name:       Scrutoscope
  * Plugin URI:        https://scrutoscope.dev
  * Description:       WordPress Performance Profiler — See where your server request duration is spent.
- * Version:           1.3.1
+ * Version:           1.3.2
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            The Scrutineer Project
@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'SCRUTOSCOPE_VERSION', '1.3.1' );
+define( 'SCRUTOSCOPE_VERSION', '1.3.2' );
 define( 'SCRUTOSCOPE_FILE', __FILE__ );
 define( 'SCRUTOSCOPE_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SCRUTOSCOPE_URL', plugin_dir_url( __FILE__ ) );

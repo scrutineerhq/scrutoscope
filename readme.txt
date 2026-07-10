@@ -3,7 +3,7 @@ Contributors: kurtpayne
 Tags: performance, profiler, p3, p3-profiler, profiling
 Requires at least: 6.0
 Tested up to: 7.0
-Stable tag: 1.3.1
+Stable tag: 1.3.2
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -106,6 +106,11 @@ It is never contacted during normal profiling, page loads, or background capture
 **Data retention:** a shared report expires after the TTL you choose, can be set to burn after its first read, and can be revoked manually at any time. The relay only ever stores ciphertext.
 
 == Changelog ==
+
+= 1.3.2 =
+* WP-CLI exports now write to uploads/scrutoscope/ subdirectory (not uploads root)
+* Absolute export paths restricted to uploads tree
+* Replaced all file_get_contents with WP_Filesystem throughout
 
 = 1.3.1 =
 * Request URLs display as paths only (domain stripped)
@@ -262,6 +267,9 @@ This release focuses on trust — opt-in defaults and honest disclosure — alon
 15. AI agent terminal output diagnosing a blocking HTTP call as the top performance issue
 
 == Upgrade Notice ==
+
+= 1.3.2 =
+wp.org review compliance: exports namespaced to uploads/scrutoscope/, WP_Filesystem for all file reads.
 
 = 1.3.1 =
 Path-only URLs, raw IPs in access log, updated screenshots.

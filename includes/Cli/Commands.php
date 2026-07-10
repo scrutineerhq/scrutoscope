@@ -350,10 +350,20 @@ class Commands {
 		$file = Utils\get_flag_value( $assoc_args, 'file', '' );
 
 		if ( $file ) {
-			// Resolve relative paths to the uploads directory.
+			// Resolve relative paths to the plugin's uploads subdirectory.
 			if ( ! path_is_absolute( $file ) ) {
+				$upload_dir  = wp_upload_dir();
+				$export_dir  = trailingslashit( $upload_dir['basedir'] ) . 'scrutoscope';
+				wp_mkdir_p( $export_dir );
+				$file = trailingslashit( $export_dir ) . basename( $file );
+			} else {
+				// Absolute paths must fall within the uploads tree.
 				$upload_dir = wp_upload_dir();
-				$file       = trailingslashit( $upload_dir['basedir'] ) . basename( $file );
+				$real_base  = realpath( $upload_dir['basedir'] );
+				$real_file  = realpath( dirname( $file ) );
+				if ( false === $real_base || false === $real_file || 0 !== strpos( $real_file, $real_base ) ) {
+					WP_CLI::error( 'Export path must be within the WordPress uploads directory.' );
+				}
 			}
 			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- WP-CLI server-side command.
 			$bytes = file_put_contents( $file, $json . "\n" );
