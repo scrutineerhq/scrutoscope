@@ -352,8 +352,8 @@ class Commands {
 		if ( $file ) {
 			// Resolve relative paths to the plugin's uploads subdirectory.
 			if ( ! path_is_absolute( $file ) ) {
-				$upload_dir  = wp_upload_dir();
-				$export_dir  = trailingslashit( $upload_dir['basedir'] ) . 'scrutoscope';
+				$upload_dir = wp_upload_dir();
+				$export_dir = trailingslashit( $upload_dir['basedir'] ) . 'scrutoscope';
 				wp_mkdir_p( $export_dir );
 				$file = trailingslashit( $export_dir ) . basename( $file );
 			} else {
