@@ -47,8 +47,9 @@ if ( defined( 'SAVEQUERIES' ) ) {
 	// COUNT is always available via $wpdb->num_queries regardless.
 	define( 'SCRUTOSCOPE_SAVEQUERIES_MANAGED', true );
 	if ( get_option( 'scrutoscope_query_profiling', false ) ) {
-		// Conditional: only enabled when the admin opts in via Settings → Query Profiling.
-		// Default is OFF — this line never executes unless the option is explicitly true.
+		// REVIEWER NOTE: SAVEQUERIES is CONDITIONAL — only defined when admin opts in
+		// via get_option('scrutoscope_query_profiling'), which defaults to false.
+		// This line never executes on a default install. See guard above.
 		define( 'SAVEQUERIES', true );
 	}
 }

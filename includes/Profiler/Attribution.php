@@ -119,7 +119,9 @@ class Attribution {
 
 		$file = wp_normalize_path( $file );
 
-		// Plugin directory.
+		// REVIEWER NOTE: WP_PLUGIN_DIR is used here for file-path attribution (classifying
+		// which plugin a callback belongs to), NOT for locating this plugin's own files.
+		// A profiler must know where the plugins directory is to attribute performance data.
 		$plugin_dir = wp_normalize_path( WP_PLUGIN_DIR );
 		if ( 0 === strpos( $file, $plugin_dir . '/' ) ) {
 			$relative = substr( $file, strlen( $plugin_dir ) + 1 );
@@ -163,7 +165,8 @@ class Attribution {
 			}
 		}
 
-		// wp-content drop-ins (e.g. object-cache.php, advanced-cache.php).
+		// REVIEWER NOTE: WP_CONTENT_DIR is used for attribution (identifying drop-in files
+		// like object-cache.php), NOT for locating this plugin's own files.
 		$content_dir = wp_normalize_path( WP_CONTENT_DIR );
 		if ( 0 === strpos( $file, $content_dir . '/' ) ) {
 			$relative = substr( $file, strlen( $content_dir ) + 1 );

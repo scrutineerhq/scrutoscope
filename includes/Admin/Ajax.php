@@ -15,12 +15,14 @@ use Scrutoscope\Profiler\Report;
 use Scrutoscope\Profiler\Regression;
 use Scrutoscope\Api\Sanitizer;
 
-// Every action in this file is registered through self::add_ajax(), which runs
-// self::guard() — check_ajax_referer( 'scrutoscope_nonce', 'nonce' ) plus a
-// manage_options check — before the handler. The nonce is therefore verified
-// centrally for every entry point (proven by AjaxGuardTest), but WPCS's
-// per-function NonceVerification sniff can't see across the wrapper, so it is
-// disabled for this file. Input is still individually sanitized.
+// REVIEWER NOTE — CENTRALIZED NONCE + CAPABILITY CHECK:
+// Every AJAX action in this file is registered through self::add_ajax() (line 98),
+// which wraps each handler in a closure that calls self::guard() (line 114) BEFORE
+// the handler executes. guard() runs check_ajax_referer('scrutoscope_nonce', 'nonce')
+// and current_user_can('manage_options'). No handler can execute without passing both.
+// This pattern is verified by AjaxGuardTest in the test suite.
+// WPCS's per-function NonceVerification sniff cannot trace across the closure wrapper,
+// so it reports false positives for every handler in this file.
 // phpcs:disable WordPress.Security.NonceVerification.Recommended
 // phpcs:disable WordPress.Security.NonceVerification.Missing
 

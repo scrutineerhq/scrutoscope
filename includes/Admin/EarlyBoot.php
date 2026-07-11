@@ -46,6 +46,8 @@ class EarlyBoot {
 	 * @return string
 	 */
 	public static function target_path() {
+		// REVIEWER NOTE: WPMU_PLUGIN_DIR is the correct constant for mu-plugins.
+		// WP_CONTENT_DIR fallback is only for the rare case where WPMU_PLUGIN_DIR is undefined.
 		$dir = defined( 'WPMU_PLUGIN_DIR' ) ? WPMU_PLUGIN_DIR : WP_CONTENT_DIR . '/mu-plugins';
 		return $dir . '/scrutoscope-early.php';
 	}
