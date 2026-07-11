@@ -85,18 +85,15 @@ if ( ! function_exists( 'get_plugins' ) ) {
 }
 if ( ! function_exists( 'WP_Filesystem' ) ) {
 	// Stub WP_Filesystem so Prompt::build() and Commands don't require wp-admin/includes/file.php.
-	function WP_Filesystem() {
-		global $wp_filesystem;
-		if ( ! $wp_filesystem ) {
-			$wp_filesystem = new class {
-				public function get_contents( $file ) {
-					return file_get_contents( $file );
-				}
-				public function put_contents( $file, $data, $mode = null ) {
-					return file_put_contents( $file, $data ) !== false;
-				}
-			};
+	$GLOBALS['wp_filesystem'] = new class {
+		public function get_contents( $file ) {
+			return file_get_contents( $file );
 		}
+		public function put_contents( $file, $data, $mode = null ) {
+			return file_put_contents( $file, $data ) !== false;
+		}
+	};
+	function WP_Filesystem() {
 		return true;
 	}
 }
