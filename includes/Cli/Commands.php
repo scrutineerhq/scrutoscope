@@ -357,16 +357,28 @@ class Commands {
 				wp_mkdir_p( $export_dir );
 				$file = trailingslashit( $export_dir ) . basename( $file );
 			} else {
-				// Absolute paths must fall within the uploads tree.
+				// Absolute paths must fall within uploads/scrutoscope/.
 				$upload_dir = wp_upload_dir();
-				$real_base  = realpath( $upload_dir['basedir'] );
-				$real_file  = realpath( dirname( $file ) );
+				$export_dir = trailingslashit( $upload_dir['basedir'] ) . 'scrutoscope';
+				wp_mkdir_p( $export_dir );
+				$real_base = realpath( $export_dir );
+				$real_file = realpath( dirname( $file ) );
 				if ( false === $real_base || false === $real_file || 0 !== strpos( $real_file, $real_base ) ) {
-					WP_CLI::error( 'Export path must be within the WordPress uploads directory.' );
+					WP_CLI::error( 'Export path must be within uploads/scrutoscope/.' );
 				}
 			}
-			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- WP-CLI server-side command.
-			$bytes = file_put_contents( $file, $json . "\n" );
+
+			// Use WP_Filesystem for file writes.
+			global $wp_filesystem;
+			if ( ! function_exists( 'WP_Filesystem' ) ) {
+				require_once ABSPATH . 'wp-admin/includes/file.php';
+			}
+			WP_Filesystem();
+			$result = $wp_filesystem->put_contents( $file, $json . "\n", FS_CHMOD_FILE );
+			if ( ! $result ) {
+				WP_CLI::error( "Could not write to {$file}." );
+			}
+			$bytes = strlen( $json . "\n" );
 			if ( false === $bytes ) {
 				WP_CLI::error( "Could not write to {$file}." );
 			}
