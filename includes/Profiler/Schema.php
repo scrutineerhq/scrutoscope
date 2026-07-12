@@ -211,8 +211,10 @@ class Schema {
 			$old_mu = WPMU_PLUGIN_DIR . '/scrutinizer-early.php';
 			$new_mu = WPMU_PLUGIN_DIR . '/scrutoscope-early.php';
 			if ( file_exists( $old_mu ) && ! file_exists( $new_mu ) ) {
-				// phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename
-				rename( $old_mu, $new_mu );
+				require_once ABSPATH . 'wp-admin/includes/file.php';
+				WP_Filesystem();
+				global $wp_filesystem;
+				$wp_filesystem->move( $old_mu, $new_mu );
 			}
 		}
 	}
