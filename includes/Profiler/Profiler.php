@@ -347,6 +347,111 @@ class Profiler {
 	}
 
 	/**
+	 * Profile a single cron hook on demand.
+	 *
+	 * Starts the profiler, fires the hook (with its scheduled args), compiles
+	 * the report, saves it, and returns the profile ID — all within the current
+	 * request. The profiler's normal init/stop lifecycle (hooked on
+	 * plugins_loaded/shutdown) is bypassed entirely.
+	 *
+	 * @param string $hook Hook name to fire.
+	 * @param array  $args Arguments to pass to the hook (from cron event).
+	 * @return int|\WP_Error  Profile row ID on success, WP_Error on failure.
+	 */
+	public function profile_cron_hook( $hook, $args = array() ) {
+		if ( $this->active ) {
+			return new \WP_Error( 'already_active', __( 'A profiling session is already in progress.', 'scrutoscope' ) );
+		}
+
+		$this->active                  = true;
+		$this->request_start_ns        = hrtime( true );
+		$this->request_start_microtime = microtime( true );
+		$this->is_background           = false;
+		$this->lightweight             = false;
+
+		// Mark this single hook as the cron target for segmentation.
+		$this->cron_hooks = array( $hook => true );
+
+		$this->phase_markers['profiler_start'] = $this->request_start_ns;
+		$this->phase_memory['profiler_start']  = memory_get_usage();
+
+		$this->call_stack   = new CallStack();
+		$this->instrumentor = new Instrumentor( $this->call_stack );
+		$this->instrumentor->instrument_all();
+
+		// Memory snapshot before the hook fires.
+		$mem_before = memory_get_usage();
+
+		// Fire the cron hook.
+		do_action_ref_array( $hook, $args );
+
+		$mem_after  = memory_get_usage();
+		$end_ns     = hrtime( true );
+		$duration_ns = max( 0, $end_ns - $this->request_start_ns );
+
+		$this->active = false;
+
+		$request_url = home_url( '/wp-cron.php?doing_wp_cron=' . time() );
+
+		$raw_timings = $this->instrumentor->get_timings();
+		$trace       = $this->call_stack->get_trace();
+
+		$metadata = array(
+			'url'                => $request_url,
+			'method'             => 'POST',
+			'duration_ns'        => $duration_ns,
+			'lightweight'        => false,
+			'bootstrap_ns'       => 0,
+			'boot_phases'        => array(),
+			'route_class'        => 'wp-cron',
+			'wp_version'         => get_bloginfo( 'version' ),
+			'timestamp'          => time(),
+			'phase_markers'      => $this->build_phase_offsets(),
+			'memory_samples'     => $this->build_memory_samples(),
+			'user_role'          => self::get_current_role(),
+			'query_count'        => self::get_query_count(),
+			'queries'            => $this->get_query_log(),
+			'http_calls'         => $this->build_http_calls(),
+			'dev_signals'        => $this->build_dev_signals(),
+			'textdomain_jit'     => $this->build_textdomain_jit(),
+			'autoloaded_options' => self::get_autoloaded_options(),
+			'enqueued_assets'    => self::get_enqueued_assets(),
+			'referer'            => '',
+			'ajax_action'        => '',
+			'response_status'    => 200,
+			'label'              => 'Cron: ' . $hook,
+			'truncated'          => $this->instrumentor->is_truncated(),
+			'cron_on_demand'     => $hook,
+		);
+
+		$report = Report::compile( $raw_timings, $trace, $metadata );
+
+		// Record aggregate per-hook cost.
+		$this->record_cron_hook_costs( $raw_timings );
+
+		$session_id = 'cron_' . wp_generate_password( 12, false );
+		$profile_id = Storage::save_profile( $session_id, $report, 'on_demand', 200 );
+
+		// Reset for any future use in the same request.
+		$this->instrumentor->reset();
+		$this->call_stack    = null;
+		$this->instrumentor  = null;
+		$this->cron_hooks    = array();
+		$this->phase_markers = array();
+		$this->phase_memory  = array();
+		$this->http_calls    = array();
+		$this->http_pending  = array();
+		$this->dev_signals   = array();
+		$this->textdomain_jit = array();
+
+		if ( false === $profile_id ) {
+			return new \WP_Error( 'save_failed', __( 'Failed to save the cron profile.', 'scrutoscope' ) );
+		}
+
+		return (int) $profile_id;
+	}
+
+	/**
 	 * Begin profiling this request.
 	 */
 	public function start() {

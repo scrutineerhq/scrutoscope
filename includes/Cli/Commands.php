@@ -594,6 +594,177 @@ class Commands {
 	}
 
 	/**
+	 * Profile a single cron hook on demand.
+	 *
+	 * Starts the profiler, fires the hook (with its scheduled arguments),
+	 * captures the full trace, and saves the result as a profile. Side
+	 * effects from the callback WILL occur (emails, syncs, data changes).
+	 *
+	 * ## OPTIONS
+	 *
+	 * <hook>
+	 * : The cron hook name to profile (e.g. wp_update_plugins).
+	 *
+	 * [--format=<format>]
+	 * : Output format.
+	 * ---
+	 * default: table
+	 * options:
+	 *   - table
+	 *   - json
+	 * ---
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp scrutoscope cron profile wp_update_plugins
+	 *     wp scrutoscope cron profile my_custom_hook --format=json
+	 *
+	 * @subcommand cron-profile
+	 *
+	 * @param array $args       Positional arguments.
+	 * @param array $assoc_args Associative arguments.
+	 */
+	public function cron_profile( $args, $assoc_args ) {
+		$hook = $args[0];
+
+		// Find scheduled args for this hook.
+		$cron_array = _get_cron_array();
+		$hook_args  = array();
+		$found      = false;
+
+		if ( is_array( $cron_array ) ) {
+			foreach ( $cron_array as $cron_hooks ) {
+				if ( isset( $cron_hooks[ $hook ] ) ) {
+					$events = $cron_hooks[ $hook ];
+					$first  = reset( $events );
+					if ( isset( $first['args'] ) && is_array( $first['args'] ) ) {
+						$hook_args = $first['args'];
+					}
+					$found = true;
+					break;
+				}
+			}
+		}
+
+		if ( ! $found && ! has_action( $hook ) ) {
+			WP_CLI::error( sprintf( 'Hook "%s" not found in cron schedule and has no registered callbacks.', $hook ) );
+		}
+
+		if ( ! $found ) {
+			WP_CLI::warning( sprintf( 'Hook "%s" is not in the cron schedule but has callbacks registered. Profiling anyway.', $hook ) );
+		}
+
+		WP_CLI::log( sprintf( 'Profiling cron hook "%s"…', $hook ) );
+
+		$profiler   = \Scrutoscope\Profiler\Profiler::instance();
+		$profile_id = $profiler->profile_cron_hook( $hook, $hook_args );
+
+		if ( is_wp_error( $profile_id ) ) {
+			WP_CLI::error( $profile_id->get_error_message() );
+		}
+
+		$profile = Storage::get_profile( $profile_id );
+		if ( ! $profile ) {
+			WP_CLI::error( 'Profile was saved but could not be retrieved.' );
+		}
+
+		$format = Utils\get_flag_value( $assoc_args, 'format', 'table' );
+		$data   = $profile['profile_data'];
+
+		if ( 'json' === $format ) {
+			WP_CLI::log( wp_json_encode( $data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ) );
+			return;
+		}
+
+		$summary    = isset( $data['summary'] ) ? $data['summary'] : array();
+		$cron_hooks = isset( $data['cron_hooks'] ) ? $data['cron_hooks'] : array();
+
+		WP_CLI::log( '' );
+		WP_CLI::log( WP_CLI::colorize( '%BProfile #' . $profile_id . '%n' ) );
+		WP_CLI::log( str_repeat( '─', 60 ) );
+
+		$summary_rows = array(
+			array(
+				'Key'   => 'Hook',
+				'Value' => $hook,
+			),
+			array(
+				'Key'   => 'Duration',
+				'Value' => round( isset( $summary['duration_ms'] ) ? $summary['duration_ms'] : 0, 1 ) . ' ms',
+			),
+			array(
+				'Key'   => 'Peak Memory',
+				'Value' => self::format_bytes( isset( $summary['memory_peak'] ) ? $summary['memory_peak'] : 0 ),
+			),
+			array(
+				'Key'   => 'DB Queries',
+				'Value' => isset( $summary['query_count'] ) ? $summary['query_count'] : 'n/a',
+			),
+			array(
+				'Key'   => 'HTTP Calls',
+				'Value' => isset( $summary['http_call_count'] ) ? $summary['http_call_count'] : 0,
+			),
+			array(
+				'Key'   => 'Callbacks',
+				'Value' => isset( $summary['callback_count'] ) ? $summary['callback_count'] : 0,
+			),
+		);
+
+		Utils\format_items( 'table', $summary_rows, array( 'Key', 'Value' ) );
+
+		// Per-hook segments.
+		if ( ! empty( $cron_hooks ) ) {
+			WP_CLI::log( '' );
+			WP_CLI::log( WP_CLI::colorize( '%BCron Hook Segments%n' ) );
+
+			$hook_rows = array();
+			foreach ( $cron_hooks as $seg ) {
+				$hook_rows[] = array(
+					'Hook'      => $seg['hook'],
+					'Time'      => $seg['duration_ms'] . ' ms',
+					'Callbacks' => $seg['callback_count'],
+					'Queries'   => $seg['query_count'],
+					'HTTP'      => $seg['http_call_count'],
+					'Memory'    => self::format_bytes( $seg['memory_delta'] ),
+				);
+			}
+
+			Utils\format_items( 'table', $hook_rows, array( 'Hook', 'Time', 'Callbacks', 'Queries', 'HTTP', 'Memory' ) );
+		}
+
+		// Sources breakdown.
+		$sources = isset( $data['sources'] ) ? $data['sources'] : array();
+		if ( ! empty( $sources ) ) {
+			WP_CLI::log( '' );
+			WP_CLI::log( WP_CLI::colorize( '%BSources%n' ) );
+
+			$total_excl_ns = 0;
+			foreach ( $sources as $s ) {
+				$total_excl_ns += isset( $s['exclusive_ns'] ) ? $s['exclusive_ns'] : 0;
+			}
+
+			$source_rows = array();
+			foreach ( $sources as $s ) {
+				$excl_ns = isset( $s['exclusive_ns'] ) ? $s['exclusive_ns'] : 0;
+				$excl_ms = round( $excl_ns / 1e6, 2 );
+				$weight  = $total_excl_ns > 0 ? round( ( $excl_ns / $total_excl_ns ) * 100, 1 ) : 0;
+
+				$source_rows[] = array(
+					'Source' => isset( $s['name'] ) ? $s['name'] : '(unknown)',
+					'Type'   => isset( $s['type'] ) ? $s['type'] : '',
+					'Excl.'  => $excl_ms . ' ms',
+					'Weight' => $weight . '%',
+					'Calls'  => isset( $s['call_count'] ) ? $s['call_count'] : '',
+				);
+			}
+
+			Utils\format_items( 'table', $source_rows, array( 'Source', 'Type', 'Excl.', 'Weight', 'Calls' ) );
+		}
+
+		WP_CLI::success( sprintf( 'Cron hook "%s" profiled. Profile #%d saved.', $hook, $profile_id ) );
+	}
+
+	/**
 	 * Format bytes into a human-readable string.
 	 *
 	 * @param int $bytes  Byte count.

@@ -3495,3 +3495,61 @@ details.scrutoscope-term > .scrutoscope-term-explain {
 .scrutoscope-eb-banner p {
 	margin: 0.5em 0;
 }
+
+/* ------------------------------------------------------------------ */
+/*  Cron hook summary strip (profile detail view for cron profiles)   */
+/* ------------------------------------------------------------------ */
+
+.scrutoscope-cron-strip {
+	margin: 12px 0;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+	overflow: hidden;
+}
+.scrutoscope-cron-strip-header {
+	padding: 8px 12px;
+	background: #f0f6fc;
+	border-bottom: 1px solid #dcdcde;
+	font-size: 13px;
+}
+.scrutoscope-cron-strip-table {
+	border: none;
+	margin: 0;
+}
+.scrutoscope-cron-strip-table thead th {
+	font-size: 12px;
+	padding: 6px 10px;
+}
+.scrutoscope-cron-strip-table tbody td {
+	font-size: 13px;
+	padding: 6px 10px;
+}
+.scrutoscope-cron-strip-row {
+	cursor: pointer;
+	transition: background 0.15s;
+}
+.scrutoscope-cron-strip-row:hover {
+	background: #f0f6fc;
+}
+.scrutoscope-cron-strip-row.active {
+	background: #e8f0fe;
+	border-left: 3px solid #2271b1;
+}
+.scrutoscope-cron-strip-row.active td:first-child {
+	padding-left: 7px;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Cron on-demand Profile button in the Cron tab events table        */
+/* ------------------------------------------------------------------ */
+
+.scrutoscope-cron-profile-btn {
+	color: #2271b1;
+	text-decoration: none;
+	cursor: pointer;
+	font-size: 13px;
+}
+.scrutoscope-cron-profile-btn:hover {
+	color: #135e96;
+	text-decoration: underline;
+}

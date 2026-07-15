@@ -670,6 +670,36 @@
 			setEarlyBoot( true );
 		} );
 		$( document ).on( 'click', '#scrutoscope-eb-banner-dismiss', dismissEarlyBootBanner );
+
+		// Cron hook summary strip filter — clicking a row filters profile tabs to that hook.
+		$( document ).on( 'click', '.scrutoscope-cron-strip-row', function() {
+			var hook = $( this ).data( 'cron-hook' );
+			if ( cronHookFilter === hook ) {
+				// Toggle off — show all.
+				cronHookFilter = null;
+				$( '.scrutoscope-cron-strip-row' ).removeClass( 'active' );
+			} else {
+				cronHookFilter = hook;
+				$( '.scrutoscope-cron-strip-row' ).removeClass( 'active' );
+				$( this ).addClass( 'active' );
+			}
+			// Re-render affected tabs.
+			if ( currentProfileData ) {
+				var d     = currentProfileData.profile_data || {};
+				var s     = d.sources || [];
+				var sm    = d.summary || {};
+				var q     = d.queries || [];
+				var h     = d.http_calls || [];
+				$( '#scrutoscope-tab-sources' ).html( renderSourceTable( filterByCronHook( s ), sm ) + renderCoreSubsystems( d.core_subsystems || [] ) );
+				if ( q.length > 0 ) {
+					$( '.scrutoscope-query-table' ).replaceWith( renderQueriesTableBody( filterQueriesByCronHook( q ) ) );
+				}
+				if ( h.length > 0 ) {
+					$( '.scrutoscope-http-table' ).replaceWith( renderHttpCallsTableBody( filterHttpByCronHook( h ) ) );
+				}
+			}
+		} );
+
 		$( document ).on( 'click', '.scrutoscope-qp-more', function( e ) {
 			e.preventDefault();
 			// Toggle only THIS control's detail panel, not every panel on the page.
@@ -2303,6 +2333,40 @@
 		html += renderMetricCard( String( httpCount ), __( 'HTTP Calls', 'scrutoscope' ), httpCount > 0 ? 'warning' : 'default' );
 		html += renderMetricCard( String( summary.callback_count || 0 ), __( 'Callbacks', 'scrutoscope' ), 'default' );
 		html += '</div>';
+
+		// Cron hook summary strip — per-hook breakdown for cron profiles.
+		var cronHooks = data.cron_hooks || [];
+		cronHookFilter = null; // Reset filter on new profile.
+
+		if ( cronHooks.length > 0 ) {
+			html += '<div class="scrutoscope-cron-strip">';
+			html += '<div class="scrutoscope-cron-strip-header">';
+			html += '<strong>' + __( 'Cron Hooks', 'scrutoscope' ) + '</strong>';
+			html += '<span class="scrutoscope-muted"> — ' + __( 'click a row to filter tabs to that hook', 'scrutoscope' ) + '</span>';
+			html += '</div>';
+			html += '<table class="scrutoscope-cron-strip-table widefat">';
+			html += '<thead><tr>';
+			html += '<th>' + __( 'Hook', 'scrutoscope' ) + '</th>';
+			html += '<th class="numeric">' + __( 'Time', 'scrutoscope' ) + '</th>';
+			html += '<th class="numeric">' + __( 'Callbacks', 'scrutoscope' ) + '</th>';
+			html += '<th class="numeric">' + __( 'Queries', 'scrutoscope' ) + '</th>';
+			html += '<th class="numeric">' + __( 'HTTP', 'scrutoscope' ) + '</th>';
+			html += '<th class="numeric">' + __( 'Memory', 'scrutoscope' ) + '</th>';
+			html += '</tr></thead><tbody>';
+			for ( var ch = 0; ch < cronHooks.length; ch++ ) {
+				var chk = cronHooks[ ch ];
+				html += '<tr class="scrutoscope-cron-strip-row" data-cron-hook="' + esc( chk.hook ) + '">';
+				html += '<td><code>' + esc( chk.hook ) + '</code></td>';
+				html += '<td class="numeric">' + esc( String( chk.duration_ms ) ) + ' ms</td>';
+				html += '<td class="numeric">' + chk.callback_count + '</td>';
+				html += '<td class="numeric">' + chk.query_count + '</td>';
+				html += '<td class="numeric">' + chk.http_call_count + '</td>';
+				html += '<td class="numeric">' + formatBytes( chk.memory_delta || 0 ) + '</td>';
+				html += '</tr>';
+			}
+			html += '</tbody></table>';
+			html += '</div>';
+		}
 
 		// Lightweight profile callout.
 		if ( summary.lightweight ) {
@@ -4154,6 +4218,7 @@
 	/* ------------------------------------------------------------------ */
 
 	var cronData = null; // cached cron inventory
+	var cronHookFilter = null; // null = all hooks, string = specific hook name
 
 	function showCronView() {
 		currentView = 'cron';
@@ -4267,6 +4332,7 @@
 		html += '<th class="numeric">' + __( 'Cost (last run)', 'scrutoscope' ) + '</th>';
 		html += '<th>' + __( 'Source', 'scrutoscope' ) + '</th>';
 		html += '<th>' + __( 'Status', 'scrutoscope' ) + '</th>';
+		html += '<th>' + __( 'Actions', 'scrutoscope' ) + '</th>';
 		html += '</tr></thead>';
 		html += '<tbody>';
 
@@ -4327,6 +4393,11 @@
 			}
 			html += '</td>';
 
+			// Actions — Profile button.
+			html += '<td class="scrutoscope-actions">';
+			html += '<a href="#" class="scrutoscope-cron-profile-btn" data-hook="' + esc( ev.hook ) + '">' + __( 'Profile', 'scrutoscope' ) + '</a>';
+			html += '</td>';
+
 			html += '</tr>';
 		}
 
@@ -4376,6 +4447,120 @@
 			fetchCronInventory();
 			fetchCronProfiles();
 		} );
+
+		// Bind cron profile buttons.
+		$( '#scrutoscope-history-view' ).on( 'click', '.scrutoscope-cron-profile-btn', function( e ) {
+			e.preventDefault();
+			var hook = $( this ).data( 'hook' );
+			if ( ! hook ) { return; }
+
+			/* translators: %s: cron hook name */
+			var msg = sprintf(
+				__( 'This will execute the "%s" callback. Any side effects (emails, syncs, data changes) will occur.\n\nContinue?', 'scrutoscope' ),
+				hook
+			);
+			if ( ! confirm( msg ) ) { return; }
+
+			var $btn = $( this );
+			$btn.text( __( 'Profiling…', 'scrutoscope' ) ).css( 'pointer-events', 'none' );
+
+			$.post( scrutoscopeAdmin.ajaxUrl, {
+				action: 'scrutoscope_profile_cron_hook',
+				nonce:  scrutoscopeAdmin.nonce,
+				hook:   hook
+			} ).done( function( response ) {
+				if ( response.success ) {
+					showNotice( response.data.message, 'success' );
+					// Refresh inventory to update costs.
+					cronData = null;
+					fetchCronInventory();
+					fetchCronProfiles();
+					// Offer to view the profile.
+					var profileId = response.data.profile_id;
+					if ( profileId ) {
+						loadProfileDetail( profileId );
+					}
+				} else {
+					showNotice( ( response.data && response.data.message ) || __( 'Failed to profile cron hook.', 'scrutoscope' ), 'error' );
+					$btn.text( __( 'Profile', 'scrutoscope' ) ).css( 'pointer-events', '' );
+				}
+			} ).fail( function() {
+				showNotice( __( 'Failed to profile cron hook.', 'scrutoscope' ), 'error' );
+				$btn.text( __( 'Profile', 'scrutoscope' ) ).css( 'pointer-events', '' );
+			} );
+		} );
+	}
+
+	/**
+	 * Filter source data by the active cron hook filter.
+	 *
+	 * When cronHookFilter is set, only include callbacks whose tag matches
+	 * the filtered hook. When null, return all sources unmodified.
+	 */
+	function filterByCronHook( sources ) {
+		if ( ! cronHookFilter ) { return sources; }
+		var filtered = [];
+		for ( var i = 0; i < sources.length; i++ ) {
+			var src     = sources[ i ];
+			var cbs     = src.callbacks || [];
+			var matched = [];
+			var exclNs  = 0;
+			var inclNs  = 0;
+			var memDelta = 0;
+			for ( var c = 0; c < cbs.length; c++ ) {
+				if ( cbs[ c ].tag === cronHookFilter ) {
+					matched.push( cbs[ c ] );
+					exclNs  += cbs[ c ].exclusive_ns || 0;
+					inclNs  += cbs[ c ].inclusive_ns || 0;
+					memDelta += cbs[ c ].memory_delta || 0;
+				}
+			}
+			if ( matched.length > 0 ) {
+				filtered.push( $.extend( {}, src, {
+					callbacks:     matched,
+					exclusive_ns:  exclNs,
+					inclusive_ns:  inclNs,
+					memory_delta:  memDelta,
+					call_count:    matched.length
+				} ) );
+			}
+		}
+		return filtered;
+	}
+
+	/**
+	 * Filter queries by cron hook — matches the hook name in the caller chain.
+	 */
+	function filterQueriesByCronHook( queries ) {
+		if ( ! cronHookFilter ) { return queries; }
+		var filtered = [];
+		for ( var i = 0; i < queries.length; i++ ) {
+			var caller = queries[ i ].caller || '';
+			if ( caller.indexOf( cronHookFilter ) !== -1 ) {
+				filtered.push( queries[ i ] );
+			}
+		}
+		return filtered;
+	}
+
+	/**
+	 * Filter HTTP calls by cron hook — matches the hook name in the caller chain.
+	 */
+	function filterHttpByCronHook( httpCalls ) {
+		if ( ! cronHookFilter ) { return httpCalls; }
+		var filtered = [];
+		for ( var i = 0; i < httpCalls.length; i++ ) {
+			var caller = '';
+			if ( httpCalls[ i ].caller && typeof httpCalls[ i ].caller === 'object' ) {
+				caller = httpCalls[ i ].caller.caller || '';
+			} else if ( typeof httpCalls[ i ].caller === 'string' ) {
+				caller = httpCalls[ i ].caller;
+			}
+			if ( caller.indexOf( cronHookFilter ) !== -1 ) {
+				filtered.push( httpCalls[ i ] );
+			}
+		}
+		return filtered;
 	}
 
 	function fetchCronProfiles() {

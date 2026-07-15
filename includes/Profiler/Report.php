@@ -207,6 +207,7 @@ class Report {
 			'autoloaded_options' => isset( $request_metadata['autoloaded_options'] ) ? $request_metadata['autoloaded_options'] : array(),
 			'enqueued_assets'    => isset( $request_metadata['enqueued_assets'] ) ? $request_metadata['enqueued_assets'] : array(),
 			'timeline'           => $lightweight ? array() : self::build_timeline( $raw_timings, $duration_ns ),
+			'cron_hooks'         => self::build_cron_hook_segments( $raw_timings, $request_metadata ),
 		);
 	}
 
@@ -265,6 +266,118 @@ class Report {
 		}
 
 		return $breakdown;
+	}
+
+	/**
+	 * Build per-hook segments for cron profiles.
+	 *
+	 * When a profile was captured during a WP-Cron run (or on-demand cron
+	 * profiling), break the raw timings into segments grouped by cron hook.
+	 * Each segment includes the hook name, exclusive time, callback count,
+	 * and memory delta. Returns an empty array for non-cron profiles.
+	 *
+	 * @param array $raw_timings      Timing entries from Instrumentor.
+	 * @param array $request_metadata Request metadata.
+	 * @return array<int, array>  Per-hook segments, sorted by exclusive time desc.
+	 */
+	private static function build_cron_hook_segments( $raw_timings, $request_metadata ) {
+		$route_class = ! empty( $request_metadata['route_class'] ) ? $request_metadata['route_class'] : '';
+		$on_demand   = ! empty( $request_metadata['cron_on_demand'] );
+
+		// Only segment cron profiles.
+		if ( 'wp-cron' !== $route_class && ! $on_demand ) {
+			return array();
+		}
+
+		// On-demand: the single hook is the only cron hook.
+		$cron_hook_set = array();
+		if ( $on_demand ) {
+			$cron_hook_set[ $request_metadata['cron_on_demand'] ] = true;
+		}
+
+		// Group timings by hook tag.
+		$by_hook = array();
+		foreach ( $raw_timings as $timing ) {
+			$tag = isset( $timing['tag'] ) ? $timing['tag'] : '';
+			if ( '' === $tag ) {
+				continue;
+			}
+
+			// For on-demand profiles, include all tags (they all belong to the
+			// single fired hook's callback chain). For full cron runs, only
+			// include tags that are actual scheduled cron hooks.
+			if ( ! $on_demand && ! empty( $cron_hook_set ) && ! isset( $cron_hook_set[ $tag ] ) ) {
+				continue;
+			}
+
+			if ( ! isset( $by_hook[ $tag ] ) ) {
+				$by_hook[ $tag ] = array(
+					'hook'           => $tag,
+					'exclusive_ns'   => 0,
+					'inclusive_ns'   => 0,
+					'callback_count' => 0,
+					'memory_delta'   => 0,
+					'query_count'    => 0,
+					'http_call_count' => 0,
+				);
+			}
+
+			$by_hook[ $tag ]['exclusive_ns'] += (int) $timing['exclusive_ns'];
+			$by_hook[ $tag ]['inclusive_ns'] += (int) $timing['inclusive_ns'];
+			$by_hook[ $tag ]['memory_delta'] += ( $timing['memory_after'] - $timing['memory_before'] );
+			++$by_hook[ $tag ]['callback_count'];
+		}
+
+		if ( empty( $by_hook ) ) {
+			return array();
+		}
+
+		// Attribute queries to hooks by matching the caller chain.
+		$queries = isset( $request_metadata['queries'] ) ? $request_metadata['queries'] : array();
+		foreach ( $queries as $query ) {
+			$caller = isset( $query['caller'] ) ? $query['caller'] : '';
+			foreach ( $by_hook as $tag => &$segment ) {
+				if ( '' !== $caller && false !== strpos( $caller, $tag ) ) {
+					++$segment['query_count'];
+					break;
+				}
+			}
+			unset( $segment );
+		}
+
+		// Attribute HTTP calls to hooks by matching the caller chain.
+		$http_calls = isset( $request_metadata['http_calls'] ) ? $request_metadata['http_calls'] : array();
+		foreach ( $http_calls as $hc ) {
+			$caller = isset( $hc['caller']['caller'] ) ? $hc['caller']['caller'] : '';
+			if ( '' === $caller && isset( $hc['caller'] ) && is_string( $hc['caller'] ) ) {
+				$caller = $hc['caller'];
+			}
+			foreach ( $by_hook as $tag => &$segment ) {
+				if ( '' !== $caller && false !== strpos( $caller, $tag ) ) {
+					++$segment['http_call_count'];
+					break;
+				}
+			}
+			unset( $segment );
+		}
+
+		// Add duration_ms for convenience.
+		foreach ( $by_hook as &$segment ) {
+			$segment['duration_ms'] = round( $segment['exclusive_ns'] / 1e6, 2 );
+		}
+		unset( $segment );
+
+		$segments = array_values( $by_hook );
+
+		// Sort by exclusive time descending.
+		usort(
+			$segments,
+			function ( $a, $b ) {
+				return $b['exclusive_ns'] <=> $a['exclusive_ns'];
+			}
+		);
+
+		return $segments;
 	}
 
 	/**

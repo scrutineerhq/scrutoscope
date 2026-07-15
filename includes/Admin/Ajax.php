@@ -66,6 +66,7 @@ class Ajax {
 		'toggle_early_boot',
 		'toggle_lightweight_mode',
 		'toggle_profile_cron',
+		'profile_cron_hook',
 		'dismiss_early_boot_banner',
 		'get_api_log',
 		'clear_api_log',
@@ -395,6 +396,78 @@ class Ajax {
 				'message' => $enabled
 					? __( 'Cron profiling on. WP-Cron runs are now sampled (at your background sample rate), so the Cron tab can show per-hook cost.', 'scrutoscope' )
 					: __( 'Cron profiling off. WP-Cron runs are no longer sampled.', 'scrutoscope' ),
+			)
+		);
+	}
+
+	/**
+	 * Profile a single cron hook on demand.
+	 *
+	 * Fires the hook with the profiler active, saves the resulting profile,
+	 * and returns the profile ID. Side effects from the cron callback will
+	 * occur — the JS confirms this with the user before calling.
+	 */
+	public static function profile_cron_hook() {
+		$hook = '';
+		if ( isset( $_POST['hook'] ) ) {
+			$hook = sanitize_text_field( wp_unslash( $_POST['hook'] ) );
+		}
+
+		if ( empty( $hook ) ) {
+			wp_send_json_error(
+				array( 'message' => __( 'No hook specified.', 'scrutoscope' ) ),
+				400
+			);
+		}
+
+		// Find the hook's scheduled args from the cron array.
+		$cron_array = _get_cron_array();
+		$hook_args  = array();
+		$found      = false;
+
+		if ( is_array( $cron_array ) ) {
+			foreach ( $cron_array as $cron_hooks ) {
+				if ( isset( $cron_hooks[ $hook ] ) ) {
+					// Use args from the first matching event.
+					$events = $cron_hooks[ $hook ];
+					$first  = reset( $events );
+					if ( isset( $first['args'] ) && is_array( $first['args'] ) ) {
+						$hook_args = $first['args'];
+					}
+					$found = true;
+					break;
+				}
+			}
+		}
+
+		// Allow profiling hooks that have callbacks registered even if they
+		// are not currently scheduled (e.g. they ran and were removed).
+		if ( ! $found && ! has_action( $hook ) ) {
+			wp_send_json_error(
+				array( 'message' => __( 'Hook not found in cron schedule and has no registered callbacks.', 'scrutoscope' ) ),
+				404
+			);
+		}
+
+		$profiler   = \Scrutoscope\Profiler\Profiler::instance();
+		$profile_id = $profiler->profile_cron_hook( $hook, $hook_args );
+
+		if ( is_wp_error( $profile_id ) ) {
+			wp_send_json_error(
+				array( 'message' => $profile_id->get_error_message() ),
+				500
+			);
+		}
+
+		wp_send_json_success(
+			array(
+				'profile_id' => $profile_id,
+				'hook'       => $hook,
+				'message'    => sprintf(
+					/* translators: %s: cron hook name */
+					__( 'Profiled "%s" successfully.', 'scrutoscope' ),
+					$hook
+				),
 			)
 		);
 	}
