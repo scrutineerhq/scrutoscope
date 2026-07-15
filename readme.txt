@@ -1,4 +1,4 @@
-=== Scrutoscope ===
+=== Scrutoscope – WordPress Performance Profiler ===
 Contributors: kurtpayne
 Tags: performance, profiler, debug, speed, slow, database, queries, monitoring, diagnostics, benchmark, development, profiling
 Requires at least: 6.0
@@ -8,13 +8,21 @@ Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-WordPress Performance Profiler — See where your server request duration is spent.
+Find which plugins, hooks, and queries are slowing your WordPress site. From the author of P3 Profiler.
 
 == Description ==
 
-Scrutoscope is a read-only profiling plugin for WordPress. It instruments every hook callback during a page request and attributes the time to its source — plugin, theme, core, mu-plugin, or drop-in — so you can see exactly what's slow and why.
+**From the author of [P3 (Plugin Performance Profiler)](https://wordpress.org/plugins/p3-profiler/)** — Scrutoscope is the spiritual successor, rebuilt from scratch for modern WordPress.
 
-**By the author of [P3 (Plugin Performance Profiler)](https://wordpress.org/plugins/p3-profiler/).** Scrutoscope is the spiritual successor, rebuilt from scratch for modern WordPress.
+Your site is slow. Scrutoscope tells you *why*. It profiles every hook callback during a page request and attributes the time to its source — plugin, theme, core, mu-plugin, or drop-in. You see which plugin costs the most, which queries are heavy, and which HTTP calls block the response.
+
+Everything is included. No premium tier, no feature gates, no upsells. 100% open source.
+
+= Live Demo =
+
+See a real report from a WooCommerce cart page with 12 active plugins — 544 ms of server time, broken down to the callback. The report is encrypted and decrypted entirely in your browser. The relay server never sees the contents.
+
+[Open live report →](https://scrutoscope.dev/r/546fcfa0afddae3b7544337c41028564#pa0IKnGUwGl_InDSTgLVtZM_sLbwsxxhtCjHHx3Kz7A)
 
 = What It Measures =
 
@@ -39,12 +47,6 @@ Scrutoscope is a read-only profiling plugin for WordPress. It instruments every 
 * Send to Support — zero-knowledge encrypted sharing
 * WP-CLI — `wp scrutoscope status|list|show|delete|export|clear|rebuild-stats|mu-plugin`
 
-= Live Demo =
-
-See a real report from a WooCommerce cart page with 12 active plugins — 544 ms of server time, broken down to the callback. The report is encrypted and decrypted entirely in your browser. The relay server never sees the contents.
-
-[Open live report →](https://scrutoscope.dev/r/546fcfa0afddae3b7544337c41028564#pa0IKnGUwGl_InDSTgLVtZM_sLbwsxxhtCjHHx3Kz7A)
-
 = Design Philosophy =
 
 * **Read-only by design** — Scrutoscope does not change your content, themes, plugins, or site behavior. It stores its own profiling tables, settings, and scheduled cleanup events (plus a record per report you choose to share). Optional early-boot timing adds a small must-use plugin only when you enable it.
@@ -55,16 +57,19 @@ See a real report from a WooCommerce cart page with 12 active plugins — 544 ms
 
 == Installation ==
 
-1. Download the latest release from [GitHub](https://github.com/scrutineerhq/scrutoscope/releases)
-2. Upload the `scrutoscope` directory to `wp-content/plugins/`
-3. Activate through the Plugins menu
-4. Go to Tools → Scrutoscope
+1. In your WordPress admin, go to **Plugins → Add New** and search for **Scrutoscope**
+2. Click **Install Now**, then **Activate**
+3. Go to **Tools → Scrutoscope**
+
+Or install manually: download from [GitHub](https://github.com/scrutineerhq/scrutoscope/releases), upload to `wp-content/plugins/`, and activate.
 
 Background measurement is optional and **off by default**. To capture a profile, open Tools → Scrutoscope and start a profiling session, or enable background measurement with a sample rate you choose.
 
 == Frequently Asked Questions ==
 
 = Does Scrutoscope slow down my site? =
+
+**TL;DR:** Negligible overhead on non-profiled requests (a few ms). During active profiling, roughly 100–200 ms per request depending on your setup.
 
 There are two kinds of overhead. An always-on check on every request — a few milliseconds — decides whether the request is being profiled; this is what every visitor pays, and it's negligible. When a request *is* being profiled (an admin session, or the sampled fraction of background traffic), instrumenting the hooks and timing every callback adds roughly 100-200ms in our benchmarks (closer to 100ms in Lightweight Mode, closer to 200ms with the full trace). Both vary a lot with your environment — number of active plugins, OPcache, whether MySQL is local or remote, your hardware, and current load — so we report what we measured rather than promising a number. Background measurement is off by default; when you turn it on you choose the sample rate, and at a low rate most requests only pay the few-ms check. Query detail is a separate opt-in: enabling Query Profiling turns on WordPress `SAVEQUERIES`, which makes WordPress keep query text, timing, and caller in memory for the request — extra overhead you only pay when you ask for query detail, so leave it off when you just need request and source timing. And you're always one click from zero: deactivating Scrutoscope removes all overhead and keeps your captured profiles (only deleting the plugin removes the data).
 
@@ -281,6 +286,9 @@ This release focuses on trust — opt-in defaults and honest disclosure — alon
 15. AI agent terminal output diagnosing a blocking HTTP call as the top performance issue
 
 == Upgrade Notice ==
+
+= 1.3.4 =
+WP_Filesystem compliance fix for mu-plugin migration.
 
 = 1.3.3 =
 WP_Filesystem for all file writes, tighter export path validation.

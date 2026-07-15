@@ -1,12 +1,12 @@
 <?php
 /**
- * Plugin Name:       Scrutoscope
+ * Plugin Name:       Scrutoscope – WordPress Performance Profiler
  * Plugin URI:        https://scrutoscope.dev
- * Description:       WordPress Performance Profiler — See where your server request duration is spent.
+ * Description:       Find which plugins, hooks, and queries are slowing your WordPress site. From the author of P3 Profiler.
  * Version:           1.3.4
  * Requires at least: 6.0
  * Requires PHP:      7.4
- * Author:            The Scrutineer Project
+ * Author:            Kurt Payne
  * Author URI:        https://scrutineer.dev
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
