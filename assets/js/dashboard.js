@@ -3387,6 +3387,7 @@
 
 				$( '#scrutoscope-tab-trace' ).html( renderTraceExplorerShell( traceEntries.length ) );
 				refreshTraceTable();
+				updateTraceTabCount();
 				renderSavedSearchPills();
 			} else {
 				$( '#scrutoscope-tab-trace' ).html(
