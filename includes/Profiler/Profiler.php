@@ -434,14 +434,14 @@ class Profiler {
 
 		// Reset for any future use in the same request.
 		$this->instrumentor->reset();
-		$this->call_stack    = null;
-		$this->instrumentor  = null;
-		$this->cron_hooks    = array();
-		$this->phase_markers = array();
-		$this->phase_memory  = array();
-		$this->http_calls    = array();
-		$this->http_pending  = array();
-		$this->dev_signals   = array();
+		$this->call_stack     = null;
+		$this->instrumentor   = null;
+		$this->cron_hooks     = array();
+		$this->phase_markers  = array();
+		$this->phase_memory   = array();
+		$this->http_calls     = array();
+		$this->http_pending   = array();
+		$this->dev_signals    = array();
 		$this->textdomain_jit = array();
 
 		if ( false === $profile_id ) {
