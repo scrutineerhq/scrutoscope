@@ -385,7 +385,7 @@ class Profiler {
 		// Fire the cron hook.
 		do_action_ref_array( $hook, $args );
 
-		$mem_after    = memory_get_usage();
+		$mem_after   = memory_get_usage();
 		$end_ns      = hrtime( true );
 		$duration_ns = max( 0, $end_ns - $this->request_start_ns );
 
