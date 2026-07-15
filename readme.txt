@@ -39,6 +39,12 @@ Scrutoscope is a read-only profiling plugin for WordPress. It instruments every 
 * Send to Support — zero-knowledge encrypted sharing
 * WP-CLI — `wp scrutoscope status|list|show|delete|export|clear|rebuild-stats|mu-plugin`
 
+= Live Demo =
+
+See a real report from a WooCommerce cart page with 12 active plugins — 544 ms of server time, broken down to the callback. The report is encrypted and decrypted entirely in your browser. The relay server never sees the contents.
+
+[Open live report →](https://scrutoscope.dev/r/546fcfa0afddae3b7544337c41028564#pa0IKnGUwGl_InDSTgLVtZM_sLbwsxxhtCjHHx3Kz7A)
+
 = Design Philosophy =
 
 * **Read-only by design** — Scrutoscope does not change your content, themes, plugins, or site behavior. It stores its own profiling tables, settings, and scheduled cleanup events (plus a record per report you choose to share). Optional early-boot timing adds a small must-use plugin only when you enable it.
