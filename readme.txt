@@ -1,6 +1,6 @@
 === Scrutoscope ===
 Contributors: kurtpayne
-Tags: performance, profiler, p3, p3-profiler, profiling
+Tags: performance, profiler, debug, speed, slow, database, queries, monitoring, diagnostics, benchmark, development, profiling
 Requires at least: 6.0
 Tested up to: 7.0
 Stable tag: 1.3.4
