@@ -338,12 +338,15 @@
       var e = tl[i];
       var sk = (e.source != null) ? e.source : '';   // keep raw slug ('' === unknown)
       var ex = e.excl_ns || 0;
+      var etag = e.tag || '';
       if (cur && cur.src === sk) {
         cur.excl += ex; cur.calls += 1;
         cur.srcExcl[sk] = (cur.srcExcl[sk] || 0) + ex;
+        if (etag) cur.tags[etag] = true;
       } else {
-        cur = { src: sk, startNs: e.offset_ns || 0, excl: ex, calls: 1, srcExcl: {} };
+        cur = { src: sk, startNs: e.offset_ns || 0, excl: ex, calls: 1, srcExcl: {}, tags: {} };
         cur.srcExcl[sk] = ex;
+        if (etag) cur.tags[etag] = true;
         runs.push(cur);
       }
     }
@@ -366,6 +369,9 @@
       target.calls += runs[mi].calls;
       for (var k in runs[mi].srcExcl) {
         if (runs[mi].srcExcl.hasOwnProperty(k)) target.srcExcl[k] = (target.srcExcl[k] || 0) + runs[mi].srcExcl[k];
+      }
+      for (var tk in runs[mi].tags) {
+        if (runs[mi].tags.hasOwnProperty(tk)) target.tags[tk] = true;
       }
       runs.splice(mi, 1);
     }
@@ -408,7 +414,8 @@
         incl: srcMeta.inclusive_ns != null ? srcMeta.inclusive_ns / 1e6 : dur,
         calls: rn.calls,
         mem: srcMeta.memory_delta != null ? srcMeta.memory_delta : null,
-        count: isOther ? otherCount : undefined
+        count: isOther ? otherCount : undefined,
+        tags: rn.tags || {}
       });
       cursor = start + dur;
     }
@@ -507,7 +514,7 @@
 
     var state = {
       zoom: 1, panFrac: 0,
-      hoveredId: null, selectedId: null, vpFocused: false,
+      hoveredId: null, selectedId: null, hookFilter: null, vpFocused: false,
       drag: null, tipX: 0, tipY: 0
     };
 
@@ -988,6 +995,7 @@
       var sel = state.selectedId, hov = state.hoveredId;
       var dim = sel ? 0.32 : 1;
       var selGrp = sel ? grpKeyOfSpan(spanById(sel)) : null;
+      var hf = state.hookFilter;
 
       model.spans.forEach(function (sp) {
         var isU = sp.type === 'unattributed';
@@ -995,7 +1003,8 @@
         var myKey = grpKeyOfSpan(sp);
         var active = (sel === sp.id || hov === sp.id);
         var inSelGroup = selGrp && selGrp === myKey;
-        var op = sel ? (inSelGroup ? 1 : dim) : 1;
+        var hookMatch = !hf || (sp.tags && sp.tags[hf]);
+        var op = sel ? (inSelGroup ? 1 : dim) : (hf ? (hookMatch ? 1 : 0.2) : 1);
         var share = sp.dur / T * 100;
         var seg = el('div', {
           position: 'absolute', left: pct(sp.start) + '%', width: 'max(' + w.toFixed(3) + '%, 2px)', top: 0, bottom: 0,
@@ -1246,6 +1255,10 @@
 
     return {
       model: model,
+      setHookFilter: function (hook) {
+        state.hookFilter = hook || null;
+        paint();
+      },
       destroy: function () {
         container.removeEventListener('wheel', onWheel);
         container.removeEventListener('pointerdown', onPointerDown);

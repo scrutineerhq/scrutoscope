@@ -674,10 +674,12 @@
 		// Cron hook summary strip filter — clicking a row filters profile tabs to that hook.
 		$( document ).on( 'click', '.scrutoscope-cron-strip-row', function() {
 			var hook = $( this ).data( 'cron-hook' );
-			if ( cronHookFilter === hook ) {
+			var clearing = ( cronHookFilter === hook );
+			if ( clearing ) {
 				// Toggle off — show all.
 				cronHookFilter = null;
 				$( '.scrutoscope-cron-strip-row' ).removeClass( 'active' );
+				$( '.scrutoscope-cron-filter-banner' ).remove();
 			} else {
 				cronHookFilter = hook;
 				$( '.scrutoscope-cron-strip-row' ).removeClass( 'active' );
@@ -696,6 +698,47 @@
 				}
 				if ( h.length > 0 ) {
 					$( '.scrutoscope-http-table' ).replaceWith( renderHttpCallsTableBody( filterHttpByCronHook( h ) ) );
+				}
+
+				// Show/remove filter banner above tab content.
+				$( '.scrutoscope-cron-filter-banner' ).remove();
+				if ( cronHookFilter ) {
+					var banner = '<div class="scrutoscope-cron-filter-banner notice notice-info inline" style="margin:8px 0;padding:6px 12px;display:flex;align-items:center;gap:8px;">' +
+						'<span>' + __( 'Filtered to hook:', 'scrutoscope' ) + ' <code>' + esc( cronHookFilter ) + '</code></span>' +
+						'<button type="button" class="button button-small scrutoscope-cron-filter-clear">' + __( 'Clear filter', 'scrutoscope' ) + '</button>' +
+						'</div>';
+					$( '.scrutoscope-tabs' ).before( banner );
+				}
+
+				// Dim/highlight the timeline waterfall to match the hook filter.
+				if ( currentTimelineInstance && currentTimelineInstance.setHookFilter ) {
+					currentTimelineInstance.setHookFilter( cronHookFilter );
+				}
+
+				// Badge filterable tabs.
+			}
+		} );
+
+		// Clear cron hook filter via the banner button.
+		$( document ).on( 'click', '.scrutoscope-cron-filter-clear', function() {
+			cronHookFilter = null;
+			$( '.scrutoscope-cron-strip-row' ).removeClass( 'active' );
+			$( '.scrutoscope-cron-filter-banner' ).remove();
+			if ( currentTimelineInstance && currentTimelineInstance.setHookFilter ) {
+				currentTimelineInstance.setHookFilter( null );
+			}
+			if ( currentProfileData ) {
+				var d  = currentProfileData.profile_data || {};
+				var s  = d.sources || [];
+				var sm = d.summary || {};
+				var q  = d.queries || [];
+				var h  = d.http_calls || [];
+				$( '#scrutoscope-tab-sources' ).html( renderSourceTable( s, sm ) + renderCoreSubsystems( d.core_subsystems || [] ) );
+				if ( q.length > 0 ) {
+					$( '.scrutoscope-query-table' ).replaceWith( renderQueriesTableBody( q ) );
+				}
+				if ( h.length > 0 ) {
+					$( '.scrutoscope-http-table' ).replaceWith( renderHttpCallsTableBody( h ) );
 				}
 			}
 		} );
@@ -2260,12 +2303,14 @@
 
 	// (the same scrutoscope-timeline.js the relay viewer uses, so both viewing
 	// surfaces stay identical).
+	var currentTimelineInstance = null;
+
 	function renderTimelineModule( profileData ) {
 		var mount = document.getElementById( 'scrutoscope-tab-timeline' );
 		if ( ! mount || ! window.ScrutoscopeTimeline ) {
 			return;
 		}
-		window.ScrutoscopeTimeline.render( mount, profileData || {} );
+		currentTimelineInstance = window.ScrutoscopeTimeline.render( mount, profileData || {} );
 		timelineLoaded = true;
 	}
 

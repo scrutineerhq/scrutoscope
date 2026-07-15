@@ -674,7 +674,9 @@ class Profiler {
 		// If no hook-based classifier ran (e.g. REST API, wp-cron, or
 		// edge cases where admin_init didn't fire), classify from context.
 		if ( empty( $this->route_class ) || 'frontend' === $this->route_class ) {
-			if ( is_admin() && ! ( defined( 'DOING_AJAX' ) && DOING_AJAX ) ) {
+			if ( defined( 'DOING_CRON' ) && DOING_CRON ) {
+				$this->route_class = 'wp-cron';
+			} elseif ( is_admin() && ! ( defined( 'DOING_AJAX' ) && DOING_AJAX ) ) {
 				$this->route_class = 'wp-admin';
 			} elseif ( defined( 'REST_REQUEST' ) && REST_REQUEST ) {
 				$this->route_class = 'rest-api';
