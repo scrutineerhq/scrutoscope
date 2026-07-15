@@ -705,6 +705,12 @@
 				// Update tab counts to reflect filtered data.
 				updateFilteredTabCounts( q, fq, h, fh );
 
+				// Re-filter Trace if loaded.
+				if ( traceEntries.length > 0 ) {
+					refreshTraceTable();
+					updateTraceTabCount();
+				}
+
 				// Show/remove filter banner above tab content.
 				$( '.scrutoscope-cron-filter-banner' ).remove();
 				if ( cronHookFilter ) {
@@ -747,6 +753,12 @@
 				}
 				// Restore original tab counts.
 				updateFilteredTabCounts( q, q, h, h );
+
+				// Re-filter Trace if loaded.
+				if ( traceEntries.length > 0 ) {
+					refreshTraceTable();
+					updateTraceTabCount();
+				}
 			}
 		} );
 
@@ -3669,6 +3681,13 @@
 	function applyTraceFilters( entries, search, source, minDur, minQueries, activePills ) {
 		var result = entries;
 
+		// Cron hook filter (from cron strip click).
+		if ( cronHookFilter ) {
+			result = result.filter( function( e ) {
+				return e._hook === cronHookFilter;
+			} );
+		}
+
 		// Text search.
 		if ( search ) {
 			result = result.filter( function( e ) {
@@ -4570,6 +4589,20 @@
 				$hTab.text( sprintf( __( 'HTTP Calls (%1$d / %2$d)', 'scrutoscope' ), filteredHttp.length, allHttp.length ) );
 			} else {
 				$hTab.text( sprintf( __( 'HTTP Calls (%d)', 'scrutoscope' ), allHttp.length ) );
+			}
+		}
+	}
+
+	/**
+	 * Update the Trace tab button count after cron hook filter changes.
+	 */
+	function updateTraceTabCount() {
+		var $tTab = $( '.scrutoscope-tab[data-tab="trace"]' );
+		if ( $tTab.length && traceEntries.length > 0 ) {
+			if ( traceFiltered.length < traceEntries.length ) {
+				$tTab.text( sprintf( __( 'Trace (%1$s / %2$s)', 'scrutoscope' ), traceFiltered.length.toLocaleString(), traceEntries.length.toLocaleString() ) );
+			} else {
+				$tTab.text( sprintf( __( 'Trace (%s)', 'scrutoscope' ), traceEntries.length.toLocaleString() ) );
 			}
 		}
 	}
