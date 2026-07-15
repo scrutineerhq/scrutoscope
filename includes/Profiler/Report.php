@@ -312,12 +312,12 @@ class Report {
 
 			if ( ! isset( $by_hook[ $tag ] ) ) {
 				$by_hook[ $tag ] = array(
-					'hook'           => $tag,
-					'exclusive_ns'   => 0,
-					'inclusive_ns'   => 0,
-					'callback_count' => 0,
-					'memory_delta'   => 0,
-					'query_count'    => 0,
+					'hook'            => $tag,
+					'exclusive_ns'    => 0,
+					'inclusive_ns'    => 0,
+					'callback_count'  => 0,
+					'memory_delta'    => 0,
+					'query_count'     => 0,
 					'http_call_count' => 0,
 				);
 			}
