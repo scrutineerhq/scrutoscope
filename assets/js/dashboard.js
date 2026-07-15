@@ -49,6 +49,7 @@
 	var traceLoaded       = false;
 	var traceRawData      = null;  // raw flat trace from AJAX
 	var traceEntries      = [];    // enriched flat entries
+	var traceTotalCount   = 0;     // total trace count from profile (before lazy load)
 	var traceFiltered     = [];    // after filters applied
 	var tracePageSize     = 200;
 	var traceShown        = 0;
@@ -705,12 +706,12 @@
 				// Update tab counts to reflect filtered data.
 				updateFilteredTabCounts( q, fq, h, fh );
 
-				// Re-filter Trace if loaded.
+				// Re-filter Trace if loaded, otherwise update tab hint.
 				if ( traceEntries.length > 0 ) {
 					refreshTraceTable();
+				} else {
 					updateTraceTabCount();
 				}
-
 				// Show/remove filter banner above tab content.
 				$( '.scrutoscope-cron-filter-banner' ).remove();
 				if ( cronHookFilter ) {
@@ -754,9 +755,10 @@
 				// Restore original tab counts.
 				updateFilteredTabCounts( q, q, h, h );
 
-				// Re-filter Trace if loaded.
+				// Re-filter Trace if loaded, otherwise restore tab count.
 				if ( traceEntries.length > 0 ) {
 					refreshTraceTable();
+				} else {
 					updateTraceTabCount();
 				}
 			}
@@ -2346,6 +2348,7 @@
 		var timeline     = data.timeline || [];
 		var traceData    = data.trace || [];
 		var traceCount   = profile.trace_count || traceData.length || 0;
+		traceTotalCount  = traceCount;
 		var timelineCount = profile.timeline_count || timeline.length || 0;
 		var durMs        = ( summary.duration_ms || 0 ).toFixed( 1 );
 		var queryCount   = summary.query_count || 0;
@@ -3387,7 +3390,6 @@
 
 				$( '#scrutoscope-tab-trace' ).html( renderTraceExplorerShell( traceEntries.length ) );
 				refreshTraceTable();
-				updateTraceTabCount();
 				renderSavedSearchPills();
 			} else {
 				$( '#scrutoscope-tab-trace' ).html(
@@ -3674,6 +3676,7 @@
 		traceShown = Math.min( tracePageSize, traceFiltered.length );
 		$( '#scrutoscope-trace-tbody' ).html( renderTraceRows( traceFiltered, 0, traceShown ) );
 		updateTraceStatus();
+		updateTraceTabCount();
 	}
 
 	/**
@@ -4599,12 +4602,22 @@
 	 */
 	function updateTraceTabCount() {
 		var $tTab = $( '.scrutoscope-tab[data-tab="trace"]' );
-		if ( $tTab.length && traceEntries.length > 0 ) {
+		if ( ! $tTab.length || traceTotalCount <= 0 ) {
+			return;
+		}
+		if ( traceEntries.length > 0 ) {
+			// Trace data loaded — show exact filtered / total.
 			if ( traceFiltered.length < traceEntries.length ) {
 				$tTab.text( sprintf( __( 'Trace (%1$s / %2$s)', 'scrutoscope' ), traceFiltered.length.toLocaleString(), traceEntries.length.toLocaleString() ) );
 			} else {
 				$tTab.text( sprintf( __( 'Trace (%s)', 'scrutoscope' ), traceEntries.length.toLocaleString() ) );
 			}
+		} else if ( cronHookFilter ) {
+			// Trace not loaded yet but filter is active — hint that it will be filtered.
+			$tTab.text( sprintf( __( 'Trace (… / %s)', 'scrutoscope' ), traceTotalCount.toLocaleString() ) );
+		} else {
+			// No filter, not loaded — restore original count.
+			$tTab.text( sprintf( __( 'Trace (%s)', 'scrutoscope' ), traceTotalCount.toLocaleString() ) );
 		}
 	}
 
