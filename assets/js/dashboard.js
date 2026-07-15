@@ -692,13 +692,18 @@
 				var sm    = d.summary || {};
 				var q     = d.queries || [];
 				var h     = d.http_calls || [];
+				var fq    = filterQueriesByCronHook( q );
+				var fh    = filterHttpByCronHook( h );
 				$( '#scrutoscope-tab-sources' ).html( renderSourceTable( filterByCronHook( s ), sm ) + renderCoreSubsystems( d.core_subsystems || [] ) );
 				if ( q.length > 0 ) {
-					$( '.scrutoscope-query-table' ).replaceWith( renderQueriesTableBody( filterQueriesByCronHook( q ) ) );
+					$( '.scrutoscope-query-table' ).replaceWith( renderQueriesTableBody( fq ) );
 				}
 				if ( h.length > 0 ) {
-					$( '.scrutoscope-http-table' ).replaceWith( renderHttpCallsTableBody( filterHttpByCronHook( h ) ) );
+					$( '.scrutoscope-http-table' ).replaceWith( renderHttpCallsTableBody( fh ) );
 				}
+
+				// Update tab counts to reflect filtered data.
+				updateFilteredTabCounts( q, fq, h, fh );
 
 				// Show/remove filter banner above tab content.
 				$( '.scrutoscope-cron-filter-banner' ).remove();
@@ -740,6 +745,8 @@
 				if ( h.length > 0 ) {
 					$( '.scrutoscope-http-table' ).replaceWith( renderHttpCallsTableBody( h ) );
 				}
+				// Restore original tab counts.
+				updateFilteredTabCounts( q, q, h, h );
 			}
 		} );
 
@@ -4542,6 +4549,31 @@
 	 * When cronHookFilter is set, only include callbacks whose tag matches
 	 * the filtered hook. When null, return all sources unmodified.
 	 */
+	/**
+	 * Update tab button counts to reflect the active cron hook filter.
+	 *
+	 * When filtered, shows "X / Y" (e.g. "Queries (12 / 93)").
+	 * When counts match (no filter or filter doesn't reduce), shows just the total.
+	 */
+	function updateFilteredTabCounts( allQueries, filteredQueries, allHttp, filteredHttp ) {
+		var $qTab = $( '.scrutoscope-tab[data-tab="queries"]' );
+		if ( $qTab.length && allQueries.length > 0 ) {
+			if ( filteredQueries.length < allQueries.length ) {
+				$qTab.text( sprintf( __( 'Queries (%1$d / %2$d)', 'scrutoscope' ), filteredQueries.length, allQueries.length ) );
+			} else {
+				$qTab.text( sprintf( __( 'Queries (%d)', 'scrutoscope' ), allQueries.length ) );
+			}
+		}
+		var $hTab = $( '.scrutoscope-tab[data-tab="http"]' );
+		if ( $hTab.length && allHttp.length > 0 ) {
+			if ( filteredHttp.length < allHttp.length ) {
+				$hTab.text( sprintf( __( 'HTTP Calls (%1$d / %2$d)', 'scrutoscope' ), filteredHttp.length, allHttp.length ) );
+			} else {
+				$hTab.text( sprintf( __( 'HTTP Calls (%d)', 'scrutoscope' ), allHttp.length ) );
+			}
+		}
+	}
+
 	function filterByCronHook( sources ) {
 		if ( ! cronHookFilter ) { return sources; }
 		var filtered = [];
