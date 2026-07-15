@@ -3,7 +3,7 @@ Contributors: kurtpayne
 Tags: performance, profiler, debug, speed, slow, database, queries, monitoring, diagnostics, benchmark, development, profiling
 Requires at least: 6.0
 Tested up to: 7.0
-Stable tag: 1.3.4
+Stable tag: 1.4.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -117,6 +117,19 @@ It is never contacted during normal profiling, page loads, or background capture
 **Data retention:** a shared report expires after the TTL you choose, can be set to burn after its first read, and can be revoked manually at any time. The relay only ever stores ciphertext.
 
 == Changelog ==
+
+= 1.4.0 =
+* New: On-demand cron profiling — fire any scheduled hook and profile it in isolation
+* New: Per-hook segmentation with timing, callback count, queries, HTTP calls, and memory
+* New: Click-to-filter — click a cron hook to filter Sources, Queries, HTTP Calls, and Trace tabs
+* New: Timeline waterfall dimming highlights the filtered hook's spans
+* New: Filtered tab counts show "X / Y" when a hook filter is active
+* New: WP-CLI `scrutoscope cron-profile` subcommand
+* Fix: Background wp-cron.php requests now correctly classified as wp-cron route class
+* Improved: Readme optimized for wp.org search discoverability
+
+= 1.4.0 =
+On-demand cron profiling with per-hook segmentation and cross-tab filtering. WP-CLI support.
 
 = 1.3.4 =
 * Replaced rename() with WP_Filesystem move() for mu-plugin migration
@@ -286,6 +299,9 @@ This release focuses on trust — opt-in defaults and honest disclosure — alon
 15. AI agent terminal output diagnosing a blocking HTTP call as the top performance issue
 
 == Upgrade Notice ==
+
+= 1.4.0 =
+On-demand cron profiling with per-hook segmentation and cross-tab filtering. WP-CLI support.
 
 = 1.3.4 =
 WP_Filesystem compliance fix for mu-plugin migration.

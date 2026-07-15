@@ -5,6 +5,23 @@ All notable changes to Scrutoscope will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-07-15
+
+### Added
+- On-demand cron profiling — fire any scheduled hook from the admin dashboard and profile it in isolation
+- Per-hook segmentation — cron profiles show a hook strip with timing, callback count, query count, HTTP call count, and memory per hook
+- Click-to-filter — click any hook in the cron strip to filter Sources, Queries, HTTP Calls, and Trace tabs to that hook's activity
+- Timeline waterfall dimming — filtered hook's spans stay at full opacity, everything else fades to 20%
+- Filtered tab counts — Queries, HTTP Calls, and Trace tabs show "X / Y" when a hook filter is active
+- WP-CLI `scrutoscope cron-profile` subcommand for headless cron profiling
+- Plugin icons for wp.org listing (128×128 + 256×256)
+
+### Fixed
+- Background `wp-cron.php` requests now correctly classified as `route_class: wp-cron` (DOING_CRON check was missing from the fallback classifier)
+
+### Improved
+- Readme optimized for wp.org search discoverability (expanded tags, demo link, clearer descriptions)
+
 ## [1.3.4] - 2026-07-12
 
 ### Fixed
