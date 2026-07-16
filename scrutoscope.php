@@ -4,7 +4,7 @@
  * Plugin URI:        https://scrutoscope.dev
  * Description:       Find which plugins, hooks, and queries are slowing your WordPress site. From the author of P3 Profiler.
  * Version:           1.4.1
- * Requires at least: 6.0
+ * Requires at least: 7.0
  * Requires PHP:      7.4
  * Author:            Kurt Payne
  * Author URI:        https://scrutineer.dev

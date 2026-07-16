@@ -1,7 +1,7 @@
 === Scrutoscope – WordPress Performance Profiler ===
 Contributors: kurtpayne
 Tags: performance, profiler, debug, speed, slow
-Requires at least: 6.0
+Requires at least: 7.0
 Tested up to: 7.0
 Stable tag: 1.4.1
 Requires PHP: 7.4
