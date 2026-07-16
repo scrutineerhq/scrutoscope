@@ -3,7 +3,7 @@ Contributors: kurtpayne
 Tags: performance, profiler, debug, speed, slow
 Requires at least: 6.0
 Tested up to: 7.0
-Stable tag: 1.4.0
+Stable tag: 1.4.1
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -117,6 +117,10 @@ It is never contacted during normal profiling, page loads, or background capture
 **Data retention:** a shared report expires after the TTL you choose, can be set to burn after its first read, and can be revoked manually at any time. The relay only ever stores ciphertext.
 
 == Changelog ==
+
+= 1.4.1 =
+* Fix: Trimmed plugin tags to wp.org 5-tag limit
+* Fix: PHPCS alignment warnings in Profiler.php and Report.php
 
 = 1.4.0 =
 * New: On-demand cron profiling — fire any scheduled hook and profile it in isolation
@@ -299,6 +303,9 @@ This release focuses on trust — opt-in defaults and honest disclosure — alon
 15. AI agent terminal output diagnosing a blocking HTTP call as the top performance issue
 
 == Upgrade Notice ==
+
+= 1.4.1 =
+Tag limit and code style fixes.
 
 = 1.4.0 =
 On-demand cron profiling with per-hook segmentation and cross-tab filtering. WP-CLI support.
