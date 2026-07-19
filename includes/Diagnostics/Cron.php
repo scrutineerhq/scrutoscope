@@ -18,7 +18,7 @@ use Scrutoscope\Profiler\Attribution;
  * Cron inventory diagnostic.
  *
  * Collects information about all registered WordPress cron events
- * for display in the Scrutineer dashboard.
+ * for display in the Scrutoscope dashboard.
  */
 class Cron {
 

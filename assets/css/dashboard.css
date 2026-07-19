@@ -3486,7 +3486,7 @@ details.scrutoscope-term > .scrutoscope-term-explain {
 	text-decoration: underline;
 }
 
-/* Early-boot discovery banner (scoped to the Scrutineer home view). */
+/* Early-boot discovery banner (scoped to the Scrutoscope home view). */
 .scrutoscope-eb-banner {
 	margin: 0 0 16px;
 	padding: 10px 14px;

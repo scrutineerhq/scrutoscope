@@ -3,7 +3,7 @@
  * Application Password lifecycle management.
  *
  * Handles auto-creation, rotation, TTL enforcement, and cleanup
- * of WordPress Application Passwords for Scrutineer API access.
+ * of WordPress Application Passwords for Scrutoscope API access.
  *
  * @package Scrutoscope
  */
@@ -13,12 +13,12 @@ namespace Scrutoscope\Api;
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Manages Scrutineer-owned Application Passwords.
+ * Manages Scrutoscope-owned Application Passwords.
  */
 class ApplicationPassword {
 
 	/**
-	 * Fixed app_id UUID for all Scrutineer-created passwords.
+	 * Fixed app_id UUID for all Scrutoscope-created passwords.
 	 * Used to find and revoke our passwords without touching others.
 	 */
 	const APP_ID = '7c9a3f2e-1b4d-4e8a-9f6c-2d5e8a1b3c7f';
@@ -26,7 +26,7 @@ class ApplicationPassword {
 	/**
 	 * Application password name shown in the WP profile.
 	 */
-	const APP_NAME = 'Scrutineer API';
+	const APP_NAME = 'Scrutoscope API';
 
 	/**
 	 * Option key for storing TTL setting.
@@ -58,7 +58,7 @@ class ApplicationPassword {
 		// Capture the app password item when WP authenticates via one.
 		add_action( 'application_password_did_authenticate', array( __CLASS__, 'capture_authenticated_password' ), 10, 2 );
 		add_action( 'rest_api_init', array( __CLASS__, 'enforce_scope' ) );
-		// A Scrutineer credential is REST-only. Reject any non-REST use at both
+		// A Scrutoscope credential is REST-only. Reject any non-REST use at both
 		// auth entry points — registered UNCONDITIONALLY (not on rest_api_init,
 		// which never fires for XML-RPC), so the XML-RPC/login paths are covered.
 		add_filter( 'authenticate', array( __CLASS__, 'reject_non_rest_use' ), 30 );
@@ -90,14 +90,14 @@ class ApplicationPassword {
 	/**
 	 * Create a fresh Application Password for the current user.
 	 *
-	 * Always revokes any existing Scrutineer password first (auto-rotate).
+	 * Always revokes any existing Scrutoscope password first (auto-rotate).
 	 * Returns the plaintext password (shown only once) or WP_Error.
 	 *
 	 * @param int $user_id  User ID to create the password for.
 	 * @return array|\WP_Error  Array with 'password' and 'uuid' keys, or WP_Error.
 	 */
 	public static function create_for_user( $user_id ) {
-		// Revoke any existing Scrutineer passwords first.
+		// Revoke any existing Scrutoscope passwords first.
 		self::revoke_all_for_user( $user_id );
 
 		// Core may return WP_Error if name already exists (5.7+).
@@ -126,7 +126,7 @@ class ApplicationPassword {
 	}
 
 	/**
-	 * Revoke all Scrutineer Application Passwords for a user.
+	 * Revoke all Scrutoscope Application Passwords for a user.
 	 *
 	 * Matches by our fixed app_id.
 	 *
@@ -148,13 +148,13 @@ class ApplicationPassword {
 	}
 
 	/**
-	 * Check if the current REST request is authenticated via a Scrutineer password.
+	 * Check if the current REST request is authenticated via a Scrutoscope password.
 	 *
 	 * Uses the item captured by the application_password_did_authenticate action.
 	 *
 	 * @return bool
 	 */
-	public static function is_scrutineer_auth() {
+	public static function is_scrutoscope_auth() {
 		if ( null === self::$current_app_password ) {
 			return false;
 		}
@@ -164,9 +164,19 @@ class ApplicationPassword {
 	}
 
 	/**
-	 * Enforce scope restriction and TTL on Scrutineer Application Passwords.
+	 * Deprecated alias for is_scrutoscope_auth().
 	 *
-	 * If the current request is authenticated via a Scrutineer password:
+	 * @deprecated 1.4.2 Use is_scrutoscope_auth() instead.
+	 * @return bool
+	 */
+	public static function is_scrutineer_auth() {
+		return self::is_scrutoscope_auth();
+	}
+
+	/**
+	 * Enforce scope restriction and TTL on Scrutoscope Application Passwords.
+	 *
+	 * If the current request is authenticated via a Scrutoscope password:
 	 * 1. Check TTL — reject if expired.
 	 * 2. Check route — only allow scrutoscope/v1/* endpoints.
 	 */
@@ -177,48 +187,48 @@ class ApplicationPassword {
 	}
 
 	/**
-	 * Block non-REST use of a Scrutineer credential on the `authenticate` path.
+	 * Block non-REST use of a Scrutoscope credential on the `authenticate` path.
 	 *
 	 * @param mixed $user Authenticated WP_User, WP_Error, or null.
-	 * @return mixed The user, or a WP_Error for non-REST Scrutineer auth.
+	 * @return mixed The user, or a WP_Error for non-REST Scrutoscope auth.
 	 */
 	public static function reject_non_rest_use( $user ) {
-		if ( ! ( $user instanceof \WP_User ) || ! self::is_non_rest_scrutineer_auth() ) {
+		if ( ! ( $user instanceof \WP_User ) || ! self::is_non_rest_scrutoscope_auth() ) {
 			return $user;
 		}
 
 		return new \WP_Error(
 			'scrutoscope_rest_only',
-			__( 'This Scrutineer API key is restricted to the Scrutineer REST API.', 'scrutoscope' ),
+			__( 'This Scrutoscope API key is restricted to the Scrutoscope REST API.', 'scrutoscope' ),
 			array( 'status' => 403 )
 		);
 	}
 
 	/**
-	 * Block non-REST use of a Scrutineer credential on the
+	 * Block non-REST use of a Scrutoscope credential on the
 	 * `determine_current_user` path (Basic-Auth header via XML-RPC etc.).
 	 *
 	 * @param int|false $user_id Resolved user ID, or false.
 	 * @return int|false Unchanged, or false to drop the auth.
 	 */
 	public static function reject_non_rest_user_id( $user_id ) {
-		if ( ! $user_id || ! self::is_non_rest_scrutineer_auth() ) {
+		if ( ! $user_id || ! self::is_non_rest_scrutoscope_auth() ) {
 			return $user_id;
 		}
 		return false;
 	}
 
 	/**
-	 * Whether the current auth is a Scrutineer credential being used outside
+	 * Whether the current auth is a Scrutoscope credential being used outside
 	 * the REST API.
 	 *
 	 * @return bool
 	 */
-	private static function is_non_rest_scrutineer_auth() {
+	private static function is_non_rest_scrutoscope_auth() {
 		if ( defined( 'REST_REQUEST' ) && REST_REQUEST ) {
 			return false;
 		}
-		return self::is_scrutineer_auth();
+		return self::is_scrutoscope_auth();
 	}
 
 	/**
@@ -230,7 +240,7 @@ class ApplicationPassword {
 	 * @return mixed|\WP_Error
 	 */
 	public static function check_scope_and_ttl( $result, $server, $request ) {
-		if ( ! self::is_scrutineer_auth() ) {
+		if ( ! self::is_scrutoscope_auth() ) {
 			return $result;
 		}
 
@@ -252,7 +262,7 @@ class ApplicationPassword {
 
 			return new \WP_Error(
 				'scrutoscope_password_expired',
-				__( 'This Scrutineer API key has expired. Please generate a new one from the Scrutineer dashboard.', 'scrutoscope' ),
+				__( 'This Scrutoscope API key has expired. Please generate a new one from the Scrutoscope dashboard.', 'scrutoscope' ),
 				array( 'status' => 401 )
 			);
 		}
@@ -262,7 +272,7 @@ class ApplicationPassword {
 		if ( 0 !== strpos( $route, '/scrutoscope/v1/' ) && '/scrutoscope/v1' !== $route ) {
 			return new \WP_Error(
 				'scrutoscope_scope_restricted',
-				__( 'This API key is scoped to Scrutineer endpoints only.', 'scrutoscope' ),
+				__( 'This API key is scoped to Scrutoscope endpoints only.', 'scrutoscope' ),
 				array( 'status' => 403 )
 			);
 		}
@@ -290,7 +300,7 @@ class ApplicationPassword {
 	}
 
 	/**
-	 * Garbage collect expired Scrutineer passwords for all users.
+	 * Garbage collect expired Scrutoscope passwords for all users.
 	 *
 	 * Runs via WP-Cron hourly.
 	 */
@@ -324,7 +334,7 @@ class ApplicationPassword {
 	/**
 	 * Clean up on plugin deactivation.
 	 *
-	 * Revoke all Scrutineer Application Passwords for all users
+	 * Revoke all Scrutoscope Application Passwords for all users
 	 * and unschedule the garbage collection cron.
 	 */
 	public static function deactivate() {

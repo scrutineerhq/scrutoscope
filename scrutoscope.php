@@ -3,11 +3,11 @@
  * Plugin Name:       Scrutoscope – WordPress Performance Profiler
  * Plugin URI:        https://scrutoscope.dev
  * Description:       Find which plugins, hooks, and queries are slowing your WordPress site. From the author of P3 Profiler.
- * Version:           1.4.1
+ * Version:           1.4.2
  * Requires at least: 7.0
  * Requires PHP:      7.4
  * Author:            Kurt Payne
- * Author URI:        https://scrutineer.dev
+ * Author URI:        https://scrutoscope.dev
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       scrutoscope
@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'SCRUTOSCOPE_VERSION', '1.4.1' );
+define( 'SCRUTOSCOPE_VERSION', '1.4.2' );
 define( 'SCRUTOSCOPE_FILE', __FILE__ );
 define( 'SCRUTOSCOPE_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SCRUTOSCOPE_URL', plugin_dir_url( __FILE__ ) );
@@ -145,7 +145,7 @@ function scrutoscope_deactivate() {
 	\Scrutoscope\Api\ApplicationPassword::deactivate();
 	wp_clear_scheduled_hook( 'scrutoscope_cleanup_profiles' );
 
-	// Remove the early-boot mu-plugin so no Scrutineer code keeps running on
+	// Remove the early-boot mu-plugin so no Scrutoscope code keeps running on
 	// every request while the plugin is deactivated. The opt-in preference is
 	// kept, so reactivation restores it.
 	\Scrutoscope\Admin\EarlyBoot::remove();

@@ -6,8 +6,8 @@
   "homepage": "https://scrutoscope.dev",
   "authors": [
     {
-      "name": "The Scrutineer Project",
-      "homepage": "https://scrutineer.dev"
+      "name": "The Scrutoscope Project",
+      "homepage": "https://scrutoscope.dev"
     }
   ],
   "require": {

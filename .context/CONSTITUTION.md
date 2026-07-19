@@ -4,7 +4,7 @@ The rules that never bend. Every PR, every refactor, every "quick fix" must pass
 
 ## Identity
 
-- **Brand:** The Scrutineer Project (scrutineer.dev)
+- **Brand:** The Scrutoscope Project (scrutoscope.dev)
 - **Plugin:** Scrutoscope — WordPress Performance Profiler
 - **Org handle:** @scrutineerhq (everywhere)
 - **License:** GPL-2.0-or-later. FOSS everything: plugin, relay, CLI, viewer.

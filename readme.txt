@@ -3,7 +3,7 @@ Contributors: kurtpayne
 Tags: performance, profiler, debug, speed, slow
 Requires at least: 7.0
 Tested up to: 7.0
-Stable tag: 1.4.1
+Stable tag: 1.4.2
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -90,7 +90,7 @@ Yes, with a low sample rate (0.1% or 1%). Scrutoscope is designed for background
 Scrutoscope is local-first and does not phone home. It contacts exactly one external service, and only when you explicitly choose to share a report.
 
 **Service:** Scrutoscope relay — zero-knowledge report sharing.
-**Provided by:** The Scrutineer Project (https://scrutoscope.dev). Relay source: https://github.com/scrutineerhq/scrutoscope-relay
+**Provided by:** The Scrutoscope Project (https://scrutoscope.dev). Relay source: https://github.com/scrutineerhq/scrutoscope-relay
 
 **When it is contacted (admin-initiated only):**
 
@@ -117,6 +117,13 @@ It is never contacted during normal profiling, page loads, or background capture
 **Data retention:** a shared report expires after the TTL you choose, can be set to burn after its first read, and can be revoked manually at any time. The relay only ever stores ciphertext.
 
 == Changelog ==
+
+= 1.4.2 =
+* Branding: Renamed all remaining "Scrutineer" references to "Scrutoscope" across user-facing strings, API prompt, CLI output, comments, and documentation
+* Branding: Updated Author URI and project URLs from scrutineer.dev to scrutoscope.dev
+* Branding: Renamed Application Password display name from "Scrutineer API" to "Scrutoscope API"
+* Branding: Renamed internal methods (is_scrutineer_auth → is_scrutoscope_auth) with deprecation aliases for backward compatibility
+* Maintenance: Bumped minimum WordPress version to 7.0
 
 = 1.4.1 =
 * Fix: Trimmed plugin tags to wp.org 5-tag limit
@@ -226,7 +233,7 @@ This release focuses on trust — opt-in defaults and honest disclosure — alon
 * Changed: Early-boot timing is now opt-in — activation no longer writes a must-use plugin; enable it from Settings (or WP-CLI) when you want pre-plugin bootstrap timing.
 * Changed: Query profiling (SAVEQUERIES) now defaults off — enable it from Settings when you need per-query detail; the basic query count is always available.
 * Changed: Outbound HTTP URLs are reduced to scheme + host (paths and query strings stripped) on write, read, and output, because paths can carry secret tokens.
-* Security: Fixed a bypass where a Scrutineer Application Password (scoped to REST with a short expiry) could be used over XML-RPC, skipping both scope and expiry.
+* Security: Fixed a bypass where a Scrutoscope Application Password (scoped to REST with a short expiry) could be used over XML-RPC, skipping both scope and expiry.
 * Security: Legacy stored profiles are re-sanitized on read and output, so older rows can't leak a full outbound URL through a share or export. Also hardened the WP-CLI export, report-sharing, deactivation/uninstall cleanup, and the autoloader.
 * Fixed: Shared-report viewer — trace callbacks show their names grouped by hook, the breakdown bar renders correctly, the timeline follows dark mode, and duplicate tabs are removed.
 * Accessibility: Full ARIA tab pattern with arrow-key navigation, focus management on view changes, and screen-reader announcements for dynamic content.
@@ -303,6 +310,9 @@ This release focuses on trust — opt-in defaults and honest disclosure — alon
 15. AI agent terminal output diagnosing a blocking HTTP call as the top performance issue
 
 == Upgrade Notice ==
+
+= 1.4.2 =
+Branding cleanup: all remaining "Scrutineer" references renamed to "Scrutoscope". WP 7.0 minimum.
 
 = 1.4.1 =
 Tag limit and code style fixes.

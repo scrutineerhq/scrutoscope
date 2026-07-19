@@ -172,7 +172,7 @@ Recommendation:
 Add an `External Services` section to `readme.txt` covering:
 
 - Service name and URL: `Scrutoscope relay`, `https://scrutoscope.dev`
-- Operator: The Scrutineer Project
+- Operator: The Scrutoscope Project
 - When it is contacted:
   - only when an admin clicks Encrypt & Share
   - when revoking a previously shared report
@@ -332,7 +332,7 @@ AJAX authorization:
 
 Application Password hardening:
 
-- Scrutineer-owned Application Passwords are captured and checked.
+- Scrutoscope-owned Application Passwords are captured and checked.
 - Non-REST use is rejected through both `authenticate` and `determine_current_user`.
 - REST route scope is restricted to `/scrutoscope/v1/*`.
 - TTL is enforced and expired credentials are revoked.

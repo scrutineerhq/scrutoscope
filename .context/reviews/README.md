@@ -1,6 +1,6 @@
-# Scrutineer Review System
+# Scrutoscope Review System
 
-A multi-expert review framework for auditing the Scrutineer WordPress profiler plugin. Designed to run with any AI coding agent — Claude Code, Codex, OpenCode, Cursor, Aider, or similar.
+A multi-expert review framework for auditing the Scrutoscope WordPress profiler plugin. Designed to run with any AI coding agent — Claude Code, Codex, OpenCode, Cursor, Aider, or similar.
 
 ## Quick Start
 
@@ -8,10 +8,10 @@ A multi-expert review framework for auditing the Scrutineer WordPress profiler p
 
 ```bash
 # Run a single panel
-claude "Run the Scrutineer Solo Freelancer review panel. Follow .context/reviews/panels/solo-freelancer.md"
+claude "Run the Scrutoscope Solo Freelancer review panel. Follow .context/reviews/panels/solo-freelancer.md"
 
 # Run a full review
-claude "Run a full Scrutineer pre-submission review. See .context/reviews/SKILL.md for the process and .context/reviews/panels/ for all panel prompts."
+claude "Run a full Scrutoscope pre-submission review. See .context/reviews/SKILL.md for the process and .context/reviews/panels/ for all panel prompts."
 ```
 
 ### With Any Agent
@@ -19,7 +19,7 @@ claude "Run a full Scrutineer pre-submission review. See .context/reviews/SKILL.
 Point your agent at a panel prompt file and ask it to follow the instructions:
 
 ```
-Read .context/reviews/panels/wp-beginner.md and execute that review against the current codebase and live POC at poc.scrutineer.dev.
+Read .context/reviews/panels/wp-beginner.md and execute that review against the current codebase and live POC at poc.scrutoscope.dev.
 ```
 
 ### Running Multiple Panels in Parallel

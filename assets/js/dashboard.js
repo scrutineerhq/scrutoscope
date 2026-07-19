@@ -1204,7 +1204,7 @@
 		} else {
 			html += '<span class="scrutoscope-qp-badge blocked">wp-config.php</span> ';
 			// translators: %s is the SAVEQUERIES constant value (e.g. false).
-			html += sprintf( __( 'SAVEQUERIES is set to %s - Scrutineer can\'t override a defined constant.', 'scrutoscope' ), '<code>false</code>' );
+			html += sprintf( __( 'SAVEQUERIES is set to %s - Scrutoscope can\'t override a defined constant.', 'scrutoscope' ), '<code>false</code>' );
 		}
 		html += '</p>';
 
@@ -1218,10 +1218,10 @@
 			html += '<p>' + __( 'Queries that run before plugin load (options autoload, core bootstrap) aren\'t captured - usually less than 10% of total. For full coverage from boot, add to wp-config.php:', 'scrutoscope' ) + '</p>';
 			html += '<code class="scrutoscope-qp-code">define( \'SAVEQUERIES\', true );</code>';
 		} else if ( isOn ) {
-			html += '<p>' + __( '<code>SAVEQUERIES</code> is defined as <code>true</code> before plugins load, so every query from boot is captured. To let Scrutineer manage this toggle instead, remove the <code>define()</code> line from wp-config.php.', 'scrutoscope' ) + '</p>';
+			html += '<p>' + __( '<code>SAVEQUERIES</code> is defined as <code>true</code> before plugins load, so every query from boot is captured. To let Scrutoscope manage this toggle instead, remove the <code>define()</code> line from wp-config.php.', 'scrutoscope' ) + '</p>';
 		} else {
 			html += '<p>' + __( '<code>define( \'SAVEQUERIES\', false )</code> in wp-config.php prevents redefinition - PHP constants are immutable once set.', 'scrutoscope' ) + '</p>';
-			html += '<p>' + __( 'To enable: change <code>false</code> to <code>true</code>, or remove the line entirely to let Scrutineer manage it via this toggle.', 'scrutoscope' ) + '</p>';
+			html += '<p>' + __( 'To enable: change <code>false</code> to <code>true</code>, or remove the line entirely to let Scrutoscope manage it via this toggle.', 'scrutoscope' ) + '</p>';
 		}
 
 		html += '</div></div>';
@@ -5395,7 +5395,7 @@
 		html += '<div class="scrutoscope-api-section scrutoscope-api-section--agent">';
 		html += '<h3 class="scrutoscope-api-heading"><span class="dashicons dashicons-share-alt2"></span> ' + __( 'Send to Agent', 'scrutoscope' ) + '</h3>';
 		html += '<p class="scrutoscope-api-desc">' + __( 'Generate a one-time prompt that gives an AI agent read-only access to your profiling data.', 'scrutoscope' ) + ' ';
-		html += __( 'The credential auto-expires and is scoped to Scrutineer endpoints only.', 'scrutoscope' ) + '</p>';
+		html += __( 'The credential auto-expires and is scoped to Scrutoscope endpoints only.', 'scrutoscope' ) + '</p>';
 		html += '<div class="scrutoscope-send-agent-controls">';
 		html += '<button type="button" class="button button-primary" id="scrutoscope-create-api-key">';
 		html += '<span class="dashicons dashicons-clipboard"></span> ' + __( 'Copy Prompt to Clipboard', 'scrutoscope' ) + '</button>';

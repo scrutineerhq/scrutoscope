@@ -1001,7 +1001,7 @@ class Ajax {
 	}
 
 	/**
-	 * AJAX: Create a new Scrutineer Application Password for the current user.
+	 * AJAX: Create a new Scrutoscope Application Password for the current user.
 	 *
 	 * Revokes any existing one first (auto-rotate per D25a).
 	 */
@@ -1043,7 +1043,7 @@ class Ajax {
 	}
 
 	/**
-	 * AJAX: Revoke all Scrutineer Application Passwords for the current user.
+	 * AJAX: Revoke all Scrutoscope Application Passwords for the current user.
 	 */
 	public static function revoke_api_password() {
 		$revoked = \Scrutoscope\Api\ApplicationPassword::revoke_all_for_user( get_current_user_id() );

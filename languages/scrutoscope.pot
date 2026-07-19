@@ -1,4 +1,4 @@
-# Copyright (C) 2026 The Scrutineer Project
+# Copyright (C) 2026 The Scrutoscope Project
 # This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
@@ -25,7 +25,7 @@ msgstr ""
 
 #. Plugin URI of the plugin
 #: scrutinizer.php
-msgid "https://scrutineer.dev/scrutinizer"
+msgid "https://scrutoscope.dev/scrutinizer"
 msgstr ""
 
 #. Description of the plugin
@@ -35,12 +35,12 @@ msgstr ""
 
 #. Author of the plugin
 #: scrutinizer.php
-msgid "The Scrutineer Project"
+msgid "The Scrutoscope Project"
 msgstr ""
 
 #. Author URI of the plugin
 #: scrutinizer.php
-msgid "https://scrutineer.dev"
+msgid "https://scrutoscope.dev"
 msgstr ""
 
 #: includes/Admin/Ajax.php:117
@@ -536,7 +536,7 @@ msgid "Network"
 msgstr ""
 
 #: includes/Admin/EarlyBoot.php:66
-msgid "The early-boot plugin file is missing from the Scrutineer plugin."
+msgid "The early-boot plugin file is missing from the Scrutoscope plugin."
 msgstr ""
 
 #: includes/Admin/EarlyBoot.php:74
@@ -552,19 +552,19 @@ msgid "Could not write the early-boot plugin to mu-plugins. Your host may restri
 msgstr ""
 
 #: includes/Api/ApplicationPassword.php:190
-msgid "This Scrutineer API key is restricted to the Scrutineer REST API."
+msgid "This Scrutoscope API key is restricted to the Scrutoscope REST API."
 msgstr ""
 
 #: includes/Api/ApplicationPassword.php:253
-msgid "This Scrutineer API key has expired. Please generate a new one from the Scrutineer dashboard."
+msgid "This Scrutoscope API key has expired. Please generate a new one from the Scrutoscope dashboard."
 msgstr ""
 
 #: includes/Api/ApplicationPassword.php:263
-msgid "This API key is scoped to Scrutineer endpoints only."
+msgid "This API key is scoped to Scrutoscope endpoints only."
 msgstr ""
 
 #: includes/Api/RestApi.php:153
-msgid "You do not have permission to access Scrutineer data."
+msgid "You do not have permission to access Scrutoscope data."
 msgstr ""
 
 #: scrutinizer.php:199
@@ -722,7 +722,7 @@ msgstr ""
 #. translators: %s is the SAVEQUERIES constant value (e.g. false).
 #: assets/js/dashboard.js:1076
 #, js-format
-msgid "SAVEQUERIES is set to %s — Scrutineer can't override a defined constant."
+msgid "SAVEQUERIES is set to %s — Scrutoscope can't override a defined constant."
 msgstr ""
 
 #: assets/js/dashboard.js:1086
@@ -734,7 +734,7 @@ msgid "Queries that run before plugin load (options autoload, core bootstrap) ar
 msgstr ""
 
 #: assets/js/dashboard.js:1090
-msgid "<code>SAVEQUERIES</code> is defined as <code>true</code> before plugins load, so every query from boot is captured. To let Scrutineer manage this toggle instead, remove the <code>define()</code> line from wp-config.php."
+msgid "<code>SAVEQUERIES</code> is defined as <code>true</code> before plugins load, so every query from boot is captured. To let Scrutoscope manage this toggle instead, remove the <code>define()</code> line from wp-config.php."
 msgstr ""
 
 #: assets/js/dashboard.js:1092
@@ -742,7 +742,7 @@ msgid "<code>define( 'SAVEQUERIES', false )</code> in wp-config.php prevents red
 msgstr ""
 
 #: assets/js/dashboard.js:1093
-msgid "To enable: change <code>false</code> to <code>true</code>, or remove the line entirely to let Scrutineer manage it via this toggle."
+msgid "To enable: change <code>false</code> to <code>true</code>, or remove the line entirely to let Scrutoscope manage it via this toggle."
 msgstr ""
 
 #: assets/js/dashboard.js:1123
@@ -2019,7 +2019,7 @@ msgid "Generate a one-time prompt that gives an AI agent read-only access to you
 msgstr ""
 
 #: assets/js/dashboard.js:4860
-msgid "The credential auto-expires and is scoped to Scrutineer endpoints only."
+msgid "The credential auto-expires and is scoped to Scrutoscope endpoints only."
 msgstr ""
 
 #: assets/js/dashboard.js:4863

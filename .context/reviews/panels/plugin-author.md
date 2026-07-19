@@ -31,7 +31,7 @@ You are the person who:
 - Transient API calls — are they measured separately from the DB queries they generate?
 
 ### The Support Ticket Workflow
-A user sends you a Scrutineer profile claiming your plugin is slow:
+A user sends you a Scrutoscope profile claiming your plugin is slow:
 - Can you verify their claim from the profile data alone?
 - Is there enough context? (PHP version, other plugins, hosting environment)
 - Can you reproduce the measurement methodology?

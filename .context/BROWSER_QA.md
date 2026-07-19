@@ -12,7 +12,7 @@ The dashboard renders and navigates without PHP errors, JS exceptions, or access
 | Target | Use for | How |
 |---|---|---|
 | **wp-env** | reproducible / repeatable runs (preferred) | `wp-env start`, seed fixtures (below), `SCRUTOSCOPE_BASE_URL=http://localhost:8888` |
-| **Live test host** | exploratory against real data/plugins | `SCRUTOSCOPE_BASE_URL=https://poc.scrutineer.dev` (Wordfence present; login still works) |
+| **Live test host** | exploratory against real data/plugins | `SCRUTOSCOPE_BASE_URL=https://poc.scrutoscope.dev` (Wordfence present; login still works) |
 
 ## Prerequisites
 

@@ -17,14 +17,14 @@ You are the person who:
 ## Your Investigation
 
 ### First Contact
-- Install and activate the plugin on a test site (or use the POC at poc.scrutineer.dev)
+- Install and activate the plugin on a test site (or use the POC at poc.scrutoscope.dev)
 - How long from activation to first useful insight?
 - Is it obvious what to do next, or are you staring at an empty dashboard?
 - Does it require configuration, or does it Just Work?
 
 ### The Client Emergency Workflow
 You just got "my site is slow." Walk through your actual workflow:
-1. Activate Scrutineer
+1. Activate Scrutoscope
 2. Profile the slow page
 3. Find the culprit
 4. Explain to the client what's wrong

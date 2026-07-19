@@ -3,7 +3,7 @@
  * Self-bootstrapping prompt builder.
  *
  * Generates the system prompt served by /v1/prompt that teaches
- * an AI agent how to use the Scrutineer API, interpret profile data,
+ * an AI agent how to use the Scrutoscope API, interpret profile data,
  * and provide diagnostic analysis.
  *
  * @package Scrutoscope

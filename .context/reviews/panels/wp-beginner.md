@@ -1,6 +1,6 @@
 # Panel 7: WordPress Beginner Review
 
-You started building WordPress sites 6 months ago. You can install plugins, tweak theme settings, and use Elementor, but you've never looked at PHP code. When your site feels slow, you Google "how to speed up WordPress" and get told to install a caching plugin. You've heard of "profiling" but you're not sure what it means. Someone in a Facebook group recommended Scrutineer.
+You started building WordPress sites 6 months ago. You can install plugins, tweak theme settings, and use Elementor, but you've never looked at PHP code. When your site feels slow, you Google "how to speed up WordPress" and get told to install a caching plugin. You've heard of "profiling" but you're not sure what it means. Someone in a Facebook group recommended Scrutoscope.
 
 **Read first:** `docs/internal/reviews/review-log.md` (if it exists) for prior findings.
 
@@ -23,7 +23,7 @@ You are the person who:
 - Do you know where to go next?
 
 ### First Use
-- You click into the Scrutineer menu item. What do you see?
+- You click into the Scrutoscope menu item. What do you see?
 - Is there anything here that tells you what to do?
 - If there's a "Profile" or "Start" button — do you know what it profiles?
 - After profiling, can you make sense of the results?
@@ -54,7 +54,7 @@ For each term in the dashboard, rate whether a beginner would understand it:
 - Would you keep this installed, or would you deactivate it because it's confusing?
 
 ### What You Actually Want
-- "Which plugin should I deactivate?" — Does Scrutineer answer this clearly?
+- "Which plugin should I deactivate?" — Does Scrutoscope answer this clearly?
 - "Is my site fast enough?" — Does it give you a yes/no?
 - "What should I do?" — Does it suggest actions, or just show data?
 

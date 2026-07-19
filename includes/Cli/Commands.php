@@ -475,7 +475,7 @@ class Commands {
 
 		// Query profiling state label.
 		if ( $qp['managed'] ) {
-			$qp_label = $qp['active'] ? 'On (managed by Scrutineer)' : 'Off (toggle disabled)';
+			$qp_label = $qp['active'] ? 'On (managed by Scrutoscope)' : 'Off (toggle disabled)';
 		} else {
 			$qp_label = $qp['active'] ? 'On (set in wp-config.php)' : 'Off (blocked by wp-config.php)';
 		}

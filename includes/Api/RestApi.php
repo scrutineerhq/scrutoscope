@@ -2,7 +2,7 @@
 /**
  * REST API route registration and controllers.
  *
- * Registers all Scrutineer REST API endpoints under the
+ * Registers all Scrutoscope REST API endpoints under the
  * scrutoscope/v1 namespace with permission callbacks and
  * response formatting.
  *
@@ -152,7 +152,7 @@ class RestApi {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return new \WP_Error(
 				'scrutoscope_forbidden',
-				__( 'You do not have permission to access Scrutineer data.', 'scrutoscope' ),
+				__( 'You do not have permission to access Scrutoscope data.', 'scrutoscope' ),
 				array( 'status' => 403 )
 			);
 		}
@@ -412,7 +412,7 @@ class RestApi {
 
 		$manifest = array(
 			'schema_version' => '1.0',
-			'name'           => 'Scrutineer',
+			'name'           => 'Scrutoscope',
 			'description'    => 'WordPress performance profiler — read-only API for site performance data.',
 			// Major series only — the public manifest should not disclose the
 			// exact patch version (aids targeted fingerprinting). API
@@ -421,13 +421,13 @@ class RestApi {
 			'auth'           => array(
 				'type'        => 'http',
 				'scheme'      => 'basic',
-				'description' => 'WordPress Application Password. Use the "Send to Agent" button in the Scrutineer dashboard to generate a short-lived credential.',
+				'description' => 'WordPress Application Password. Use the "Send to Agent" button in the Scrutoscope dashboard to generate a short-lived credential.',
 			),
 			'base_url'       => $base_url,
 			'tools'          => array(
 				array(
 					'name'        => 'get_prompt',
-					'description' => 'Get the system prompt that describes how to interpret Scrutineer data. Read this first.',
+					'description' => 'Get the system prompt that describes how to interpret Scrutoscope data. Read this first.',
 					'endpoint'    => '/v1/prompt',
 					'method'      => 'GET',
 					'parameters'  => array(),

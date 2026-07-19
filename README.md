@@ -107,6 +107,6 @@ GPL-2.0-or-later. See [LICENSE](LICENSE).
 
 ## Links
 
-- [scrutineer.dev](https://scrutineer.dev) — Project home
-- [@scrutineer.dev](https://bsky.app/profile/scrutineer.dev) — Bluesky
+- [scrutoscope.dev](https://scrutoscope.dev) — Project home
+- [@scrutoscope.dev](https://bsky.app/profile/scrutoscope.dev) — Bluesky
 - [GitHub](https://github.com/scrutineerhq/scrutoscope) — Source

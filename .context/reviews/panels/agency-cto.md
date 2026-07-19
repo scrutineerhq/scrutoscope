@@ -17,7 +17,7 @@ You are the person who:
 ## Your Investigation
 
 ### Fleet Fitness
-- Does Scrutineer work on managed hosting? (WP Engine restricts certain PHP functions, Kinsta has worker process limits)
+- Does Scrutoscope work on managed hosting? (WP Engine restricts certain PHP functions, Kinsta has worker process limits)
 - Can you use this with WP-CLI for batch profiling across sites?
 - Does it handle multisite? (Even if not officially supported, does it break?)
 - How does it behave with object caching enabled (Redis/Memcached)?

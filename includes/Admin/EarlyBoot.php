@@ -70,7 +70,7 @@ class EarlyBoot {
 	public static function install() {
 		$source = self::source_path();
 		if ( ! file_exists( $source ) ) {
-			return new \WP_Error( 'scrutoscope_mu_source', __( 'The early-boot plugin file is missing from the Scrutineer plugin.', 'scrutoscope' ) );
+			return new \WP_Error( 'scrutoscope_mu_source', __( 'The early-boot plugin file is missing from the Scrutoscope plugin.', 'scrutoscope' ) );
 		}
 		if ( self::is_installed() ) {
 			return true;

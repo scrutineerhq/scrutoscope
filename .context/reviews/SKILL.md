@@ -1,6 +1,6 @@
-# Scrutineer Review System
+# Scrutoscope Review System
 
-Comprehensive, multi-expert review process for the Scrutineer WordPress profiler plugin. Run before wp.org submission, after major changes, or on a regular cadence.
+Comprehensive, multi-expert review process for the Scrutoscope WordPress profiler plugin. Run before wp.org submission, after major changes, or on a regular cadence.
 
 ## Review Panels
 
@@ -25,18 +25,18 @@ This system uses **12 expert panels**, each with a dedicated prompt in `panels/`
 
 ### Full Pre-Submission Review
 ```
-Run the full Scrutineer pre-submission review. Use all 12 panels from .context/reviews/panels/.
+Run the full Scrutoscope pre-submission review. Use all 12 panels from .context/reviews/panels/.
 Present results section by section.
 ```
 
 ### Single Panel
 ```
-Run the Scrutineer [panel name] review panel. Follow .context/reviews/panels/[filename].md.
+Run the Scrutoscope [panel name] review panel. Follow .context/reviews/panels/[filename].md.
 ```
 
 ### Re-Review (check previous findings)
 ```
-Re-check all open findings from the last Scrutineer review in docs/internal/reviews/.
+Re-check all open findings from the last Scrutoscope review in docs/internal/reviews/.
 ```
 
 ## Execution Flow
@@ -61,4 +61,4 @@ Before running panels, the agent should read:
 | `.context/STATE.md` | Current milestone status |
 | `.context/DECISIONS.md` | Why things are the way they are |
 
-For live-site panels, the agent needs access to the POC at `poc.scrutineer.dev` (WP admin: `admin` / check with maintainer for current password).
+For live-site panels, the agent needs access to the POC at `poc.scrutoscope.dev` (WP admin: `admin` / check with maintainer for current password).

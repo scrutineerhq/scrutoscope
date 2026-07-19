@@ -5,6 +5,14 @@ All notable changes to Scrutoscope will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.2] - 2026-07-19
+
+### Changed
+- Renamed all remaining "Scrutineer" references to "Scrutoscope" across user-facing strings, API prompt, CLI output, OpenAPI spec, Application Password display name, comments, and documentation
+- Updated Author URI and project URLs from scrutineer.dev to scrutoscope.dev
+- Renamed internal methods (`is_scrutineer_auth` → `is_scrutoscope_auth`, `is_non_rest_scrutineer_auth` → `is_non_rest_scrutoscope_auth`) with deprecation aliases for backward compatibility
+- Bumped minimum WordPress version to 7.0
+
 ## [1.4.1] - 2026-07-16
 
 ### Fixed
@@ -205,7 +213,7 @@ This release focuses on trust — opt-in defaults and honest disclosure — alon
 
 ### Security
 
-- Fixed a bypass where a Scrutineer Application Password (scoped to REST + a short TTL) could be used over **XML-RPC**, skipping both scope and expiry — now rejected at the authentication layer for any non-REST use.
+- Fixed a bypass where a Scrutoscope Application Password (scoped to REST + a short TTL) could be used over **XML-RPC**, skipping both scope and expiry — now rejected at the authentication layer for any non-REST use.
 - **Legacy stored profiles are re-sanitized on read and on output**, so older rows can't leak a full outbound URL (webhook/bot tokens live in the path) through a share or export. The `blocking` flag is carried through shares and the REST API.
 - Hardened the WP-CLI `export`, the report-sharing path, deactivation/uninstall cleanup (`wp_delete_file`), and the autoloader (path-traversal); made the SQL reducer idempotent so a defensive re-reduction keeps the table name.
 
@@ -309,6 +317,7 @@ This release focuses on trust — opt-in defaults and honest disclosure — alon
 - **WordPress native** — Standard admin card patterns, semantic borders, WP color palette. No dark custom themes.
 - **Privacy by design** — SQL queries sanitized with literal stripping. No telemetry. No external calls except opt-in encrypted sharing.
 
+[1.4.2]: https://github.com/scrutineerhq/scrutoscope/releases/tag/v1.4.2
 [1.3.2]: https://github.com/scrutineerhq/scrutoscope/releases/tag/v1.3.2
 [1.3.1]: https://github.com/scrutineerhq/scrutoscope/releases/tag/v1.3.1
 [1.3.0]: https://github.com/scrutineerhq/scrutoscope/releases/tag/v1.3.0
