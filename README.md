@@ -125,7 +125,8 @@ The report is encrypted in your browser with AES-256-GCM before upload. The rela
 - [About Scrutoscope](https://scrutoscope.dev/about) — Project story
 - [WordPress.org](https://wordpress.org/plugins/scrutoscope/) — Plugin listing
 - [Live demo](https://scrutoscope.dev/r/546fcfa0afddae3b7544337c41028564#pa0IKnGUwGl_InDSTgLVtZM_sLbwsxxhtCjHHx3Kz7A) — Encrypted sample report
-- [@scrutoscope.dev](https://bsky.app/profile/scrutoscope.dev) — Bluesky
+- [GitHub issues](https://github.com/scrutineerhq/scrutoscope/issues) — Bug reports and feature requests
+- Email: hello@scrutineer.dev
 - [GitHub](https://github.com/scrutineerhq/scrutoscope) — Source
 
 ## Contributing
