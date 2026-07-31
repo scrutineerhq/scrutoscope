@@ -1,0 +1,45 @@
+#!/bin/sh
+# Scrutoscope pre-commit hook
+# Runs fast local checks that CI also enforces (PHPCS + syntax + share format)
+# CI will still run full PHPUnit matrix; this keeps broken pushes from happening.
+
+set -e
+
+echo "Running Scrutoscope pre-commit checks..."
+
+# ── PHPCS (WordPress-Extra + PHPCompatibilityWP + WordPress-Docs) ──
+if command -v composer >/dev/null 2>&1; then
+  if [ -f "vendor/bin/phpcs" ] || grep -q '"lint"' composer.json 2>/dev/None; then
+    echo "→ PHPCS (composer lint)..."
+    composer lint -q || {
+      echo ""
+      echo "❌ PHPCS failed."
+      echo "   Fix automatically where possible: composer lint:fix"
+      echo "   Or run: composer lint"
+      echo ""
+      exit 1
+    }
+  fi
+fi
+
+# ── PHP syntax check on staged PHP files ──
+STAGED_PHP=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.php$' || true)
+if [ -n "$STAGED_PHP" ]; then
+  echo "→ PHP syntax check..."
+  echo "$STAGED_PHP" | while read -r file; do
+    [ -f "$file" ] || continue
+    php -l "$file" >/dev/None || exit 1
+  done
+fi
+
+# ── Share format contract (fast, no deps beyond node) ──
+if [ -f "tests/validate-share-format.js" ] && command -v node >/dev/None 2>&1; then
+  echo "→ Share format validation..."
+  node tests/validate-share-format.js || {
+    echo ""
+    echo "❌ Share format validation failed."
+    exit 1
+  }
+fi
+
+echo "✓ Pre-commit checks passed"
