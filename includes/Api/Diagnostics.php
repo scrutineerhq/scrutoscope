@@ -299,10 +299,11 @@ class Diagnostics {
 
 		$in_list = \Scrutoscope\Util\Autoload::get_in_list_sql();
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- $in_list is pre-escaped via Autoload::get_in_list_sql()
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- $in_list is pre-escaped via Autoload::get_in_list_sql()
 		$size = $wpdb->get_var(
 			"SELECT SUM(LENGTH(option_value)) FROM {$wpdb->options} WHERE autoload IN ($in_list)"
 		);
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 
 		if ( null === $size ) {
 			return 'unknown';
