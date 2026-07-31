@@ -1296,12 +1296,12 @@ class Profiler {
 
 		$in_list = \Scrutoscope\Util\Autoload::get_in_list_sql();
 
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $in_list is pre-escaped via Autoload::get_in_list_sql()
 		$results = $wpdb->get_results(
 			"SELECT option_name, autoload, LENGTH(option_value) AS size_bytes FROM {$wpdb->options} WHERE autoload IN ($in_list) ORDER BY LENGTH(option_value) DESC",
 			ARRAY_A
 		);
-		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
 		if ( empty( $results ) || ! is_array( $results ) ) {
 			return array(

@@ -1,4 +1,13 @@
 <?php
+/**
+ * Autoload value handling for WP 6.6+ compatibility.
+ *
+ * Centralizes the wp_autoload_values_to_autoload filter and sanitization
+ * so Profiler and Diagnostics stay in sync.
+ *
+ * @package Scrutoscope
+ */
+
 namespace Scrutoscope\Util;
 
 /**
