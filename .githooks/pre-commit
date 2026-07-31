@@ -1,38 +1,52 @@
 #!/bin/sh
 # Scrutoscope pre-commit hook
-# Runs fast local checks that CI also enforces (PHPCS + syntax + share format)
-# CI will still run full PHPUnit matrix; this keeps broken pushes from happening.
-
+# Fast local checks that CI also enforces. CI runs full matrix; this stops obvious broken pushes.
 set -e
 
 echo "Running Scrutoscope pre-commit checks..."
 
-# ── PHPCS (WordPress-Extra + PHPCompatibilityWP + WordPress-Docs) ──
-if command -v composer >/dev/null 2>&1; then
-  if [ -f "vendor/bin/phpcs" ] || grep -q '"lint"' composer.json 2>/dev/None; then
-    echo "→ PHPCS (composer lint)..."
+# ── Locate PHP tools (may not be in PATH in some VMs) ──
+if ! command -v composer >/dev/None 2>&1; then
+  if [ -x "/opt/php/bin/composer" ]; then
+    export PATH="/opt/php/bin:$PATH"
+  elif [ -x "$HOME/.composer/vendor/bin/composer" ]; then
+    export PATH="$HOME/.composer/vendor/bin:$PATH"
+  fi
+fi
+
+# ── PHPCS (WordPress-Extra) ──
+if command -v composer >/dev/None 2>&1 && [ -f "composer.json" ] && grep -q '"lint"' composer.json 2>/dev/None; then
+  echo "→ PHPCS (composer lint)..."
+  if [ -d "vendor" ]; then
     composer lint -q || {
       echo ""
       echo "❌ PHPCS failed."
-      echo "   Fix automatically where possible: composer lint:fix"
-      echo "   Or run: composer lint"
+      echo "   Try: composer lint:fix"
       echo ""
       exit 1
     }
+  else
+    echo "  (vendor not installed — skipping PHPCS, CI will check. Run: composer install)"
   fi
+else
+  echo "  ⚠ composer not found — skipping PHPCS (CI will still check)"
 fi
 
 # ── PHP syntax check on staged PHP files ──
 STAGED_PHP=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.php$' || true)
 if [ -n "$STAGED_PHP" ]; then
-  echo "→ PHP syntax check..."
-  echo "$STAGED_PHP" | while read -r file; do
-    [ -f "$file" ] || continue
-    php -l "$file" >/dev/None || exit 1
-  done
+  if command -v php >/dev/None 2>&1; then
+    echo "→ PHP syntax check..."
+    echo "$STAGED_PHP" | while read -r file; do
+      [ -f "$file" ] || continue
+      php -l "$file" >/dev/None || exit 1
+    done
+  else
+    echo "  ⚠ php not found — skipping syntax check"
+  fi
 fi
 
-# ── Share format contract (fast, no deps beyond node) ──
+# ── Share format contract (fast, node only) ──
 if [ -f "tests/validate-share-format.js" ] && command -v node >/dev/None 2>&1; then
   echo "→ Share format validation..."
   node tests/validate-share-format.js || {
