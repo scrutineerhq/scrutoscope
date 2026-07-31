@@ -5,6 +5,20 @@ All notable changes to Scrutoscope will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.3] - 2026-07-31
+
+### Added
+- Options tab in profile detail — shows autoloaded options sorted by size with total size, count, and WP 6.6+ value handling (yes/on/auto/auto-on)
+- Toggle autoload on/off directly from Options tab — uses `wp_set_option_autoload()` on WP 6.4+ with `$wpdb` fallback, protects `alloptions`/`notoptions`, clears caches
+
+### Fixed
+- WordPress 6.6+ autoload compatibility — `get_autoloaded_options()` and `get_autoloaded_options_size()` now respect `wp_autoload_values_to_autoload` filter instead of hardcoded `autoload = 'yes'`
+- WordPress 6.9 cron timing compatibility — shutdown priority changed from `PHP_INT_MAX` to `9` (Trac #63858, `WP-Cron` shutdown on `WP_6_9` was firing too late)
+- Sanitizer false positives — don't redact short secret values (<6 chars) to avoid mangling `DB_PASSWORD` and similar into `/[redacted]-admin/`
+
+### Changed
+- Centralized autoload value handling in new `Scrutoscope\Util\Autoload` helper — single source for filter, sanitization, and SQL `IN` list generation
+
 ## [1.4.2] - 2026-07-19
 
 ### Changed

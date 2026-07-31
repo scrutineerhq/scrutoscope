@@ -3,7 +3,7 @@ Contributors: kurtpayne
 Tags: performance, profiler, debug, speed, slow
 Requires at least: 7.0
 Tested up to: 7.0
-Stable tag: 1.4.2
+Stable tag: 1.4.3
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -117,6 +117,13 @@ It is never contacted during normal profiling, page loads, or background capture
 **Data retention:** a shared report expires after the TTL you choose, can be set to burn after its first read, and can be revoked manually at any time. The relay only ever stores ciphertext.
 
 == Changelog ==
+
+= 1.4.3 =
+* New: Options tab in profile detail — autoloaded options sorted by size with total size warning and autoload badge (on/off/auto)
+* New: Toggle autoload on/off directly from Options tab — uses wp_set_option_autoload() on WP 6.4+ with fallback
+* Fix: WordPress 6.6+ autoload compatibility — now respects wp_autoload_values_to_autoload filter (yes/on/auto/auto-on) instead of hardcoded 'yes'
+* Fix: WordPress 6.9 cron timing — shutdown priority 9 instead of PHP_INT_MAX (Trac #63858)
+* Fix: Sanitizer false positives — don't redact short secrets (<6 chars) to avoid mangling DB_PASSWORD into /[redacted]-admin/
 
 = 1.4.2 =
 * Branding: Renamed all remaining "Scrutineer" references to "Scrutoscope" across user-facing strings, API prompt, CLI output, comments, and documentation
