@@ -566,7 +566,10 @@ class Profiler {
 		add_action( 'admin_init', array( $this, 'capture_admin_route_class' ), PHP_INT_MAX );
 
 		// Stop and save at shutdown.
-		add_action( 'shutdown', array( $this, 'stop' ), PHP_INT_MAX );
+		// WP 6.9 moved _wp_cron from wp_loaded to shutdown priority 10 (Trac #63858).
+		// Running at PHP_INT_MAX captured spawn_cron's loopback HTTP (can be ~1s) and
+		// inflated total duration vs TTFB. Priority 9 runs before core cron spawn.
+		add_action( 'shutdown', array( $this, 'stop' ), 9 );
 	}
 
 	/**
@@ -1291,9 +1294,24 @@ class Profiler {
 	private static function get_autoloaded_options() {
 		global $wpdb;
 
+		// WP 6.6+ has 7 autoload values: yes, on, auto, auto-on, auto-off, no, off.
+		// Core autoloads yes, on, auto, auto-on. Use the core filter for parity,
+		// falling back to the 4-value default for pre-6.6 or when filter returns empty.
+		$autoload_values = apply_filters( 'wp_autoload_values_to_autoload', array( 'yes', 'on', 'auto', 'auto-on' ) );
+		if ( ! is_array( $autoload_values ) || empty( $autoload_values ) ) {
+			$autoload_values = array( 'yes', 'on', 'auto', 'auto-on' );
+		}
+		// Sanitize filter output to known safe values.
+		$allowed       = array( 'yes', 'on', 'auto', 'auto-on', 'auto-off', 'no', 'off' );
+		$autoload_values = array_values( array_intersect( array_map( 'strval', $autoload_values ), $allowed ) );
+		if ( empty( $autoload_values ) ) {
+			$autoload_values = array( 'yes', 'on', 'auto', 'auto-on' );
+		}
+		$in_list = "'" . implode( "','", array_map( 'esc_sql', $autoload_values ) ) . "'";
+
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$results = $wpdb->get_results(
-			"SELECT option_name, LENGTH(option_value) AS size_bytes FROM {$wpdb->options} WHERE autoload = 'yes' ORDER BY LENGTH(option_value) DESC",
+			"SELECT option_name, autoload, LENGTH(option_value) AS size_bytes FROM {$wpdb->options} WHERE autoload IN ($in_list) ORDER BY LENGTH(option_value) DESC",
 			ARRAY_A
 		);
 		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
@@ -1312,8 +1330,9 @@ class Profiler {
 			$size      = (int) $row['size_bytes'];
 			$total    += $size;
 			$options[] = array(
-				'name' => $row['option_name'],
-				'size' => $size,
+				'name'     => $row['option_name'],
+				'autoload' => isset( $row['autoload'] ) ? $row['autoload'] : 'yes',
+				'size'     => $size,
 			);
 		}
 

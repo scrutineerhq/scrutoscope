@@ -764,6 +764,59 @@
 			}
 		} );
 
+		// Toggle option autoload: yes/on/auto/auto-on <-> off/on.
+		$( document ).on( 'click', '.scrutoscope-toggle-autoload', function() {
+			var $btn = $( this );
+			var optionName = $btn.data( 'option' );
+			var nextVal = $btn.data( 'next' );
+			if ( ! optionName || ! nextVal ) {
+				return;
+			}
+			if ( ! confirm( sprintf( __( 'Change autoload for %s to %s?', 'scrutoscope' ), optionName, nextVal ) ) ) {
+				return;
+			}
+			$btn.prop( 'disabled', true ).text( __( 'Saving…', 'scrutoscope' ) );
+			$.post( scrutoscopeAdmin.ajaxUrl, {
+				action: 'scrutoscope_toggle_option_autoload',
+				nonce: scrutoscopeAdmin.nonce,
+				option_name: optionName,
+				autoload: nextVal
+			} ).done( function( res ) {
+				if ( res && res.success ) {
+					// Optimistic UI update.
+					var newBadgeClass = ( 'off' === nextVal ) ? 'autoload-off' : 'autoload-on';
+					// 'on' -> autoload-on, 'off' -> autoload-off. If we ever flip to 'auto' preserve auto styling via server round-trip.
+					$btn.closest( 'tr' ).find( '.scrutoscope-autoload-badge' ).text( nextVal ).attr( 'class', 'scrutoscope-autoload-badge ' + newBadgeClass );
+					var isNowOffable = ( 'off' !== nextVal );
+					var newNext = isNowOffable ? 'off' : 'on';
+					var newLabel = isNowOffable ? __( 'Set to off', 'scrutoscope' ) : __( 'Set to on', 'scrutoscope' );
+					$btn.data( 'next', newNext ).text( newLabel ).prop( 'disabled', false );
+					if ( window.scrutoscopeToast ) {
+						window.scrutoscopeToast( res.data && res.data.message ? res.data.message : __( 'Autoload updated.', 'scrutoscope' ), 'success' );
+					}
+				} else {
+					$btn.prop( 'disabled', false ).text( $btn.data( 'next' ) === 'off' ? __( 'Set to off', 'scrutoscope' ) : __( 'Set to on', 'scrutoscope' ) );
+					var msg = ( res && res.data && res.data.message ) ? res.data.message : __( 'Failed to update autoload.', 'scrutoscope' );
+					if ( window.scrutoscopeToast ) {
+						window.scrutoscopeToast( msg, 'error' );
+					} else {
+						alert( msg );
+					}
+				}
+			} ).fail( function( xhr ) {
+				$btn.prop( 'disabled', false ).text( $btn.data( 'next' ) === 'off' ? __( 'Set to off', 'scrutoscope' ) : __( 'Set to on', 'scrutoscope' ) );
+				var msg = __( 'Failed to update autoload.', 'scrutoscope' );
+				if ( xhr && xhr.responseJSON && xhr.responseJSON.data && xhr.responseJSON.data.message ) {
+					msg = xhr.responseJSON.data.message;
+				}
+				if ( window.scrutoscopeToast ) {
+					window.scrutoscopeToast( msg, 'error' );
+				} else {
+					alert( msg );
+				}
+			} );
+		} );
+
 		$( document ).on( 'click', '.scrutoscope-qp-more', function( e ) {
 			e.preventDefault();
 			// Toggle only THIS control's detail panel, not every panel on the page.
@@ -3180,13 +3233,16 @@
 			html += ' <span class="scrutoscope-options-caution">' + __( '⚡ Over 512 KB - worth reviewing', 'scrutoscope' ) + '</span>';
 		}
 		html += '</div>';
+		html += '<p class="scrutoscope-options-info">' + __( 'WP 6.6+ values: on/off/auto. Legacy: yes/no. Core autoloads yes, on, auto, auto-on.', 'scrutoscope' ) + '</p>';
 
 		html += '<table class="scrutoscope-source-table scrutoscope-options-table widefat">';
 		html += '<thead><tr>';
 		html += '<th class="numeric">#</th>';
 		html += '<th>' + __( 'Option Name', 'scrutoscope' ) + '</th>';
+		html += '<th>' + __( 'Autoload', 'scrutoscope' ) + '</th>';
 		html += '<th class="numeric">' + __( 'Size', 'scrutoscope' ) + '</th>';
 		html += '<th class="numeric">' + __( '% of Total', 'scrutoscope' ) + '</th>';
+		html += '<th>' + __( 'Action', 'scrutoscope' ) + '</th>';
 		html += '</tr></thead><tbody>';
 
 		for ( var i = 0; i < options.length; i++ ) {
@@ -3194,10 +3250,21 @@
 			var pct = totalSize > 0 ? ( ( opt.size / totalSize ) * 100 ).toFixed( 1 ) : '0.0';
 			var sizeStr = formatBytes( opt.size );
 			var large = opt.size > 102400 ? ' class="scrutoscope-slow-query"' : ''; // > 100 KB highlight.
+			var autoloadVal = opt.autoload || 'yes';
+			var badgeClass = 'autoload-on';
+			if ( 'auto' === autoloadVal || 'auto-on' === autoloadVal ) {
+				badgeClass = 'autoload-auto';
+			} else if ( 'off' === autoloadVal || 'no' === autoloadVal || 'auto-off' === autoloadVal ) {
+				badgeClass = 'autoload-off';
+			}
+			var isOffable = ( 'yes' === autoloadVal || 'on' === autoloadVal || 'auto' === autoloadVal || 'auto-on' === autoloadVal );
+			var nextVal = isOffable ? 'off' : 'on';
+			var btnLabel = isOffable ? __( 'Set to off', 'scrutoscope' ) : __( 'Set to on', 'scrutoscope' );
 
 			html += '<tr' + large + '>';
 			html += '<td class="numeric">' + ( i + 1 ) + '</td>';
 			html += '<td><code>' + esc( opt.name ) + '</code></td>';
+			html += '<td><span class="scrutoscope-autoload-badge ' + badgeClass + '">' + esc( autoloadVal ) + '</span></td>';
 			html += '<td class="numeric">' + esc( sizeStr ) + '</td>';
 			html += '<td class="scrutoscope-weight-cell">';
 			html += '<div class="scrutoscope-weight-bar-wrap">';
@@ -3205,6 +3272,7 @@
 			html += '<div class="scrutoscope-weight-bar" style="width:' + pct + '%;background:#e67e22"></div>';
 			html += '</div>';
 			html += '</td>';
+			html += '<td><button type="button" class="button button-small scrutoscope-toggle-autoload" data-option="' + esc( opt.name ) + '" data-next="' + esc( nextVal ) + '">' + esc( btnLabel ) + '</button></td>';
 			html += '</tr>';
 		}
 

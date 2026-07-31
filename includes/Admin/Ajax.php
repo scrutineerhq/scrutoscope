@@ -78,6 +78,7 @@ class Ajax {
 		'save_retention',
 		'save_proxy_trust',
 		'save_background_filters',
+		'toggle_option_autoload',
 	);
 
 	/**
@@ -1246,6 +1247,98 @@ class Ajax {
 				'user_scope'    => $user_scope,
 				'exclude_paths' => $exclude_paths,
 				'message'       => __( 'Background profiling filters saved.', 'scrutoscope' ),
+			)
+		);
+	}
+
+	/**
+	 * Toggle an option's autoload value.
+	 *
+	 * Expects POST: option_name, autoload (on/off).
+	 * Uses WP 6.4+ wp_set_option_autoload() when available; falls back to
+	 * direct yes/no update for older cores.
+	 */
+	public static function toggle_option_autoload() {
+		$option_name = isset( $_POST['option_name'] ) ? sanitize_text_field( wp_unslash( $_POST['option_name'] ) ) : '';
+		$autoload    = isset( $_POST['autoload'] ) ? sanitize_text_field( wp_unslash( $_POST['autoload'] ) ) : '';
+
+		if ( '' === $option_name ) {
+			wp_send_json_error( array( 'message' => __( 'Missing option name.', 'scrutoscope' ) ), 400 );
+		}
+
+		// Normalize: accept yes/no legacy too, but only store on/off.
+		if ( 'yes' === $autoload ) {
+			$autoload = 'on';
+		} elseif ( 'no' === $autoload ) {
+			$autoload = 'off';
+		}
+
+		if ( ! in_array( $autoload, array( 'on', 'off' ), true ) ) {
+			wp_send_json_error( array( 'message' => __( 'Invalid autoload value.', 'scrutoscope' ) ), 400 );
+		}
+
+		// Protect special options — matches WP core.
+		if ( 'alloptions' === $option_name || 'notoptions' === $option_name ) {
+			wp_send_json_error( array( 'message' => __( 'Cannot modify protected option.', 'scrutoscope' ) ), 400 );
+		}
+
+		if ( function_exists( 'wp_set_option_autoload' ) ) {
+			// WP 6.4+ expects bool true = 'on', false = 'off'.
+			$bool_val = ( 'on' === $autoload );
+			$result   = wp_set_option_autoload( $option_name, $bool_val );
+			// wp_set_option_autoload returns false when option not found OR already that value.
+			// Verify by reading current value.
+			global $wpdb;
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+			$current = $wpdb->get_var( $wpdb->prepare( "SELECT autoload FROM {$wpdb->options} WHERE option_name = %s", $option_name ) );
+			if ( null === $current ) {
+				wp_send_json_error( array( 'message' => __( 'Option not found.', 'scrutoscope' ) ), 404 );
+			}
+			// Normalize current for comparison (yes/no are deprecated aliases for on/off).
+			$normalized_current = $current;
+			if ( 'yes' === $current ) {
+				$normalized_current = 'on';
+			} elseif ( 'no' === $current ) {
+				$normalized_current = 'off';
+			}
+			if ( $normalized_current !== $autoload && false === $result ) {
+				wp_send_json_error( array( 'message' => __( 'Failed to update autoload.', 'scrutoscope' ) ), 500 );
+			}
+		} else {
+			global $wpdb;
+			// Pre-6.4 fallback: yes/no.
+			$db_val = ( 'on' === $autoload ) ? 'yes' : 'no';
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+			$updated = $wpdb->update( $wpdb->options, array( 'autoload' => $db_val ), array( 'option_name' => $option_name ), array( '%s' ), array( '%s' ) );
+			if ( false === $updated ) {
+				wp_send_json_error( array( 'message' => __( 'Database error updating autoload.', 'scrutoscope' ) ), 500 );
+			}
+			if ( 0 === $updated ) {
+				// Check if option exists at all.
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+				$exists = $wpdb->get_var( $wpdb->prepare( "SELECT option_name FROM {$wpdb->options} WHERE option_name = %s", $option_name ) );
+				if ( null === $exists ) {
+					wp_send_json_error( array( 'message' => __( 'Option not found.', 'scrutoscope' ) ), 404 );
+				}
+				// Already that value — treat as success.
+			}
+			// Clear caches for this option.
+			wp_cache_delete( $option_name, 'options' );
+			if ( 'on' === $autoload || 'yes' === $autoload ) {
+				wp_cache_delete( 'alloptions', 'options' );
+			}
+		}
+
+		wp_send_json_success(
+			array(
+				'option_name' => $option_name,
+				'autoload'    => $autoload,
+				'message'     => sprintf(
+					/* translators: %1$s option name, %2$s autoload value */
+					__( 'Autoload for %1$s set to %2$s.', 'scrutoscope' ),
+					$option_name,
+					$autoload
+				),
 			)
 		);
 	}
