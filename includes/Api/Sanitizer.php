@@ -170,9 +170,16 @@ class Sanitizer {
 	 */
 	private static function scrub_string( $str ) {
 		// Replace known sensitive constant values.
+		// Skip very short values — they cause false positives (e.g. DB_PASSWORD
+		// = "wp" in lab/docker would redact every "/wp-admin/" to
+		// "/[redacted]-admin/").
 		foreach ( self::$redacted_constants as $const ) {
 			if ( defined( $const ) && '' !== constant( $const ) ) {
-				$str = str_replace( constant( $const ), '[redacted]', $str );
+				$value = constant( $const );
+				if ( strlen( $value ) < 6 ) {
+					continue;
+				}
+				$str = str_replace( $value, '[redacted]', $str );
 			}
 		}
 
