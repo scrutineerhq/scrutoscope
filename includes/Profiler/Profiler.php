@@ -1294,20 +1294,7 @@ class Profiler {
 	private static function get_autoloaded_options() {
 		global $wpdb;
 
-		// WP 6.6+ has 7 autoload values: yes, on, auto, auto-on, auto-off, no, off.
-		// Core autoloads yes, on, auto, auto-on. Use the core filter for parity,
-		// falling back to the 4-value default for pre-6.6 or when filter returns empty.
-		$autoload_values = apply_filters( 'wp_autoload_values_to_autoload', array( 'yes', 'on', 'auto', 'auto-on' ) );
-		if ( ! is_array( $autoload_values ) || empty( $autoload_values ) ) {
-			$autoload_values = array( 'yes', 'on', 'auto', 'auto-on' );
-		}
-		// Sanitize filter output to known safe values.
-		$allowed       = array( 'yes', 'on', 'auto', 'auto-on', 'auto-off', 'no', 'off' );
-		$autoload_values = array_values( array_intersect( array_map( 'strval', $autoload_values ), $allowed ) );
-		if ( empty( $autoload_values ) ) {
-			$autoload_values = array( 'yes', 'on', 'auto', 'auto-on' );
-		}
-		$in_list = "'" . implode( "','", array_map( 'esc_sql', $autoload_values ) ) . "'";
+		$in_list = \Scrutoscope\Util\Autoload::get_in_list_sql();
 
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$results = $wpdb->get_results(

@@ -297,17 +297,7 @@ class Diagnostics {
 	private static function get_autoloaded_options_size() {
 		global $wpdb;
 
-		// Match Profiler::get_autoloaded_options() — WP 6.6+ 7-value autoload system.
-		$autoload_values = apply_filters( 'wp_autoload_values_to_autoload', array( 'yes', 'on', 'auto', 'auto-on' ) );
-		if ( ! is_array( $autoload_values ) || empty( $autoload_values ) ) {
-			$autoload_values = array( 'yes', 'on', 'auto', 'auto-on' );
-		}
-		$allowed         = array( 'yes', 'on', 'auto', 'auto-on', 'auto-off', 'no', 'off' );
-		$autoload_values = array_values( array_intersect( array_map( 'strval', $autoload_values ), $allowed ) );
-		if ( empty( $autoload_values ) ) {
-			$autoload_values = array( 'yes', 'on', 'auto', 'auto-on' );
-		}
-		$in_list = "'" . implode( "','", array_map( 'esc_sql', $autoload_values ) ) . "'";
+		$in_list = \Scrutoscope\Util\Autoload::get_in_list_sql();
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$size = $wpdb->get_var(
