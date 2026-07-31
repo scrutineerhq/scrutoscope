@@ -3,7 +3,7 @@ Contributors: kurtpayne
 Tags: performance, profiler, debug, speed, slow
 Requires at least: 7.0
 Tested up to: 7.0
-Stable tag: 1.4.3
+Stable tag: 1.4.4
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -117,6 +117,10 @@ It is never contacted during normal profiling, page loads, or background capture
 **Data retention:** a shared report expires after the TTL you choose, can be set to burn after its first read, and can be revoked manually at any time. The relay only ever stores ciphertext.
 
 == Changelog ==
+
+= 1.4.4 =
+* Fix: PHPCS — missing file doc and interpolated IN list false positives — CI now clean
+* Change: Release workflow now validates PHPCS + PHPUnit + share format before shipping — failing check blocks deploy
 
 = 1.4.3 =
 * New: Options tab in profile detail — autoloaded options sorted by size with total size warning and autoload badge (on/off/auto)
