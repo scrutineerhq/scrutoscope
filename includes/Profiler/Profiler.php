@@ -431,6 +431,8 @@ class Profiler {
 			'textdomain_jit'     => $this->build_textdomain_jit(),
 			'autoloaded_options' => self::get_autoloaded_options(),
 			'enqueued_assets'    => self::get_enqueued_assets(),
+			'script_modules'     => self::get_script_modules(),
+			'env_health'         => class_exists( '\\Scrutoscope\\Util\\Environment' ) ? \Scrutoscope\Util\Environment::get_env_health() : array(),
 			'referer'            => '',
 			'ajax_action'        => '',
 			'response_status'    => 200,
@@ -734,6 +736,8 @@ class Profiler {
 			'textdomain_jit'     => $this->build_textdomain_jit(),
 			'autoloaded_options' => self::get_autoloaded_options(),
 			'enqueued_assets'    => self::get_enqueued_assets(),
+			'script_modules'     => self::get_script_modules(),
+			'env_health'         => class_exists( '\\Scrutoscope\\Util\\Environment' ) ? \Scrutoscope\Util\Environment::get_env_health() : array(),
 			// Background sampling profiles anonymous visitor traffic, so the
 			// visitor's inbound referer is never-collect data. Only capture it
 			// for admin-driven session profiling (the admin's own navigation).
@@ -1419,7 +1423,10 @@ class Profiler {
 	/**
 	 * Capture autoloaded options from wp_options.
 	 *
-	 * @return array{total_size: int, count: int, options: array}
+	 * Includes guidance flag for options that explicitly force autoload
+	 * despite exceeding core's max size (WP 6.6+).
+	 *
+	 * @return array{total_size: int, count: int, options: array, max_size: int, defies_count: int}
 	 */
 	private static function get_autoloaded_options() {
 		global $wpdb;
@@ -1433,30 +1440,177 @@ class Profiler {
 		);
 		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
+		$max_size = 150000;
+		if ( class_exists( '\\Scrutoscope\\Util\\Environment' ) ) {
+			$max_size = \Scrutoscope\Util\Environment::get_max_autoload_size();
+		} elseif ( function_exists( 'wp_max_autoloaded_option_size' ) ) {
+			$max_size = (int) wp_max_autoloaded_option_size();
+		} elseif ( function_exists( 'apply_filters' ) ) {
+			$f = apply_filters( 'wp_max_autoloaded_option_size', 150000 );
+			if ( is_int( $f ) && $f > 0 ) {
+				$max_size = $f;
+			} elseif ( is_numeric( $f ) && (int) $f > 0 ) {
+				$max_size = (int) $f;
+			}
+		}
+
 		if ( empty( $results ) || ! is_array( $results ) ) {
 			return array(
-				'total_size' => 0,
-				'count'      => 0,
-				'options'    => array(),
+				'total_size'   => 0,
+				'count'        => 0,
+				'options'      => array(),
+				'max_size'     => $max_size,
+				'defies_count' => 0,
 			);
 		}
 
-		$total   = 0;
-		$options = array();
+		$total        = 0;
+		$options      = array();
+		$defies_count = 0;
+		$autoloaded_vals = array( 'yes', 'on', 'auto', 'auto-on' );
 		foreach ( $results as $row ) {
-			$size      = (int) $row['size_bytes'];
-			$total    += $size;
+			$size     = (int) $row['size_bytes'];
+			$autoload = isset( $row['autoload'] ) ? $row['autoload'] : 'yes';
+			$total   += $size;
+			$defies   = $size > $max_size && in_array( $autoload, $autoloaded_vals, true );
+			if ( $defies ) {
+				++$defies_count;
+			}
 			$options[] = array(
-				'name'     => $row['option_name'],
-				'autoload' => isset( $row['autoload'] ) ? $row['autoload'] : 'yes',
-				'size'     => $size,
+				'name'           => $row['option_name'],
+				'autoload'       => $autoload,
+				'size'           => $size,
+				'defies_guidance'=> $defies,
 			);
 		}
 
 		return array(
-			'total_size' => $total,
-			'count'      => count( $options ),
-			'options'    => $options,
+			'total_size'   => $total,
+			'count'        => count( $options ),
+			'options'      => $options,
+			'max_size'     => $max_size,
+			'defies_count' => $defies_count,
+		);
+	}
+
+	/**
+	 * Collect script modules (WP 6.5+ Script Modules API).
+	 *
+	 * @return array{modules: array, count: int, total_size: int}
+	 */
+	private static function get_script_modules() {
+		$modules = array();
+		$total_size = 0;
+
+		// WP 6.5+ API: wp_script_modules() returns WP_Script_Modules.
+		if ( function_exists( 'wp_script_modules' ) ) {
+			$registry = wp_script_modules();
+			if ( $registry ) {
+				// Try common getter names across WP versions.
+				$marked = array();
+				if ( method_exists( $registry, 'get_marked_for_enqueue' ) ) {
+					$marked = $registry->get_marked_for_enqueue();
+				} elseif ( method_exists( $registry, 'get_marked_for_display' ) ) {
+					$marked = $registry->get_marked_for_display();
+				}
+
+				// If no explicit marked list, fall back to all registered that are enqueued.
+				if ( empty( $marked ) && method_exists( $registry, 'get_registered_script_modules' ) ) {
+					$all = $registry->get_registered_script_modules();
+					if ( is_array( $all ) ) {
+						$marked = array_keys( $all );
+					}
+				}
+
+				if ( is_array( $marked ) && ! empty( $marked ) ) {
+					$abspath = wp_normalize_path( ABSPATH );
+					foreach ( $marked as $id ) {
+						// ID can be string or array with 'id' key depending on WP version.
+						$handle = is_array( $id ) && isset( $id['id'] ) ? $id['id'] : (string) $id;
+						if ( '' === $handle ) {
+							continue;
+						}
+
+						// Try to get module data.
+						$data = null;
+						if ( method_exists( $registry, 'get_registered_script_module' ) ) {
+							$data = $registry->get_registered_script_module( $handle );
+						} elseif ( method_exists( $registry, 'get_data' ) ) {
+							$data = $registry->get_data( $handle );
+						}
+
+						$src  = '';
+						$deps = array();
+						$ver  = '';
+						if ( is_array( $data ) ) {
+							$src  = isset( $data['src'] ) ? $data['src'] : ( isset( $data['source'] ) ? $data['source'] : '' );
+							$deps = isset( $data['dependencies'] ) ? $data['dependencies'] : ( isset( $data['deps'] ) ? $data['deps'] : array() );
+							$ver  = isset( $data['version'] ) ? $data['version'] : ( isset( $data['ver'] ) ? $data['ver'] : '' );
+							if ( ! is_array( $deps ) ) {
+								$deps = array();
+							}
+						} elseif ( is_object( $data ) ) {
+							$src  = isset( $data->src ) ? $data->src : '';
+							$deps = isset( $data->dependencies ) ? $data->dependencies : ( isset( $data->deps ) ? $data->deps : array() );
+							$ver  = isset( $data->version ) ? $data->version : ( isset( $data->ver ) ? $data->ver : '' );
+						}
+
+						$size = 0;
+						$local_path = '';
+						if ( $src ) {
+							$local_path = self::resolve_asset_path( $src, $abspath );
+							if ( $local_path && file_exists( $local_path ) ) {
+								$size = (int) filesize( $local_path );
+							}
+						}
+
+						$attribution = array( 'type' => 'unknown', 'slug' => '', 'name' => '' );
+						if ( $local_path ) {
+							$attribution = Attribution::classify( $local_path );
+						} elseif ( $src ) {
+							$attribution = self::classify_asset_url( $src );
+						}
+						// Handle-based for @wordpress/* is core.
+						if ( 'unknown' === $attribution['type'] && 0 === strpos( $handle, '@wordpress/' ) ) {
+							$attribution = array( 'type' => 'core', 'slug' => 'wordpress', 'name' => 'WordPress Core' );
+						}
+
+						$total_size += $size;
+						$modules[] = array(
+							'handle'      => $handle,
+							'src'         => $src,
+							'version'     => $ver,
+							'deps'        => $deps,
+							'size'        => $size,
+							'attribution' => $attribution,
+						);
+					}
+				}
+			}
+		}
+
+		// Also check for import map if available (WP 6.8+).
+		$import_map = array();
+		if ( function_exists( 'wp_get_import_map' ) ) {
+			$map = wp_get_import_map();
+			if ( is_array( $map ) ) {
+				$import_map = $map;
+			}
+		}
+
+		// Sort by size desc.
+		usort(
+			$modules,
+			function ( $a, $b ) {
+				return $b['size'] <=> $a['size'];
+			}
+		);
+
+		return array(
+			'modules'    => $modules,
+			'count'      => count( $modules ),
+			'total_size' => $total_size,
+			'import_map' => $import_map,
 		);
 	}
 
