@@ -1506,19 +1506,27 @@ class Profiler {
 		if ( function_exists( 'wp_script_modules' ) ) {
 			$registry = wp_script_modules();
 			if ( $registry ) {
-				// Try common getter names across WP versions.
+				// Try common getter names across WP versions - use is_callable to avoid private methods.
 				$marked = array();
-				if ( method_exists( $registry, 'get_marked_for_enqueue' ) ) {
+				if ( is_callable( array( $registry, 'get_queue' ) ) ) {
+					$marked = $registry->get_queue();
+				} elseif ( is_callable( array( $registry, 'get_marked_for_enqueue' ) ) ) {
 					$marked = $registry->get_marked_for_enqueue();
-				} elseif ( method_exists( $registry, 'get_marked_for_display' ) ) {
+				} elseif ( is_callable( array( $registry, 'get_marked_for_display' ) ) ) {
 					$marked = $registry->get_marked_for_display();
 				}
 
 				// If no explicit marked list, fall back to all registered that are enqueued.
-				if ( empty( $marked ) && method_exists( $registry, 'get_registered_script_modules' ) ) {
-					$all = $registry->get_registered_script_modules();
-					if ( is_array( $all ) ) {
-						$marked = array_keys( $all );
+				if ( empty( $marked ) ) {
+					if ( is_callable( array( $registry, 'get_registered_script_modules' ) ) ) {
+						$all = $registry->get_registered_script_modules();
+						if ( is_array( $all ) ) {
+							$marked = array_keys( $all );
+						}
+					} elseif ( is_callable( array( $registry, 'get_registered' ) ) ) {
+						// WP 7.0+ has get_registered() for single, but we can try to get all via reflection as last resort.
+						// For now, leave $marked empty and rely on queue.
+						$marked = array();
 					}
 				}
 
@@ -1533,9 +1541,11 @@ class Profiler {
 
 						// Try to get module data.
 						$data = null;
-						if ( method_exists( $registry, 'get_registered_script_module' ) ) {
+						if ( is_callable( array( $registry, 'get_registered' ) ) ) {
+							$data = $registry->get_registered( $handle );
+						} elseif ( is_callable( array( $registry, 'get_registered_script_module' ) ) ) {
 							$data = $registry->get_registered_script_module( $handle );
-						} elseif ( method_exists( $registry, 'get_data' ) ) {
+						} elseif ( is_callable( array( $registry, 'get_data' ) ) ) {
 							$data = $registry->get_data( $handle );
 						}
 
