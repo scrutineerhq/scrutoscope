@@ -1006,16 +1006,21 @@
         var hookMatch = !hf || (sp.tags && sp.tags[hf]);
         var op = sel ? (inSelGroup ? 1 : dim) : (hf ? (hookMatch ? 1 : 0.2) : 1);
         var share = sp.dur / T * 100;
+        var isSelected = sel === sp.id;
         var seg = el('div', {
           position: 'absolute', left: pct(sp.start) + '%', width: 'max(' + w.toFixed(3) + '%, 2px)', top: 0, bottom: 0,
           background: isU ? TH.unattrFill : colorFor(sp.type, sp.src),
           backgroundImage: isU ? hatchBg(TH.hatch) : 'none',
           borderRight: '1px solid ' + TH.cardBg, cursor: 'pointer', opacity: op,
           boxShadow: (active || inSelGroup) ? 'inset 0 0 0 2px ' + TH.text : 'none',
-          zIndex: (active || inSelGroup) ? 5 : 1, transition: 'opacity .12s'
+          zIndex: (active || inSelGroup) ? 5 : 1, transition: 'opacity .12s',
+          outline: isSelected && state.vpFocused ? '2px solid ' + TH.accent : 'none',
+          outlineOffset: '-2px'
         }, {
-          'data-id': sp.id, role: 'button', tabindex: '-1',
-          aria: labelText(sp) + ', ' + typeTag(sp.type) + ', exclusive ' + fmtMs(sp.dur) + ' ms, ' + share.toFixed(1) + '% of request'
+          'data-id': sp.id, role: 'button', tabindex: isSelected ? '0' : '-1',
+          aria: labelText(sp) + ', ' + typeTag(sp.type) + ', exclusive ' + fmtMs(sp.dur) + ' ms, ' + share.toFixed(1) + '% of request',
+          class: 'scrutoscope-timeline-span' + (isSelected ? ' is-selected' : '') + (active ? ' is-active' : ''),
+          'aria-selected': isSelected ? 'true' : 'false'
         });
         var showLabel = (w > 7 && !isU) || (isU && w > 12);
         if (showLabel) {
