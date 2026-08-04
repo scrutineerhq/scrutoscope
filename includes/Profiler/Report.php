@@ -148,8 +148,22 @@ class Report {
 		// HTTP call summary.
 		$http_calls    = isset( $request_metadata['http_calls'] ) ? $request_metadata['http_calls'] : array();
 		$http_total_ms = 0;
+		$ai_total_ms   = 0;
+		$ai_call_count = 0;
 		foreach ( $http_calls as $hc ) {
-			$http_total_ms += isset( $hc['duration_ms'] ) ? (float) $hc['duration_ms'] : 0;
+			$dur = isset( $hc['duration_ms'] ) ? (float) $hc['duration_ms'] : 0;
+			$http_total_ms += $dur;
+			if ( ! empty( $hc['provider'] ) ) {
+				$ai_total_ms += $dur;
+				++$ai_call_count;
+			}
+		}
+
+		// Ability calls summary (WP 6.9+ Abilities API).
+		$ability_calls    = isset( $request_metadata['ability_calls'] ) ? $request_metadata['ability_calls'] : array();
+		$ability_total_ms = 0;
+		foreach ( $ability_calls as $ac ) {
+			$ability_total_ms += isset( $ac['duration_ms'] ) ? (float) $ac['duration_ms'] : 0;
 		}
 
 		// Route classification.
@@ -173,14 +187,19 @@ class Report {
 				'query_count'        => isset( $request_metadata['query_count'] ) ? (int) $request_metadata['query_count'] : 0,
 				'http_call_count'    => count( $http_calls ),
 				'http_total_ms'      => round( $http_total_ms, 2 ),
+				'ai_call_count'      => $ai_call_count,
+				'ai_total_ms'        => round( $ai_total_ms, 2 ),
+				'ability_call_count' => count( $ability_calls ),
+				'ability_total_ms'   => round( $ability_total_ms, 2 ),
 				'memory_peak'        => memory_get_peak_usage(),
 				'memory_allocated'   => $total_mem_allocated,
-				'asset_count'        => isset( $request_metadata['enqueued_assets']['counts'] )
-					? ( $request_metadata['enqueued_assets']['counts']['scripts'] + $request_metadata['enqueued_assets']['counts']['styles'] )
-					: 0,
+				'asset_count'        => ( isset( $request_metadata['enqueued_assets']['counts'] )
+					? ( ( $request_metadata['enqueued_assets']['counts']['scripts'] ?? 0 ) + ( $request_metadata['enqueued_assets']['counts']['styles'] ?? 0 ) + ( $request_metadata['enqueued_assets']['counts']['modules'] ?? 0 ) )
+					: 0 ) ?: ( isset( $request_metadata['script_modules']['count'] ) ? (int) $request_metadata['script_modules']['count'] : 0 ),
 				'asset_total_size'   => isset( $request_metadata['enqueued_assets']['total_size'] )
 					? (int) $request_metadata['enqueued_assets']['total_size']
 					: 0,
+				'module_count'       => isset( $request_metadata['script_modules']['count'] ) ? (int) $request_metadata['script_modules']['count'] : ( isset( $request_metadata['enqueued_assets']['counts']['modules'] ) ? (int) $request_metadata['enqueued_assets']['counts']['modules'] : 0 ),
 			),
 			'sources'            => array_values( $by_source ),
 			'core_subsystems'    => $core_subsystems,
@@ -201,11 +220,14 @@ class Report {
 			'memory_samples'     => isset( $request_metadata['memory_samples'] ) ? $request_metadata['memory_samples'] : array(),
 			'queries'            => isset( $request_metadata['queries'] ) ? $request_metadata['queries'] : array(),
 			'http_calls'         => $http_calls,
+			'ability_calls'      => $ability_calls,
 			'dev_signals'        => isset( $request_metadata['dev_signals'] ) ? $request_metadata['dev_signals'] : array(),
 			'textdomain_jit'     => isset( $request_metadata['textdomain_jit'] ) ? $request_metadata['textdomain_jit'] : array(),
 			'boot_phases'        => isset( $request_metadata['boot_phases'] ) ? $request_metadata['boot_phases'] : array(),
 			'autoloaded_options' => isset( $request_metadata['autoloaded_options'] ) ? $request_metadata['autoloaded_options'] : array(),
 			'enqueued_assets'    => isset( $request_metadata['enqueued_assets'] ) ? $request_metadata['enqueued_assets'] : array(),
+			'script_modules'     => isset( $request_metadata['script_modules'] ) ? $request_metadata['script_modules'] : array(),
+			'env_health'         => isset( $request_metadata['env_health'] ) ? $request_metadata['env_health'] : array(),
 			'timeline'           => $lightweight ? array() : self::build_timeline( $raw_timings, $duration_ns ),
 			'cron_hooks'         => self::build_cron_hook_segments( $raw_timings, $request_metadata ),
 		);

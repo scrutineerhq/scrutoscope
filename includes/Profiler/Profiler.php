@@ -128,6 +128,20 @@ class Profiler {
 	private $http_pending = array();
 
 	/**
+	 * Completed Abilities API execution records (WP 6.9+).
+	 *
+	 * @var array<int, array>
+	 */
+	private $ability_calls = array();
+
+	/**
+	 * Stack of in-flight ability executions.
+	 *
+	 * @var array<int, array>
+	 */
+	private $ability_pending = array();
+
+	/**
 	 * Get the singleton instance.
 	 *
 	 * @return Profiler
@@ -412,6 +426,7 @@ class Profiler {
 			'query_count'        => self::get_query_count(),
 			'queries'            => $this->get_query_log(),
 			'http_calls'         => $this->build_http_calls(),
+			'ability_calls'      => $this->build_ability_calls(),
 			'dev_signals'        => $this->build_dev_signals(),
 			'textdomain_jit'     => $this->build_textdomain_jit(),
 			'autoloaded_options' => self::get_autoloaded_options(),
@@ -441,6 +456,8 @@ class Profiler {
 		$this->phase_memory   = array();
 		$this->http_calls     = array();
 		$this->http_pending   = array();
+		$this->ability_calls  = array();
+		$this->ability_pending = array();
 		$this->dev_signals    = array();
 		$this->textdomain_jit = array();
 
@@ -540,6 +557,16 @@ class Profiler {
 		// http_api_debug fires for EVERY request — including non-blocking
 		// (fire-and-forget) calls, which never reach the http_response filter.
 		add_action( 'http_api_debug', array( $this, 'track_http_end' ), PHP_INT_MAX, 2 );
+
+		// Abilities API execution timing (WP 6.9+). Gracefully no-ops on older WP where these actions don't exist.
+		add_action( 'wp_ability_before_execute', array( $this, 'track_ability_start' ), 0, 2 );
+		add_action( 'wp_ability_after_execute', array( $this, 'track_ability_end' ), PHP_INT_MAX, 2 );
+		// Legacy/alternate names seen in pre-release implementations.
+		add_action( 'wp_abilities_api_before_execute_ability', array( $this, 'track_ability_start' ), 0, 2 );
+		add_action( 'wp_abilities_api_after_execute_ability', array( $this, 'track_ability_end' ), PHP_INT_MAX, 2 );
+		// Filter-based execution path.
+		add_filter( 'pre_execute_ability', array( $this, 'track_ability_start_filter' ), 0, 2 );
+		add_filter( 'execute_ability_result', array( $this, 'track_ability_end_filter' ), PHP_INT_MAX, 3 );
 
 		// Core-developer signals: deprecations + doing_it_wrong. Captured only
 		// while profiling (non-profiled requests pay nothing). Aggregate only —
@@ -702,6 +729,7 @@ class Profiler {
 			'query_count'        => self::get_query_count(),
 			'queries'            => $this->get_query_log(),
 			'http_calls'         => $this->build_http_calls(),
+			'ability_calls'      => $this->build_ability_calls(),
 			'dev_signals'        => $this->build_dev_signals(),
 			'textdomain_jit'     => $this->build_textdomain_jit(),
 			'autoloaded_options' => self::get_autoloaded_options(),
@@ -896,6 +924,11 @@ class Profiler {
 			$status = (int) $response['response']['code'];
 		}
 
+		$provider = null;
+		if ( class_exists( '\\Scrutoscope\\Util\\AiProvider' ) ) {
+			$provider = \Scrutoscope\Util\AiProvider::detect( $pending['url'] );
+		}
+
 		$this->http_calls[] = array(
 			'url'         => $pending['url'],
 			'method'      => $pending['method'],
@@ -906,6 +939,7 @@ class Profiler {
 			'caller'      => $pending['caller'],
 			'is_error'    => $is_error,
 			'blocking'    => $pending['blocking'],
+			'provider'    => $provider,
 		);
 	}
 
@@ -918,6 +952,10 @@ class Profiler {
 		$calls = array();
 		foreach ( $this->http_calls as $call ) {
 			$offset_ns = max( 0, $call['start_ns'] - $this->request_start_ns );
+			$provider  = isset( $call['provider'] ) ? $call['provider'] : null;
+			if ( null === $provider && class_exists( '\\Scrutoscope\\Util\\AiProvider' ) && ! empty( $call['url'] ) ) {
+				$provider = \Scrutoscope\Util\AiProvider::detect( $call['url'] );
+			}
 			$calls[]   = array(
 				'url'         => $call['url'],
 				'method'      => $call['method'],
@@ -928,6 +966,7 @@ class Profiler {
 				'caller'      => $call['caller'],
 				'is_error'    => $call['is_error'],
 				'blocking'    => isset( $call['blocking'] ) ? $call['blocking'] : true,
+				'provider'    => $provider,
 			);
 		}
 
@@ -939,6 +978,97 @@ class Profiler {
 			}
 		);
 
+		return $calls;
+	}
+
+	/**
+	 * Track Abilities API execution start (WP 6.9+).
+	 *
+	 * @param string     $ability_name Ability name.
+	 * @param mixed|null $input        Input data.
+	 * @return void
+	 */
+	public function track_ability_start( $ability_name, $input = null ) {
+		$this->ability_pending[] = array(
+			'name'     => (string) $ability_name,
+			'start_ns' => hrtime( true ),
+		);
+		unset( $input );
+	}
+
+	/**
+	 * Filter wrapper for ability start.
+	 *
+	 * @param mixed  $preempt      Short-circuit value.
+	 * @param string $ability_name Ability name.
+	 * @return mixed
+	 */
+	public function track_ability_start_filter( $preempt, $ability_name ) {
+		$this->track_ability_start( $ability_name, null );
+		return $preempt;
+	}
+
+	/**
+	 * Track Abilities API execution end (WP 6.9+).
+	 *
+	 * @param string $ability_name Ability name.
+	 * @param mixed  $result       Execution result.
+	 * @return void
+	 */
+	public function track_ability_end( $ability_name = '', $result = null ) {
+		if ( empty( $this->ability_pending ) ) {
+			return;
+		}
+		$pending = array_pop( $this->ability_pending );
+		$end_ns  = hrtime( true );
+		$name    = ! empty( $pending['name'] ) ? $pending['name'] : (string) $ability_name;
+		$this->ability_calls[] = array(
+			'name'        => $name,
+			'duration_ns' => max( 0, $end_ns - $pending['start_ns'] ),
+			'duration_ms' => round( max( 0, $end_ns - $pending['start_ns'] ) / 1e6, 2 ),
+			'start_ns'    => $pending['start_ns'],
+			'end_ns'      => $end_ns,
+			'is_error'    => is_wp_error( $result ),
+		);
+	}
+
+	/**
+	 * Filter wrapper for ability end.
+	 *
+	 * @param mixed  $result       Execution result.
+	 * @param string $ability_name Ability name.
+	 * @param mixed  $input        Input data.
+	 * @return mixed
+	 */
+	public function track_ability_end_filter( $result, $ability_name, $input = null ) {
+		$this->track_ability_end( $ability_name, $result );
+		unset( $input );
+		return $result;
+	}
+
+	/**
+	 * Build ability call data with offsets.
+	 *
+	 * @return array
+	 */
+	private function build_ability_calls() {
+		$calls = array();
+		foreach ( $this->ability_calls as $call ) {
+			$offset_ns = max( 0, $call['start_ns'] - $this->request_start_ns );
+			$calls[]   = array(
+				'name'        => $call['name'],
+				'duration_ns' => $call['duration_ns'],
+				'duration_ms' => $call['duration_ms'],
+				'offset_ns'   => $offset_ns,
+				'is_error'    => ! empty( $call['is_error'] ),
+			);
+		}
+		usort(
+			$calls,
+			function ( $a, $b ) {
+				return $a['offset_ns'] <=> $b['offset_ns'];
+			}
+		);
 		return $calls;
 	}
 

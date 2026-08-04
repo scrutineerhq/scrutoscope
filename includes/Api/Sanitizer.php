@@ -125,7 +125,24 @@ class Sanitizer {
 					// scheme+host on every output path — same defense-in-depth as
 					// SQL, since a write-time reduction can regress or predate a
 					// stored profile.
-					$clean[ $key ] = self::reduce_http_call_urls( self::sanitize( $value ) );
+					// Preserve 'provider' (AI tag) verbatim — it's a short
+					// controlled vocab string and must not be scrubbed as a secret.
+					$sanitized = array();
+					foreach ( $value as $idx => $call ) {
+						if ( ! is_array( $call ) ) {
+							$sanitized[ $idx ] = self::sanitize( $call );
+							continue;
+						}
+						$provider = isset( $call['provider'] ) ? $call['provider'] : null;
+						$sanitized[ $idx ] = self::sanitize( $call );
+						if ( null !== $provider ) {
+							$sanitized[ $idx ]['provider'] = $provider;
+						}
+					}
+					$clean[ $key ] = self::reduce_http_call_urls( $sanitized );
+				} elseif ( 'ability_calls' === $key && is_array( $value ) ) {
+					// Ability names are controlled vocab — don't scrub.
+					$clean[ $key ] = $value;
 				} else {
 					$clean[ $key ] = self::sanitize( $value );
 				}
