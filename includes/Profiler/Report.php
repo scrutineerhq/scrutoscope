@@ -193,9 +193,9 @@ class Report {
 				'ability_total_ms'   => round( $ability_total_ms, 2 ),
 				'memory_peak'        => memory_get_peak_usage(),
 				'memory_allocated'   => $total_mem_allocated,
-				'asset_count'        => ( isset( $request_metadata['enqueued_assets']['counts'] )
-					? ( ( $request_metadata['enqueued_assets']['counts']['scripts'] ?? 0 ) + ( $request_metadata['enqueued_assets']['counts']['styles'] ?? 0 ) + ( $request_metadata['enqueued_assets']['counts']['modules'] ?? 0 ) )
-					: 0 ) ?: ( isset( $request_metadata['script_modules']['count'] ) ? (int) $request_metadata['script_modules']['count'] : 0 ),
+				'asset_count'        => isset( $request_metadata['enqueued_assets']['counts'] )
+				? ( 0 !== ( ( $request_metadata['enqueued_assets']['counts']['scripts'] ?? 0 ) + ( $request_metadata['enqueued_assets']['counts']['styles'] ?? 0 ) + ( $request_metadata['enqueued_assets']['counts']['modules'] ?? 0 ) ) ? ( ( $request_metadata['enqueued_assets']['counts']['scripts'] ?? 0 ) + ( $request_metadata['enqueued_assets']['counts']['styles'] ?? 0 ) + ( $request_metadata['enqueued_assets']['counts']['modules'] ?? 0 ) ) : ( isset( $request_metadata['script_modules']['count'] ) ? (int) $request_metadata['script_modules']['count'] : 0 ) )
+				: ( isset( $request_metadata['script_modules']['count'] ) ? (int) $request_metadata['script_modules']['count'] : 0 ),
 				'asset_total_size'   => isset( $request_metadata['enqueued_assets']['total_size'] )
 					? (int) $request_metadata['enqueued_assets']['total_size']
 					: 0,

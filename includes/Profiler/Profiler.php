@@ -1480,7 +1480,7 @@ class Profiler {
 				'name'           => $row['option_name'],
 				'autoload'       => $autoload,
 				'size'           => $size,
-				'defies_guidance'=> $defies,
+				'defies_guidance' => $defies,
 			);
 		}
 
@@ -1574,7 +1574,11 @@ class Profiler {
 							}
 						}
 
-						$attribution = array( 'type' => 'unknown', 'slug' => '', 'name' => '' );
+						$attribution = array(
+							'type' => 'unknown',
+							'slug' => '',
+							'name' => '',
+						);
 						if ( $local_path ) {
 							$attribution = Attribution::classify( $local_path );
 						} elseif ( $src ) {
@@ -1582,7 +1586,11 @@ class Profiler {
 						}
 						// Handle-based for @wordpress/* is core.
 						if ( 'unknown' === $attribution['type'] && 0 === strpos( $handle, '@wordpress/' ) ) {
-							$attribution = array( 'type' => 'core', 'slug' => 'wordpress', 'name' => 'WordPress Core' );
+							$attribution = array(
+							'type' => 'core',
+							'slug' => 'wordpress',
+							'name' => 'WordPress Core',
+						);
 						}
 
 						$total_size += $size;
