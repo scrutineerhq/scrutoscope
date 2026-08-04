@@ -1858,6 +1858,98 @@
 	border: 1px solid #c3c4c7;
 }
 
+/* AI Provider badge / filter */
+.scrutoscope-ai-badge {
+	display: inline-block;
+	margin-left: 6px;
+	padding: 1px 7px;
+	border-radius: 10px;
+	font-size: 10px;
+	font-weight: 700;
+	line-height: 1.6;
+	white-space: nowrap;
+	vertical-align: middle;
+	background: #f3e8ff;
+	color: #6b21a8;
+	border: 1px solid #d8b4fe;
+}
+
+.scrutoscope-ai-provider {
+	display: inline-block;
+	padding: 1px 6px;
+	border-radius: 8px;
+	font-size: 11px;
+	font-weight: 600;
+	background: #faf5ff;
+	color: #7e22ce;
+	border: 1px solid #e9d5ff;
+}
+
+.scrutoscope-ai-summary {
+	color: #7e22ce;
+	font-weight: 600;
+}
+
+.scrutoscope-http-filter {
+	margin: 8px 0 10px 0;
+	font-size: 13px;
+}
+
+.scrutoscope-http-filter .scrutoscope-filter-label {
+	color: #646970;
+	margin-right: 6px;
+}
+
+.scrutoscope-filter-pill {
+	display: inline-block;
+	padding: 3px 10px;
+	border-radius: 12px;
+	font-size: 12px;
+	font-weight: 600;
+	line-height: 1.4;
+	border: 1px solid #c3c4c7;
+	background: #fff;
+	color: #50575e;
+	cursor: pointer;
+}
+
+.scrutoscope-filter-pill:hover {
+	background: #f6f7f7;
+}
+
+.scrutoscope-filter-pill.scrutoscope-filter-active {
+	background: #7e22ce;
+	color: #fff;
+	border-color: #7e22ce;
+}
+
+.scrutoscope-muted {
+	color: #a7aaad;
+}
+
+.scrutoscope-defies-badge {
+	display: inline-block;
+	margin-left: 6px;
+	padding: 1px 6px;
+	border-radius: 10px;
+	font-size: 9px;
+	font-weight: 700;
+	line-height: 1.6;
+	white-space: nowrap;
+	background: #fde8e8;
+	color: #8a1f11;
+	border: 1px solid #f1a2a2;
+}
+
+.scrutoscope-defies-row {
+	background: #fdf0f0 !important;
+}
+
+.scrutoscope-env-pills .scrutoscope-autoload-badge {
+	font-size: 11px;
+	padding: 3px 10px;
+}
+
 .scrutoscope-toggle-autoload {
 	font-size: 11px;
 	padding: 0 8px;
@@ -2573,6 +2665,79 @@
 .scrutoscope-trace-more {
 	text-align: center;
 	padding: 12px 0;
+}
+
+/* Virtualization viewport — fixed height, scrollable, sticky header */
+#scrutoscope-trace-viewport {
+	max-height: 520px;
+	overflow-y: auto;
+	overflow-x: hidden;
+	position: relative;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+	background: #fff;
+}
+
+#scrutoscope-trace-viewport:focus {
+	outline: none;
+}
+
+#scrutoscope-trace-viewport:focus-visible {
+	outline: 2px solid var(--wp-admin-theme-color, #2271b1);
+	outline-offset: -2px;
+}
+
+.scrutoscope-trace-viewport-inner table {
+	margin: 0;
+	border: 0;
+}
+
+.scrutoscope-trace-viewport-inner thead th {
+	position: sticky;
+	top: 0;
+	background: #fff;
+	z-index: 2;
+	box-shadow: 0 1px 0 #c3c4c7;
+}
+
+.scrutoscope-trace-row {
+	outline: none;
+}
+
+.scrutoscope-trace-row:hover {
+	background: #f6f7f7;
+}
+
+.scrutoscope-trace-row:focus {
+	outline: none;
+}
+
+.scrutoscope-trace-row:focus-visible {
+	outline: 2px solid var(--wp-admin-theme-color, #2271b1);
+	outline-offset: -2px;
+}
+
+.scrutoscope-trace-row.is-focused {
+	background: #f0f6fc;
+}
+
+.scrutoscope-trace-row.is-focused:focus-visible {
+	outline: 2px solid var(--wp-admin-theme-color, #2271b1);
+}
+
+.scrutoscope-trace-spacer td {
+	border: 0 !important;
+	padding: 0 !important;
+}
+
+/* Timeline — focus rings for keyboard nav (a11y) */
+.scrutoscope-timeline-span:focus-visible {
+	outline: 2px solid var(--wp-admin-theme-color, #2271b1);
+	outline-offset: -2px;
+}
+
+.scrutoscope-timeline-span.is-selected:focus-visible {
+	outline: 2px solid var(--wp-admin-theme-color, #2271b1);
 }
 
 /* Loading placeholder */

@@ -38,6 +38,7 @@
 	var groupedData   = [];
 	var routeData     = [];
 	var historyData   = [];
+	var httpFilter    = 'all';    // 'all' | 'ai'
 	var historyPage   = 1;
 	var historyPages  = 1;
 	var historyTotal  = 0;
@@ -55,6 +56,18 @@
 	var traceShown        = 0;
 	var traceSortKey      = 'exclusive_ns';
 	var traceSortDir      = 'desc';
+
+	// Trace virtualization — fixed row height, overscan, focus mgmt.
+	// CEILING: if row height becomes variable (word-wrap callback names), switch to measured heights + binary search.
+	var TRACE_ROW_HEIGHT  = 32;
+	var TRACE_OVERSCAN    = 10;
+	var traceVirtual      = {
+		viewport: null,      // #scrutoscope-trace-viewport
+		focusedIdx: 0,       // index in traceFiltered that has roving tabindex
+		total: 0,
+		raf: null,
+		lastScrollTop: 0
+	};
 
 	// Timeline lazy-load state.
 	var timelineLoaded = false;
@@ -297,6 +310,28 @@
 			$( '.scrutoscope-group-detail' ).hide();
 		} );
 
+		// HTTP AI filter toggle.
+		$( document ).on( 'click', '[data-http-filter]', function( e ) {
+			e.preventDefault();
+			httpFilter = $( this ).data( 'http-filter' ) || 'all';
+			// Re-render HTTP section if currently visible.
+			var $panel = $( this ).closest( '.scrutoscope-http-filter' ).parent();
+			// Find the stored httpCalls from last rendered detail — we keep it on window for simplicity.
+			if ( window._scrutoscopeLastHttpCalls ) {
+				// Re-build the whole HTTP table.
+				var newHtml = renderHttpCallsTable( window._scrutoscopeLastHttpCalls );
+				// Replace the container that holds the HTTP calls table.
+				// The table lives inside the detail view's http section.
+				var $httpSection = $( '.scrutoscope-http-section' );
+				if ( $httpSection.length ) {
+					$httpSection.html( newHtml );
+				} else {
+					// Fallback: replace sibling content after filter bar.
+					$panel.parent().find( '.scrutoscope-source-table.scrutoscope-http-table' ).parent().html( newHtml );
+				}
+			}
+		} );
+
 		// Home view navigation.
 		$( document ).on( 'click', '#scrutoscope-home-capture, #scrutoscope-empty-capture', function() {
 			showCaptureFlow();
@@ -484,12 +519,19 @@
 			refreshTraceTable();
 		} );
 
-		// Trace "Show more" button.
+		// Trace "Show more" button — legacy, no longer needed with virtualization.
+		// Keep handler for backward compat but just scroll down one viewport.
 		$( document ).on( 'click', '#scrutoscope-trace-show-more', function() {
-			traceShown += tracePageSize;
-			var rows = renderTraceRows( traceFiltered, traceShown - tracePageSize, tracePageSize );
-			$( '#scrutoscope-trace-tbody' ).append( rows );
-			updateTraceStatus();
+			var vp = document.getElementById( 'scrutoscope-trace-viewport' );
+			if ( vp ) {
+				vp.scrollTop += vp.clientHeight * 0.9;
+			} else {
+				// Fallback to old append behavior if viewport not yet virtualized.
+				traceShown += tracePageSize;
+				var rows = renderTraceRows( traceFiltered, traceShown - tracePageSize, tracePageSize );
+				$( '#scrutoscope-trace-tbody' ).append( rows );
+				updateTraceStatus();
+			}
 		} );
 
 		// Trace clear filters.
@@ -2398,6 +2440,7 @@
 		var httpCalls    = data.http_calls || [];
 		var autoloadOpts = data.autoloaded_options || {};
 		var assets       = data.enqueued_assets || {};
+		var envHealth    = data.env_health || {};
 		var timeline     = data.timeline || [];
 		var traceData    = data.trace || [];
 		var traceCount   = profile.trace_count || traceData.length || 0;
@@ -2412,6 +2455,16 @@
 
 		currentProfileId = parseInt( profile.id, 10 );
 		currentProfileData = profile;
+
+		// Pre-enrich inline trace so context pills have full data when shell renders.
+		if ( traceData && traceData.length ) {
+			traceLoaded  = true;
+			traceRawData = traceData;
+			traceEntries = enrichTraceEntries( traceData, sources, queries, httpCalls );
+			traceFiltered = traceEntries.slice();
+			traceVirtual.total = traceEntries.length;
+			traceVirtual.focusedIdx = 0;
+		}
 
 		var html = '';
 
@@ -2453,6 +2506,11 @@
 		html += renderMetricCard( String( httpCount ), __( 'HTTP Calls', 'scrutoscope' ), httpCount > 0 ? 'warning' : 'default' );
 		html += renderMetricCard( String( summary.callback_count || 0 ), __( 'Callbacks', 'scrutoscope' ), 'default' );
 		html += '</div>';
+
+		// Environment health pills — always visible.
+		if ( envHealth && ( envHealth.opcache || envHealth.jit || envHealth.object_cache ) ) {
+			html += formatEnvHealthPills( envHealth );
+		}
 
 		// Cron hook summary strip — per-hook breakdown for cron profiles.
 		var cronHooks = data.cron_hooks || [];
@@ -2508,9 +2566,13 @@
 			// translators: %d is the number of HTTP calls.
 			html += '<button class="scrutoscope-tab" data-tab="http">' + sprintf( __( 'HTTP Calls (%d)', 'scrutoscope' ), httpCalls.length ) + '</button>';
 		}
-		if ( ( assets.counts && ( assets.counts.scripts + assets.counts.styles ) > 0 ) ) {
-			// translators: %d is the number of assets (scripts and styles).
-			html += '<button class="scrutoscope-tab" data-tab="assets">' + sprintf( __( 'Assets (%d)', 'scrutoscope' ), ( assets.counts.scripts + assets.counts.styles ) ) + '</button>';
+		if ( ( assets.counts && ( ( assets.counts.scripts || 0 ) + ( assets.counts.styles || 0 ) + ( assets.counts.modules || 0 ) ) > 0 ) ) {
+			// translators: %d is the number of assets (scripts, styles, and modules).
+			var assetTotal = ( assets.counts.scripts || 0 ) + ( assets.counts.styles || 0 ) + ( assets.counts.modules || 0 );
+			html += '<button class="scrutoscope-tab" data-tab="assets">' + sprintf( __( 'Assets (%d)', 'scrutoscope' ), assetTotal ) + '</button>';
+		} else if ( data.script_modules && data.script_modules.count > 0 ) {
+			// Fallback when only script_modules top-level key present (older shape).
+			html += '<button class="scrutoscope-tab" data-tab="assets">' + sprintf( __( 'Assets (%d)', 'scrutoscope' ), data.script_modules.count ) + '</button>';
 		}
 		if ( autoloadOpts.count > 0 ) {
 			// translators: %d is the number of autoloaded options.
@@ -2548,15 +2610,18 @@
 
 		// Tab: HTTP Calls.
 		if ( httpCalls.length > 0 ) {
-			html += '<div class="scrutoscope-tab-content" id="scrutoscope-tab-http" style="display:none">';
+			// Stash for filter re-render.
+			window._scrutoscopeLastHttpCalls = httpCalls;
+			html += '<div class="scrutoscope-tab-content scrutoscope-http-section" id="scrutoscope-tab-http" style="display:none">';
 			html += renderHttpCallsTable( httpCalls );
 			html += '</div>';
 		}
 
 		// Tab: Enqueued Assets.
-		if ( assets.counts && ( assets.counts.scripts + assets.counts.styles ) > 0 ) {
+		var assetModuleCount = ( assets.counts && assets.counts.modules ) ? assets.counts.modules : ( data.script_modules && data.script_modules.count ? data.script_modules.count : 0 );
+		if ( ( assets.counts && ( ( assets.counts.scripts || 0 ) + ( assets.counts.styles || 0 ) + assetModuleCount ) > 0 ) || assetModuleCount > 0 ) {
 			html += '<div class="scrutoscope-tab-content" id="scrutoscope-tab-assets" style="display:none">';
-			html += renderAssetsTab( assets );
+			html += renderAssetsTab( assets, data.script_modules );
 			html += '</div>';
 		}
 
@@ -2588,7 +2653,7 @@
 
 		// Tab: Metadata.
 		html += '<div class="scrutoscope-tab-content" id="scrutoscope-tab-metadata" style="display:none">';
-		html += renderMetadata( request, summary );
+		html += renderMetadata( request, summary, envHealth );
 		html += renderDevSignals( data.dev_signals || [] );
 		html += renderBootPhases( data.boot_phases || [] );
 		html += '</div>';
@@ -2602,6 +2667,17 @@
 			renderTimelineModule( data );
 		} else if ( currentProfileId ) {
 			loadTimelineData( currentProfileId );
+		}
+
+		// If trace was inlined (small profile), init virtualization now (shell already in DOM).
+		if ( traceData && traceData.length ) {
+			// Enrichment already done before html build; just wire virtualization.
+			setTimeout( function() {
+				initTraceVirtualization();
+				renderTraceVirtualWindow( false );
+				updateTraceStatus();
+				renderSavedSearchPills();
+			}, 0 );
 		}
 	}
 
@@ -3063,10 +3139,38 @@
 			return '<p class="scrutoscope-empty">' + __( 'No external HTTP calls detected.', 'scrutoscope' ) + '</p>';
 		}
 
-		// Compute total HTTP time.
+		// Compute total HTTP time and AI-specific totals.
 		var totalHttpMs = 0;
+		var aiCount = 0;
+		var aiTotalMs = 0;
+		var providers = {};
 		for ( var h = 0; h < httpCalls.length; h++ ) {
-			totalHttpMs += httpCalls[ h ].duration_ms || 0;
+			var _hc = httpCalls[ h ];
+			var _dur = _hc.duration_ms || 0;
+			totalHttpMs += _dur;
+			if ( _hc.provider ) {
+				aiCount++;
+				aiTotalMs += _dur;
+				providers[ _hc.provider ] = ( providers[ _hc.provider ] || 0 ) + 1;
+			} else {
+				// Back-compat: re-detect from URL if provider missing (old profiles stored host-only).
+				var _url = ( _hc.url || '' ).toLowerCase();
+				var _prov = null;
+				if ( _url.indexOf( 'api.openai.com' ) !== -1 || _url.indexOf( 'openai.azure.com' ) !== -1 ) _prov = 'openai';
+				else if ( _url.indexOf( 'api.anthropic.com' ) !== -1 ) _prov = 'anthropic';
+				else if ( _url.indexOf( 'generativelanguage.googleapis.com' ) !== -1 || _url.indexOf( 'aiplatform.googleapis.com' ) !== -1 ) _prov = 'google';
+				else if ( _url.indexOf( 'api.cohere.ai' ) !== -1 ) _prov = 'cohere';
+				else if ( _url.indexOf( 'api.mistral.ai' ) !== -1 ) _prov = 'mistral';
+				else if ( _url.indexOf( 'api.perplexity.ai' ) !== -1 ) _prov = 'perplexity';
+				else if ( _url.indexOf( 'api.groq.com' ) !== -1 ) _prov = 'groq';
+				else if ( _url.indexOf( 'api.openrouter.ai' ) !== -1 || _url.indexOf( 'openrouter.ai' ) !== -1 ) _prov = 'openrouter';
+				if ( _prov ) {
+					_hc.provider = _prov;
+					aiCount++;
+					aiTotalMs += _dur;
+					providers[ _prov ] = ( providers[ _prov ] || 0 ) + 1;
+				}
+			}
 		}
 
 		var html = '<div class="scrutoscope-queries-summary">';
@@ -3074,26 +3178,52 @@
 		var httpCountLabel = '<strong>' + sprintf( __( '%d external HTTP calls', 'scrutoscope' ), httpCalls.length ) + '</strong>';
 		// translators: 1: a count label, 2: a total (time or size).
 		html += sprintf( __( '%1$s totaling %2$s', 'scrutoscope' ), httpCountLabel, '<strong>' + totalHttpMs.toFixed( 1 ) + ' ms</strong>' );
+		if ( aiCount > 0 ) {
+			html += ' &middot; <span class="scrutoscope-ai-summary">' + esc( String( aiCount ) ) + ' AI calls totaling ' + aiTotalMs.toFixed( 1 ) + ' ms</span>';
+		}
 		html += '</div>';
+
+		// Filter pills when AI calls present.
+		if ( aiCount > 0 ) {
+			var allActive = httpFilter === 'all' ? ' scrutoscope-filter-active' : '';
+			var aiActive  = httpFilter === 'ai'  ? ' scrutoscope-filter-active' : '';
+			html += '<div class="scrutoscope-http-filter">';
+			html += '<span class="scrutoscope-filter-label">' + __( 'Filter:', 'scrutoscope' ) + '</span> ';
+			html += '<button type="button" class="scrutoscope-filter-pill' + allActive + '" data-http-filter="all">' + __( 'All', 'scrutoscope' ) + '</button> ';
+			html += '<button type="button" class="scrutoscope-filter-pill' + aiActive + '" data-http-filter="ai">🤖 ' + sprintf( __( 'AI only (%d)', 'scrutoscope' ), aiCount ) + '</button>';
+			html += '</div>';
+		}
 
 		html += renderHttpCallsTableBody( httpCalls );
 		return html;
 	}
 
 	function renderHttpCallsTableBody( httpCalls ) {
+		// Apply AI filter if set.
+		var displayCalls = httpCalls;
+		if ( httpFilter === 'ai' ) {
+			displayCalls = [];
+			for ( var fi = 0; fi < httpCalls.length; fi++ ) {
+				if ( httpCalls[ fi ].provider ) {
+					displayCalls.push( httpCalls[ fi ] );
+				}
+			}
+		}
+
 		var html = '<table class="scrutoscope-source-table scrutoscope-http-table widefat">';
 		html += '<thead><tr>';
 		html += '<th class="numeric">#</th>';
 		html += sortableHeader( 'httpcalls', 'method', __( 'Method', 'scrutoscope' ), 'string' );
 		html += sortableHeader( 'httpcalls', 'url', __( 'URL', 'scrutoscope' ), 'string' );
+		html += sortableHeader( 'httpcalls', 'provider', __( 'Provider', 'scrutoscope' ), 'string' );
 		html += sortableHeader( 'httpcalls', 'status', __( 'Status', 'scrutoscope' ), 'number' );
 		html += sortableHeader( 'httpcalls', 'duration_ms', __( 'Duration', 'scrutoscope' ), 'number' );
 		html += sortableHeader( 'httpcalls', 'source_name', __( 'Source', 'scrutoscope' ), 'string' );
 		html += sortableHeader( 'httpcalls', 'caller_str', __( 'Caller', 'scrutoscope' ), 'string' );
 		html += '</tr></thead><tbody>';
 
-		for ( var i = 0; i < httpCalls.length; i++ ) {
-			var hc   = httpCalls[ i ];
+		for ( var i = 0; i < displayCalls.length; i++ ) {
+			var hc   = displayCalls[ i ];
 			var hMs  = ( hc.duration_ms || 0 ).toFixed( 1 );
 			var slow = hc.duration_ms > 500 ? ' class="scrutoscope-slow-query"' : '';
 			var statusLabel = hc.is_error ? __( 'Error', 'scrutoscope' ) : String( hc.status || '—' );
@@ -3108,7 +3238,16 @@
 			html += '<tr' + slow + '>';
 			html += '<td class="numeric">' + ( i + 1 ) + '</td>';
 			html += '<td>' + esc( hc.method || 'GET' ) + '</td>';
-			html += '<td class="scrutoscope-sql-cell" title="' + esc( hc.url ) + '"><code>' + esc( truncate( hc.url || '', 80 ) ) + '</code></td>';
+			var urlCell = '<code>' + esc( truncate( hc.url || '', 60 ) ) + '</code>';
+			if ( hc.provider ) {
+				var label = hc.provider.charAt( 0 ).toUpperCase() + hc.provider.slice( 1 );
+				// Special-case OpenAI capitalization.
+				if ( hc.provider === 'openai' ) label = 'OpenAI';
+				if ( hc.provider === 'openrouter' ) label = 'OpenRouter';
+				urlCell += ' <span class="scrutoscope-ai-badge" title="AI provider: ' + esc( hc.provider ) + '">AI \u00b7 ' + esc( label ) + '</span>';
+			}
+			html += '<td class="scrutoscope-sql-cell" title="' + esc( hc.url ) + '">' + urlCell + '</td>';
+			html += '<td>' + ( hc.provider ? '<span class="scrutoscope-ai-provider">' + esc( hc.provider ) + '</span>' : '<span class="scrutoscope-muted">—</span>' ) + '</td>';
 			html += '<td class="numeric">' + esc( statusLabel ) + '</td>';
 			html += '<td class="numeric">' + hMs + ' ms</td>';
 			html += '<td>' + esc( sourceName ) + '</td>';
@@ -3135,17 +3274,31 @@
 	/*  Enqueued Assets tab                                                */
 	/* ------------------------------------------------------------------ */
 
-	function renderAssetsTab( assets ) {
+	function renderAssetsTab( assets, scriptModulesData ) {
 		var scripts   = assets.scripts || [];
 		var styles    = assets.styles || [];
 		var totalSize = assets.total_size || 0;
 		var counts    = assets.counts || {};
+
+		// Modules can be inside enqueued_assets (new shape) or via separate script_modules key.
+		var modules = assets.modules || ( scriptModulesData && scriptModulesData.modules ) || [];
+		var moduleTotal = assets.module_total_size || ( scriptModulesData && scriptModulesData.total_size ) || 0;
+		var moduleCount = counts.modules || modules.length || ( scriptModulesData && scriptModulesData.count ) || 0;
+		var importMap = assets.import_map || ( scriptModulesData && scriptModulesData.import_map ) || null;
+		var importMapCount = assets.import_map_count || ( scriptModulesData && scriptModulesData.import_map_count ) || 0;
+		if ( importMap && typeof importMap === 'object' && ! Array.isArray( importMap ) ) {
+			importMapCount = Object.keys( importMap ).length;
+		}
 
 		var html = '<div class="scrutoscope-queries-summary">';
 		// translators: %d is the number of scripts.
 		html += '<strong>' + sprintf( __( '%d scripts', 'scrutoscope' ), ( counts.scripts || 0 ) ) + '</strong>';
 		// translators: %d is the number of stylesheets.
 		html += ' + <strong>' + sprintf( __( '%d stylesheets', 'scrutoscope' ), ( counts.styles || 0 ) ) + '</strong>';
+		if ( moduleCount > 0 ) {
+			// translators: %d is the number of script modules.
+			html += ' + <strong>' + sprintf( __( '%d modules', 'scrutoscope' ), moduleCount ) + '</strong>';
+		}
 		if ( totalSize > 0 ) {
 			// translators: %s is the total asset size on disk.
 			html += ' ' + sprintf( __( 'totaling %s on disk', 'scrutoscope' ), '<strong>' + formatBytes( totalSize ) + '</strong>' );
@@ -3160,7 +3313,80 @@
 			html += '<h4 class="scrutoscope-asset-section-label">' + __( 'Stylesheets', 'scrutoscope' ) + '</h4>';
 			html += renderAssetTableBody( styles, 'styles' );
 		}
+		if ( modules.length > 0 ) {
+			var modLabel = sprintf( __( 'Script Modules (WP 6.5+) — %d modules totaling %s', 'scrutoscope' ), moduleCount, formatBytes( moduleTotal ) );
+			html += '<h4 class="scrutoscope-asset-section-label">' + modLabel + '</h4>';
+			if ( importMapCount > 0 ) {
+				html += '<p class="description" style="margin:-4px 0 8px 0;">' + sprintf( __( 'Import map contains %d entries (static dependencies preloaded via modulepreload).', 'scrutoscope' ), importMapCount ) + '</p>';
+			}
+			html += renderModulesTableBody( modules );
+			var hasInteractivity = assets.has_interactivity || ( scriptModulesData && scriptModulesData.has_interactivity );
+			var storeCount = assets.interactivity_store_count || ( scriptModulesData && scriptModulesData.interactivity_store_count ) || 0;
+			if ( hasInteractivity ) {
+				if ( storeCount > 0 ) {
+					html += '<p class="description" style="margin:8px 0 0 0;">' + sprintf( __( 'Interactivity API present: %d stores detected.', 'scrutoscope' ), storeCount ) + '</p>';
+				} else {
+					html += '<p class="description" style="margin:8px 0 0 0;">' + __( 'Interactivity API present.', 'scrutoscope' ) + '</p>';
+				}
+			}
+		} else {
+			var hasInteractivityEmpty = assets.has_interactivity || ( scriptModulesData && scriptModulesData.has_interactivity );
+			if ( hasInteractivityEmpty ) {
+				var storeCountEmpty = assets.interactivity_store_count || ( scriptModulesData && scriptModulesData.interactivity_store_count ) || 0;
+				html += '<h4 class="scrutoscope-asset-section-label">' + __( 'Script Modules (WP 6.5+)', 'scrutoscope' ) + '</h4>';
+				if ( storeCountEmpty > 0 ) {
+					html += '<p class="description">' + sprintf( __( 'Interactivity API present: %d stores detected (no modules enqueued on this request).', 'scrutoscope' ), storeCountEmpty ) + '</p>';
+				} else {
+					html += '<p class="description">' + __( 'Interactivity API present, no modules enqueued on this request.', 'scrutoscope' ) + '</p>';
+				}
+			}
+		}
 
+		return html;
+	}
+
+	function renderModulesTableBody( moduleList ) {
+		var tableId = 'assets-modules';
+		var html = '<table class="scrutoscope-asset-table widefat" data-table-id="' + tableId + '"><thead class="scrutoscope-sortable-header"><tr>';
+		html += sortableHeader( tableId, 'handle', __( 'Module ID', 'scrutoscope' ), 'string' );
+		html += sortableHeader( tableId, 'src', __( 'Source', 'scrutoscope' ), 'string' );
+		html += sortableHeader( tableId, 'size', __( 'Size', 'scrutoscope' ), 'numeric' );
+		html += '<th>' + __( 'Location', 'scrutoscope' ) + '</th>';
+		html += '<th>' + __( 'Fetchpriority', 'scrutoscope' ) + '</th>';
+		html += '<th>' + __( 'Dependencies', 'scrutoscope' ) + '</th>';
+		html += sortableHeader( tableId, 'version', __( 'Version', 'scrutoscope' ), 'string' );
+		html += '</tr></thead><tbody>';
+
+		for ( var i = 0; i < moduleList.length; i++ ) {
+			var a = moduleList[ i ];
+			var attr = a.attribution || {};
+			var srcUrl = ( typeof a.src === 'string' ) ? a.src : '';
+			var srcDisplay = srcUrl.replace( /^https?:\/\/[^\/]+/, '' );
+
+			var sourcePill = '';
+			if ( attr.type && 'unknown' !== attr.type ) {
+				var pillColor = sourceColors[ attr.type ] || '#888';
+				sourcePill = '<span class="scrutoscope-asset-source-pill" style="background:' + pillColor + '">'
+					+ esc( attr.name || attr.slug ) + '</span> ';
+			}
+
+			var sizeCell = a.size > 0 ? formatBytes( a.size ) : '<span class="scrutoscope-muted">' + __( 'external', 'scrutoscope' ) + '</span>';
+			var sizeClass = a.size > 102400 ? ' scrutoscope-asset-large' : '';
+
+			var moduleId = a.handle || a.id || '';
+
+			html += '<tr>';
+			html += '<td>' + sourcePill + '<code>' + esc( moduleId ) + '</code></td>';
+			html += '<td class="scrutoscope-src-cell" title="' + esc( srcUrl ) + '">' + esc( truncate( srcDisplay, 60 ) ) + '</td>';
+			html += '<td class="numeric' + sizeClass + '">' + sizeCell + '</td>';
+			html += '<td>' + esc( a.location || '' ) + '</td>';
+			html += '<td>' + ( a.fetchpriority ? '<code>' + esc( a.fetchpriority ) + '</code>' : '—' ) + '</td>';
+			html += '<td>' + ( a.deps && a.deps.length > 0 ? '<code>' + esc( a.deps.join( ', ' ) ) + '</code>' : ( a.dependencies && a.dependencies.static && a.dependencies.static.length > 0 ? '<code>' + esc( a.dependencies.static.join( ', ' ) ) + '</code>' : '—' ) ) + '</td>';
+			html += '<td>' + ( a.version ? '<code>' + esc( a.version ) + '</code>' : '—' ) + '</td>';
+			html += '</tr>';
+		}
+
+		html += '</tbody></table>';
 		return html;
 	}
 
@@ -3217,6 +3443,15 @@
 		var options   = autoloadOpts.options || [];
 		var totalSize = autoloadOpts.total_size || 0;
 		var count     = autoloadOpts.count || 0;
+		var maxSize   = autoloadOpts.max_size || 150000;
+		var defiesCount = autoloadOpts.defies_count || 0;
+		// Recalc defies if not provided (old profiles).
+		if ( ! autoloadOpts.defies_count && options.length ) {
+			defiesCount = 0;
+			for ( var di = 0; di < options.length; di++ ) {
+				if ( options[ di ].defies_guidance ) { defiesCount++; }
+			}
+		}
 
 		if ( 0 === count ) {
 			return '<p class="scrutoscope-empty">' + __( 'No autoloaded options data.', 'scrutoscope' ) + '</p>';
@@ -3232,8 +3467,11 @@
 		} else if ( totalSize > 524288 ) { // > 512 KB.
 			html += ' <span class="scrutoscope-options-caution">' + __( '⚡ Over 512 KB - worth reviewing', 'scrutoscope' ) + '</span>';
 		}
+		if ( defiesCount > 0 ) {
+			html += ' <span class="scrutoscope-options-warning">⚠ ' + sprintf( __( '%d defy guidance (>%s) — explicitly autoloaded but too large', 'scrutoscope' ), defiesCount, formatBytes( maxSize ) ) + '</span>';
+		}
 		html += '</div>';
-		html += '<p class="scrutoscope-options-info">' + __( 'WP 6.6+ values: on/off/auto. Legacy: yes/no. Core autoloads yes, on, auto, auto-on.', 'scrutoscope' ) + '</p>';
+		html += '<p class="scrutoscope-options-info">' + sprintf( __( 'WP 6.6+ values: on/off/auto. Legacy: yes/no. Core autoloads yes, on, auto, auto-on. Max size: %s.', 'scrutoscope' ), formatBytes( maxSize ) ) + '</p>';
 
 		html += '<table class="scrutoscope-source-table scrutoscope-options-table widefat">';
 		html += '<thead><tr>';
@@ -3250,6 +3488,9 @@
 			var pct = totalSize > 0 ? ( ( opt.size / totalSize ) * 100 ).toFixed( 1 ) : '0.0';
 			var sizeStr = formatBytes( opt.size );
 			var large = opt.size > 102400 ? ' class="scrutoscope-slow-query"' : ''; // > 100 KB highlight.
+			if ( opt.defies_guidance ) {
+				large = ' class="scrutoscope-slow-query scrutoscope-defies-row"';
+			}
 			var autoloadVal = opt.autoload || 'yes';
 			var badgeClass = 'autoload-on';
 			if ( 'auto' === autoloadVal || 'auto-on' === autoloadVal ) {
@@ -3263,8 +3504,16 @@
 
 			html += '<tr' + large + '>';
 			html += '<td class="numeric">' + ( i + 1 ) + '</td>';
-			html += '<td><code>' + esc( opt.name ) + '</code></td>';
-			html += '<td><span class="scrutoscope-autoload-badge ' + badgeClass + '">' + esc( autoloadVal ) + '</span></td>';
+			var nameCell = '<code>' + esc( opt.name ) + '</code>';
+			if ( opt.defies_guidance ) {
+				nameCell += ' <span class="scrutoscope-options-warning" title="' + esc( sprintf( __( 'Defies core guidance — explicitly autoloaded but >%s. Consider setting to Off or letting WP decide (auto).', 'scrutoscope' ), formatBytes( maxSize ) ) ) + '">⚠</span>';
+			}
+			html += '<td>' + nameCell + '</td>';
+			html += '<td><span class="scrutoscope-autoload-badge ' + badgeClass + '">' + esc( autoloadVal ) + '</span>';
+			if ( opt.defies_guidance ) {
+				html += ' <span class="scrutoscope-defies-badge" title="' + esc( sprintf( __( 'Defies core guidance — explicitly autoloaded but >%s. Consider setting to Off or letting WP decide (null).', 'scrutoscope' ), formatBytes( maxSize ) ) ) + '">' + __( 'defies guidance', 'scrutoscope' ) + '</span>';
+			}
+			html += '</td>';
 			html += '<td class="numeric">' + esc( sizeStr ) + '</td>';
 			html += '<td class="scrutoscope-weight-cell">';
 			html += '<div class="scrutoscope-weight-bar-wrap">';
@@ -3284,10 +3533,77 @@
 	/*  Metadata table                                                     */
 	/* ------------------------------------------------------------------ */
 
-	function renderMetadata( request, summary ) {
+	function formatEnvHealthPills( env ) {
+		if ( ! env || ( ! env.opcache && ! env.jit && ! env.object_cache ) ) {
+			// Try legacy location (request.env_health or top-level)
+			return '';
+		}
+		var op = env.opcache || {};
+		var jit = env.jit || {};
+		var objCache = env.object_cache || ( typeof env === 'string' ? env : '' );
+		if ( typeof objCache === 'object' ) {
+			objCache = objCache.type || objCache.value || 'unknown';
+		}
+		// Normalize object_cache string.
+		if ( ! objCache ) {
+			objCache = env.object_cache || 'none';
+		}
+
+		var html = '<div class="scrutoscope-env-pills" style="display:flex;flex-wrap:wrap;gap:8px;margin:10px 0;">';
+
+		// OPCache pill.
+		var opEnabled = !! op.enabled;
+		var opHit = ( typeof op.hit_rate === 'number' ) ? op.hit_rate.toFixed(1) + '% hit' : '';
+		var opLabel = 'OPCache: ' + ( opEnabled ? 'ON' : 'OFF' ) + ( opEnabled && opHit ? ' ' + opHit : '' );
+		var opCls = opEnabled ? 'autoload-auto' : 'autoload-off';
+		// Warning when OFF.
+		html += '<span class="scrutoscope-autoload-badge ' + opCls + '"';
+		if ( ! opEnabled ) {
+			html += ' title="' + esc( __( 'OPCache off - TTFB +10-30% likely. Enable opcache in php.ini.', 'scrutoscope' ) ) + '"';
+		}
+		html += '>' + esc( opLabel ) + '</span>';
+		if ( ! opEnabled ) {
+			html += '<span class="scrutoscope-options-warning">⚠ ' + __( 'OPCache OFF — TTFB +10-30% likely', 'scrutoscope' ) + '</span>';
+		} else if ( op.memory_used && op.memory_consumption ) {
+			var pctUsed = ( op.memory_used / op.memory_consumption * 100 ).toFixed(0);
+			if ( pctUsed > 90 ) {
+				html += '<span class="scrutoscope-options-warning">⚠ ' + sprintf( __( 'OPCache memory %s%% full', 'scrutoscope' ), pctUsed ) + '</span>';
+			}
+		}
+
+		// JIT pill.
+		var jitEnabled = !! jit.enabled;
+		var jitLabel = 'JIT: ' + ( jitEnabled ? 'ON' : 'off' );
+		if ( jitEnabled && jit.buffer_size ) {
+			jitLabel += ' (' + jit.buffer_size + ')';
+		}
+		var jitCls = jitEnabled ? 'autoload-on' : 'autoload-off';
+		html += '<span class="scrutoscope-autoload-badge ' + jitCls + '">' + esc( jitLabel ) + '</span>';
+
+		// Object cache pill.
+		var ocLabel = 'Object cache: ' + ( objCache || 'none' );
+		var ocCls = ( objCache && 'none' !== objCache ) ? 'autoload-on' : 'autoload-off';
+		if ( 'redis' === objCache || 'memcached' === objCache ) { ocCls = 'autoload-on'; }
+		else if ( 'none' === objCache ) { ocCls = 'autoload-off'; }
+		else { ocCls = 'autoload-auto'; }
+		html += '<span class="scrutoscope-autoload-badge ' + ocCls + '">' + esc( ocLabel ) + '</span>';
+		if ( 'none' === objCache ) {
+			html += '<span class="scrutoscope-options-caution"> ' + __( 'No persistent object cache — consider Redis/Memcached', 'scrutoscope' ) + '</span>';
+		}
+
+		html += '</div>';
+		return html;
+	}
+
+	function renderMetadata( request, summary, envHealth ) {
 		var memPeak = summary.memory_peak || request.memory_peak || 0;
 		var memAlloc = summary.memory_allocated || 0;
-		var html = '<table class="scrutoscope-source-table widefat">';
+		var html = '';
+		// Env health pills at top — always visible when available.
+		if ( envHealth && ( envHealth.opcache || envHealth.jit || envHealth.object_cache ) ) {
+			html += formatEnvHealthPills( envHealth );
+		}
+		html += '<table class="scrutoscope-source-table widefat">';
 		html += '<tbody>';
 		html += '<tr><td>' + __( 'Route', 'scrutoscope' ) + '</td><td>' + esc( request.route_class || '—' ) + '</td></tr>';
 		if ( request.ajax_action ) {
@@ -3621,7 +3937,9 @@
 	}
 
 	/**
-	 * Render the trace explorer shell: search, pills, filters, table container.
+	 * Render the trace explorer shell: search, pills, filters, virtualized treegrid.
+	 * Virtualization uses fixed row height + top/bottom spacer rows so only
+	 * viewport + overscan rows are in the DOM (e.g. 30 rows vs 11k).
 	 */
 	function renderTraceExplorerShell( totalCount ) {
 		var html = '';
@@ -3686,23 +4004,26 @@
 		// Status bar.
 		html += '<div class="scrutoscope-trace-status" id="scrutoscope-trace-status"></div>';
 
-		// Table.
-		html += '<table class="scrutoscope-trace-table widefat striped">';
-		html += '<thead><tr>';
-		html += '<th class="scrutoscope-trace-sortable' + ( 'exclusive_ns' === traceSortKey ? ( ' sort-' + traceSortDir ) : '' ) + '" data-sort-key="exclusive_ns" style="width:90px">' + __( 'Duration', 'scrutoscope' ) + '</th>';
-		html += '<th class="scrutoscope-trace-sortable' + ( '_callback' === traceSortKey ? ( ' sort-' + traceSortDir ) : '' ) + '" data-sort-key="_callback">' + __( 'Callback', 'scrutoscope' ) + '</th>';
-		html += '<th class="scrutoscope-trace-sortable' + ( '_hook' === traceSortKey ? ( ' sort-' + traceSortDir ) : '' ) + '" data-sort-key="_hook">' + __( 'Hook', 'scrutoscope' ) + '</th>';
-		html += '<th class="scrutoscope-trace-sortable' + ( 'source_name' === traceSortKey ? ( ' sort-' + traceSortDir ) : '' ) + '" data-sort-key="source_name" style="width:120px">' + __( 'Source', 'scrutoscope' ) + '</th>';
-		html += '<th class="scrutoscope-trace-sortable' + ( 'query_count' === traceSortKey ? ( ' sort-' + traceSortDir ) : '' ) + '" data-sort-key="query_count" style="width:60px">' + __( 'Qry', 'scrutoscope' ) + '</th>';
-		html += '<th class="scrutoscope-trace-sortable' + ( 'http_count' === traceSortKey ? ( ' sort-' + traceSortDir ) : '' ) + '" data-sort-key="http_count" style="width:60px">' + __( 'HTTP', 'scrutoscope' ) + '</th>';
-		html += '<th class="scrutoscope-trace-sortable' + ( 'mem_delta' === traceSortKey ? ( ' sort-' + traceSortDir ) : '' ) + '" data-sort-key="mem_delta" style="width:80px">' + __( 'Mem', 'scrutoscope' ) + '</th>';
+		// Virtualized treegrid viewport.
+		// - Fixed height, overflow:auto, tabindex=0 for keyboard nav.
+		// - Table inside with sticky thead; tbody is windowed via spacer rows.
+		html += '<div id="scrutoscope-trace-viewport" class="scrutoscope-trace-viewport" tabindex="0" role="region" aria-label="' + esc( __( 'Trace callbacks scroll area, use arrow keys to navigate', 'scrutoscope' ) ) + '" style="max-height:520px; overflow:auto; position:relative; outline:none; border:1px solid #c3c4c7; border-radius:3px;">';
+		html += '<table class="scrutoscope-trace-table widefat striped" role="treegrid" aria-label="' + esc( __( 'Trace callbacks', 'scrutoscope' ) ) + '" aria-rowcount="' + ( totalCount || 0 ) + '" style="width:100%; border:0; margin:0;">';
+		html += '<thead role="rowgroup" style="position:sticky; top:0; background:#fff; z-index:2; box-shadow:0 1px 0 #c3c4c7;"><tr role="row">';
+		html += '<th role="columnheader" class="scrutoscope-trace-sortable' + ( 'exclusive_ns' === traceSortKey ? ( ' sort-' + traceSortDir ) : '' ) + '" data-sort-key="exclusive_ns" aria-sort="' + ( 'exclusive_ns' === traceSortKey ? ( 'desc' === traceSortDir ? 'descending' : 'ascending' ) : 'none' ) + '" style="width:90px">' + __( 'Duration', 'scrutoscope' ) + '</th>';
+		html += '<th role="columnheader" class="scrutoscope-trace-sortable' + ( '_callback' === traceSortKey ? ( ' sort-' + traceSortDir ) : '' ) + '" data-sort-key="_callback" aria-sort="' + ( '_callback' === traceSortKey ? ( 'desc' === traceSortDir ? 'descending' : 'ascending' ) : 'none' ) + '">' + __( 'Callback', 'scrutoscope' ) + '</th>';
+		html += '<th role="columnheader" class="scrutoscope-trace-sortable' + ( '_hook' === traceSortKey ? ( ' sort-' + traceSortDir ) : '' ) + '" data-sort-key="_hook" aria-sort="' + ( '_hook' === traceSortKey ? ( 'desc' === traceSortDir ? 'descending' : 'ascending' ) : 'none' ) + '">' + __( 'Hook', 'scrutoscope' ) + '</th>';
+		html += '<th role="columnheader" class="scrutoscope-trace-sortable' + ( 'source_name' === traceSortKey ? ( ' sort-' + traceSortDir ) : '' ) + '" data-sort-key="source_name" aria-sort="' + ( 'source_name' === traceSortKey ? ( 'desc' === traceSortDir ? 'descending' : 'ascending' ) : 'none' ) + '" style="width:120px">' + __( 'Source', 'scrutoscope' ) + '</th>';
+		html += '<th role="columnheader" class="scrutoscope-trace-sortable' + ( 'query_count' === traceSortKey ? ( ' sort-' + traceSortDir ) : '' ) + '" data-sort-key="query_count" aria-sort="' + ( 'query_count' === traceSortKey ? ( 'desc' === traceSortDir ? 'descending' : 'ascending' ) : 'none' ) + '" style="width:60px">' + __( 'Qry', 'scrutoscope' ) + '</th>';
+		html += '<th role="columnheader" class="scrutoscope-trace-sortable' + ( 'http_count' === traceSortKey ? ( ' sort-' + traceSortDir ) : '' ) + '" data-sort-key="http_count" aria-sort="' + ( 'http_count' === traceSortKey ? ( 'desc' === traceSortDir ? 'descending' : 'ascending' ) : 'none' ) + '" style="width:60px">' + __( 'HTTP', 'scrutoscope' ) + '</th>';
+		html += '<th role="columnheader" class="scrutoscope-trace-sortable' + ( 'mem_delta' === traceSortKey ? ( ' sort-' + traceSortDir ) : '' ) + '" data-sort-key="mem_delta" aria-sort="' + ( 'mem_delta' === traceSortKey ? ( 'desc' === traceSortDir ? 'descending' : 'ascending' ) : 'none' ) + '" style="width:80px">' + __( 'Mem', 'scrutoscope' ) + '</th>';
 		html += '</tr></thead>';
-		html += '<tbody id="scrutoscope-trace-tbody"></tbody>';
+		html += '<tbody id="scrutoscope-trace-tbody" role="rowgroup"></tbody>';
 		html += '</table>';
+		html += '</div>';
 
-		// Show more button.
+		// Legacy show-more kept hidden for compat but not used with virtualization.
 		html += '<div class="scrutoscope-trace-more" id="scrutoscope-trace-more-wrap" style="display:none">';
-		// translators: %d is the number of additional rows to show.
 		html += '<button type="button" class="button" id="scrutoscope-trace-show-more">' + sprintf( __( 'Show %d more', 'scrutoscope' ), tracePageSize ) + '</button>';
 		html += '</div>';
 
@@ -3710,8 +4031,180 @@
 		return html;
 	}
 
+	/** Virtualized treegrid helpers **/
+	function initTraceVirtualization() {
+		var vp = document.getElementById( 'scrutoscope-trace-viewport' );
+		if ( ! vp ) { return; }
+		// Remove any prior listeners to avoid duplicates on re-render.
+		if ( traceVirtual.viewport && traceVirtual._onScroll ) {
+			traceVirtual.viewport.removeEventListener( 'scroll', traceVirtual._onScroll );
+		}
+		if ( traceVirtual.viewport && traceVirtual._onKey ) {
+			traceVirtual.viewport.removeEventListener( 'keydown', traceVirtual._onKey );
+		}
+		traceVirtual.viewport = vp;
+		traceVirtual.focusedIdx = 0;
+
+		traceVirtual._onScroll = function() {
+			if ( traceVirtual.raf ) { return; }
+			traceVirtual.raf = window.requestAnimationFrame( function() {
+				traceVirtual.raf = null;
+				renderTraceVirtualWindow( false );
+			} );
+		};
+		traceVirtual._onKey = onTraceTreegridKeydown;
+
+		vp.addEventListener( 'scroll', traceVirtual._onScroll, { passive: true } );
+		vp.addEventListener( 'keydown', traceVirtual._onKey );
+		// Click to focus row.
+		vp.addEventListener( 'click', function( e ) {
+			var tr = e.target.closest && e.target.closest( 'tr[data-index]' );
+			if ( tr ) {
+				var idx = parseInt( tr.getAttribute( 'data-index' ), 10 );
+				if ( ! isNaN( idx ) ) {
+					traceVirtual.focusedIdx = idx;
+					renderTraceVirtualWindow( true );
+				}
+			}
+		} );
+	}
+
+	function onTraceTreegridKeydown( e ) {
+		var total = traceFiltered.length;
+		if ( ! total ) { return; }
+		var idx = traceVirtual.focusedIdx;
+		var handled = false;
+		var pageSize = Math.max( 1, Math.floor( ( traceVirtual.viewport.clientHeight || 400 ) / TRACE_ROW_HEIGHT ) - 1 );
+
+		if ( 'ArrowDown' === e.key ) {
+			idx = Math.min( total - 1, idx + 1 ); handled = true;
+		} else if ( 'ArrowUp' === e.key ) {
+			idx = Math.max( 0, idx - 1 ); handled = true;
+		} else if ( 'Home' === e.key ) {
+			idx = 0; handled = true;
+		} else if ( 'End' === e.key ) {
+			idx = total - 1; handled = true;
+		} else if ( 'PageDown' === e.key ) {
+			idx = Math.min( total - 1, idx + pageSize ); handled = true;
+		} else if ( 'PageUp' === e.key ) {
+			idx = Math.max( 0, idx - pageSize ); handled = true;
+		} else if ( 'ArrowRight' === e.key || 'ArrowLeft' === e.key ) {
+			// Flat list — no expand/collapse, but prevent horizontal scroll.
+			handled = true;
+		}
+		if ( handled ) {
+			e.preventDefault();
+			traceVirtual.focusedIdx = idx;
+			ensureTraceRowVisible( idx );
+			renderTraceVirtualWindow( true );
+		}
+	}
+
+	function ensureTraceRowVisible( idx ) {
+		var vp = traceVirtual.viewport;
+		if ( ! vp ) { return; }
+		var rowTop = idx * TRACE_ROW_HEIGHT;
+		var rowBottom = rowTop + TRACE_ROW_HEIGHT;
+		var viewTop = vp.scrollTop;
+		var viewBottom = viewTop + vp.clientHeight;
+		// Account for sticky header (~36px)
+		var headerH = 36;
+		if ( rowTop < viewTop + headerH ) {
+			vp.scrollTop = Math.max( 0, rowTop - headerH );
+		} else if ( rowBottom > viewBottom ) {
+			vp.scrollTop = rowBottom - vp.clientHeight;
+		}
+	}
+
+	function renderTraceVirtualWindow( keepFocus ) {
+		var vp = traceVirtual.viewport;
+		if ( ! vp ) { return; }
+		var total = traceFiltered.length;
+		var table = vp.querySelector( 'table[role="treegrid"]' );
+		if ( 0 === total ) {
+			$( '#scrutoscope-trace-tbody' ).html( '<tr role="row"><td role="gridcell" colspan="7" style="padding:20px; text-align:center; color:#646970;">' + esc( __( 'No callbacks match the filters.', 'scrutoscope' ) ) + '</td></tr>' );
+			if ( table ) { table.setAttribute( 'aria-rowcount', '0' ); }
+			return;
+		}
+		var scrollTop = vp.scrollTop;
+		var viewportH = vp.clientHeight;
+		var start = Math.max( 0, Math.floor( scrollTop / TRACE_ROW_HEIGHT ) - TRACE_OVERSCAN );
+		// When header is sticky, first row offset includes header; adjust start slightly.
+		// Simpler: ignore header for math, overscan covers it.
+		var visibleCount = Math.ceil( viewportH / TRACE_ROW_HEIGHT ) + TRACE_OVERSCAN * 2 + 4;
+		var end = Math.min( total, start + visibleCount );
+
+		// Clamp focusedIdx into range if virtualization evicted it elsewhere — keep it valid.
+		if ( traceVirtual.focusedIdx < 0 ) { traceVirtual.focusedIdx = 0; }
+		if ( traceVirtual.focusedIdx >= total ) { traceVirtual.focusedIdx = total - 1; }
+		// If focused row is outside window, expand window to include it (cheap, still small).
+		if ( traceVirtual.focusedIdx < start ) {
+			end = Math.min( total, end + ( start - traceVirtual.focusedIdx ) );
+			start = traceVirtual.focusedIdx;
+		} else if ( traceVirtual.focusedIdx >= end ) {
+			start = Math.max( 0, traceVirtual.focusedIdx - visibleCount + 1 );
+			end = Math.min( total, start + visibleCount );
+		}
+
+		var topH = start * TRACE_ROW_HEIGHT;
+		var bottomH = ( total - end ) * TRACE_ROW_HEIGHT;
+
+		var html = '';
+		if ( topH > 0 ) {
+			html += '<tr role="row" aria-hidden="true" class="scrutoscope-trace-spacer" style="height:' + topH + 'px"><td role="gridcell" colspan="7" style="padding:0;border:0;height:' + topH + 'px"></td></tr>';
+		}
+		html += renderTraceRowsVirtual( traceFiltered, start, end, traceVirtual.focusedIdx );
+		if ( bottomH > 0 ) {
+			html += '<tr role="row" aria-hidden="true" class="scrutoscope-trace-spacer" style="height:' + bottomH + 'px"><td role="gridcell" colspan="7" style="padding:0;border:0;height:' + bottomH + 'px"></td></tr>';
+		}
+		// Batch DOM write — single innerHTML.
+		$( '#scrutoscope-trace-tbody' ).html( html );
+		if ( table ) { table.setAttribute( 'aria-rowcount', String( total ) ); }
+		else { vp.setAttribute( 'aria-rowcount', String( total ) ); }
+
+		if ( keepFocus ) {
+			// Restore focus to the active row after DOM replacement.
+			var activeEl = document.getElementById( 'scrutoscope-trace-row-' + traceVirtual.focusedIdx );
+			if ( activeEl ) {
+				// Use focus({preventScroll:true}) so we don't fight ensureTraceRowVisible.
+				try { activeEl.focus( { preventScroll: true } ); } catch ( err ) { activeEl.focus(); }
+			} else {
+				// Fallback: focus viewport itself (keeps keyboard nav alive).
+				try { vp.focus( { preventScroll: true } ); } catch ( err2 ) { vp.focus(); }
+			}
+		}
+	}
+
+	function renderTraceRowsVirtual( entries, start, end, focusedIdx ) {
+		var html = '';
+		for ( var i = start; i < end; i++ ) {
+			var e = entries[ i ];
+			var durMs  = e.exclusive_ms.toFixed( 2 );
+			var color  = sourceColors[ e.source_type ] || sourceColors.unknown || '#999';
+			var durCls = e.exclusive_ms >= 10 ? ' scrutoscope-trace-slow' : '';
+			var isFocused = ( i === focusedIdx );
+			var label = ( e._callbackDisplay || e._callback ) + ', ' + durMs + ' ms, hook ' + e._hook + ', source ' + e.source_name + ', ' + ( e.query_count || 0 ) + ' queries, ' + ( e.http_count || 0 ) + ' http';
+
+			html += '<tr id="scrutoscope-trace-row-' + i + '" role="row" aria-rowindex="' + ( i + 1 ) + '" aria-selected="' + ( isFocused ? 'true' : 'false' ) + '" aria-label="' + esc( label ) + '" data-index="' + i + '" tabindex="' + ( isFocused ? '0' : '-1' ) + '" class="scrutoscope-trace-row' + ( isFocused ? ' is-focused' : '' ) + '" style="height:' + TRACE_ROW_HEIGHT + 'px; box-sizing:border-box;">';
+			html += '<td role="gridcell" class="scrutoscope-trace-dur' + durCls + '" style="height:' + TRACE_ROW_HEIGHT + 'px;">' + esc( durMs ) + ' ms</td>';
+			html += '<td role="gridcell" class="scrutoscope-trace-cb" style="height:' + TRACE_ROW_HEIGHT + 'px;"><code>' + esc( e._callbackDisplay || e._callback ) + '</code>';
+			if ( e._priority ) {
+				html += ' <span class="scrutoscope-muted">:' + esc( e._priority ) + '</span>';
+			}
+			html += '</td>';
+			html += '<td role="gridcell" class="scrutoscope-trace-hook" style="height:' + TRACE_ROW_HEIGHT + 'px;"><code>' + esc( e._hook ) + '</code></td>';
+			html += '<td role="gridcell" style="height:' + TRACE_ROW_HEIGHT + 'px;"><span class="scrutoscope-source-dot" style="background:' + color + '"></span>' + esc( e.source_name ) + '</td>';
+			html += '<td role="gridcell" class="scrutoscope-trace-num" style="height:' + TRACE_ROW_HEIGHT + 'px;">' + ( e.query_count > 0 ? e.query_count : '<span class="scrutoscope-muted">-</span>' ) + '</td>';
+			html += '<td role="gridcell" class="scrutoscope-trace-num" style="height:' + TRACE_ROW_HEIGHT + 'px;">' + ( e.http_count > 0 ? e.http_count : '<span class="scrutoscope-muted">-</span>' ) + '</td>';
+			html += '<td role="gridcell" class="scrutoscope-trace-num" style="height:' + TRACE_ROW_HEIGHT + 'px;">' + ( e.mem_delta ? formatMemoryDelta( e.mem_delta ) : '<span class="scrutoscope-muted">-</span>' ) + '</td>';
+			html += '</tr>';
+		}
+		return html;
+	}
+
 	/**
-	 * Apply current filters, sort, and re-render the trace table.
+	 * Apply current filters, sort, and re-render the trace table via virtualization.
+	 * Batch DOM write: single innerHTML for visible window only, rAF-throttled scroll.
 	 */
 	function refreshTraceTable() {
 		var search     = ( $( '#scrutoscope-trace-search' ).val() || '' ).toLowerCase();
@@ -3728,7 +4221,7 @@
 		// Filter.
 		traceFiltered = applyTraceFilters( traceEntries, search, source, minDur, minQueries, activePills );
 
-		// Sort.
+		// Sort — batch, not per-row.
 		var sk = traceSortKey;
 		var sd = 'asc' === traceSortDir ? 1 : -1;
 		traceFiltered.sort( function( a, b ) {
@@ -3740,9 +4233,25 @@
 			return 0;
 		} );
 
-		// Render first page.
-		traceShown = Math.min( tracePageSize, traceFiltered.length );
-		$( '#scrutoscope-trace-tbody' ).html( renderTraceRows( traceFiltered, 0, traceShown ) );
+		traceVirtual.total = traceFiltered.length;
+		traceVirtual.focusedIdx = 0;
+		traceShown = traceFiltered.length; // no pagination — virtual scroll covers all
+
+		// Ensure virtualization is bound (idempotent after first render).
+		if ( ! traceVirtual.viewport || ! document.getElementById( 'scrutoscope-trace-viewport' ) ) {
+			initTraceVirtualization();
+		} else {
+			// Re-bind if viewport was re-created (after filter -> re-render of shell).
+			// init is cheap and dedupes listeners.
+			initTraceVirtualization();
+		}
+
+		// Reset scroll to top on new filter/sort.
+		if ( traceVirtual.viewport ) {
+			traceVirtual.viewport.scrollTop = 0;
+		}
+
+		renderTraceVirtualWindow( false );
 		updateTraceStatus();
 		updateTraceTabCount();
 	}
@@ -3857,7 +4366,7 @@
 		return html;
 	}
 
-	/** Update the trace status bar and show/hide the "Show more" button. */
+	/** Update the trace status bar — virtualization hides "Show more". */
 	function updateTraceStatus() {
 		var filterCount = 0;
 		if ( $( '#scrutoscope-trace-search' ).val() ) { filterCount++; }
@@ -3866,10 +4375,12 @@
 		if ( parseInt( $( '#scrutoscope-trace-min-queries' ).val(), 10 ) > 0 ) { filterCount++; }
 		$( '.scrutoscope-trace-pill.active' ).each( function() { filterCount++; } );
 
-		var showing = Math.min( traceShown, traceFiltered.length );
+		// Virtualized: we always "show" all filtered via windowed render, but keep wording familiar.
+		var total = traceFiltered.length;
+		var showing = total; // everything is reachable via scroll
 		// translators: 1: number of callbacks shown, 2: total number of callbacks.
-		var statusText = sprintf( __( 'Showing %1$s of %2$s callbacks', 'scrutoscope' ), showing.toLocaleString(), traceFiltered.length.toLocaleString() );
-		if ( traceFiltered.length !== traceEntries.length ) {
+		var statusText = sprintf( __( 'Showing %1$s of %2$s callbacks', 'scrutoscope' ), showing.toLocaleString(), total.toLocaleString() );
+		if ( total !== traceEntries.length ) {
 			// translators: %s is the total number of callbacks before filtering.
 			statusText += ' ' + sprintf( __( '(filtered from %s)', 'scrutoscope' ), traceEntries.length.toLocaleString() );
 		}
@@ -3877,9 +4388,10 @@
 			// translators: %d is the number of active filters.
 			statusText += ' \u00b7 ' + sprintf( __( '%d filters active', 'scrutoscope' ), filterCount );
 		}
+		statusText += ' \u00b7 virtualized';
 
 		$( '#scrutoscope-trace-status' ).text( statusText );
-		$( '#scrutoscope-trace-more-wrap' ).toggle( traceShown < traceFiltered.length );
+		$( '#scrutoscope-trace-more-wrap' ).hide();
 	}
 
 	/** Load saved searches from localStorage. */
