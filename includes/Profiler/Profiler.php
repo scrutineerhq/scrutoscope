@@ -1587,10 +1587,10 @@ class Profiler {
 						// Handle-based for @wordpress/* is core.
 						if ( 'unknown' === $attribution['type'] && 0 === strpos( $handle, '@wordpress/' ) ) {
 							$attribution = array(
-							'type' => 'core',
-							'slug' => 'wordpress',
-							'name' => 'WordPress Core',
-						);
+								'type' => 'core',
+								'slug' => 'wordpress',
+								'name' => 'WordPress Core',
+							);
 						}
 
 						$total_size += $size;
