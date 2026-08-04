@@ -23,19 +23,19 @@ class AiProvider {
 	 * @var array<string,string>
 	 */
 	const EXACT = array(
-		'api.openai.com'                       => 'openai',
-		'api.anthropic.com'                    => 'anthropic',
-		'api.cohere.ai'                         => 'cohere',
-		'api.mistral.ai'                        => 'mistral',
-		'api.perplexity.ai'                     => 'perplexity',
-		'api.groq.com'                          => 'groq',
-		'api.openrouter.ai'                     => 'openrouter',
-		'openrouter.ai'                         => 'openrouter',
-		'generativelanguage.googleapis.com'     => 'google',
-		'aiplatform.googleapis.com'             => 'google',
-		'api.stability.ai'                      => 'stability',
-		'api.replicate.com'                     => 'replicate',
-		'inference.nebius.com'                  => 'nebius',
+		'api.openai.com'                    => 'openai',
+		'api.anthropic.com'                 => 'anthropic',
+		'api.cohere.ai'                     => 'cohere',
+		'api.mistral.ai'                    => 'mistral',
+		'api.perplexity.ai'                 => 'perplexity',
+		'api.groq.com'                      => 'groq',
+		'api.openrouter.ai'                 => 'openrouter',
+		'openrouter.ai'                     => 'openrouter',
+		'generativelanguage.googleapis.com' => 'google',
+		'aiplatform.googleapis.com'         => 'google',
+		'api.stability.ai'                  => 'stability',
+		'api.replicate.com'                 => 'replicate',
+		'inference.nebius.com'              => 'nebius',
 	);
 
 	/**

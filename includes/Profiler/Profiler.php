@@ -451,17 +451,17 @@ class Profiler {
 
 		// Reset for any future use in the same request.
 		$this->instrumentor->reset();
-		$this->call_stack     = null;
-		$this->instrumentor   = null;
-		$this->cron_hooks     = array();
-		$this->phase_markers  = array();
-		$this->phase_memory   = array();
-		$this->http_calls     = array();
-		$this->http_pending   = array();
-		$this->ability_calls  = array();
+		$this->call_stack      = null;
+		$this->instrumentor    = null;
+		$this->cron_hooks      = array();
+		$this->phase_markers   = array();
+		$this->phase_memory    = array();
+		$this->http_calls      = array();
+		$this->http_pending    = array();
+		$this->ability_calls   = array();
 		$this->ability_pending = array();
-		$this->dev_signals    = array();
-		$this->textdomain_jit = array();
+		$this->dev_signals     = array();
+		$this->textdomain_jit  = array();
 
 		if ( false === $profile_id ) {
 			return new \WP_Error( 'save_failed', __( 'Failed to save the cron profile.', 'scrutoscope' ) );
@@ -960,7 +960,7 @@ class Profiler {
 			if ( null === $provider && class_exists( '\\Scrutoscope\\Util\\AiProvider' ) && ! empty( $call['url'] ) ) {
 				$provider = \Scrutoscope\Util\AiProvider::detect( $call['url'] );
 			}
-			$calls[]   = array(
+			$calls[] = array(
 				'url'         => $call['url'],
 				'method'      => $call['method'],
 				'status'      => $call['status'],
@@ -1023,9 +1023,9 @@ class Profiler {
 		if ( empty( $this->ability_pending ) ) {
 			return;
 		}
-		$pending = array_pop( $this->ability_pending );
-		$end_ns  = hrtime( true );
-		$name    = ! empty( $pending['name'] ) ? $pending['name'] : (string) $ability_name;
+		$pending               = array_pop( $this->ability_pending );
+		$end_ns                = hrtime( true );
+		$name                  = ! empty( $pending['name'] ) ? $pending['name'] : (string) $ability_name;
 		$this->ability_calls[] = array(
 			'name'        => $name,
 			'duration_ns' => max( 0, $end_ns - $pending['start_ns'] ),
@@ -1464,9 +1464,9 @@ class Profiler {
 			);
 		}
 
-		$total        = 0;
-		$options      = array();
-		$defies_count = 0;
+		$total           = 0;
+		$options         = array();
+		$defies_count    = 0;
 		$autoloaded_vals = array( 'yes', 'on', 'auto', 'auto-on' );
 		foreach ( $results as $row ) {
 			$size     = (int) $row['size_bytes'];
@@ -1477,9 +1477,9 @@ class Profiler {
 				++$defies_count;
 			}
 			$options[] = array(
-				'name'           => $row['option_name'],
-				'autoload'       => $autoload,
-				'size'           => $size,
+				'name'            => $row['option_name'],
+				'autoload'        => $autoload,
+				'size'            => $size,
 				'defies_guidance' => $defies,
 			);
 		}
@@ -1499,7 +1499,7 @@ class Profiler {
 	 * @return array{modules: array, count: int, total_size: int}
 	 */
 	private static function get_script_modules() {
-		$modules = array();
+		$modules    = array();
 		$total_size = 0;
 
 		// WP 6.5+ API: wp_script_modules() returns WP_Script_Modules.
@@ -1565,7 +1565,7 @@ class Profiler {
 							$ver  = isset( $data->version ) ? $data->version : ( isset( $data->ver ) ? $data->ver : '' );
 						}
 
-						$size = 0;
+						$size       = 0;
 						$local_path = '';
 						if ( $src ) {
 							$local_path = self::resolve_asset_path( $src, $abspath );
@@ -1594,7 +1594,7 @@ class Profiler {
 						}
 
 						$total_size += $size;
-						$modules[] = array(
+						$modules[]   = array(
 							'handle'      => $handle,
 							'src'         => $src,
 							'version'     => $ver,

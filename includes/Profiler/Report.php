@@ -151,7 +151,7 @@ class Report {
 		$ai_total_ms   = 0;
 		$ai_call_count = 0;
 		foreach ( $http_calls as $hc ) {
-			$dur = isset( $hc['duration_ms'] ) ? (float) $hc['duration_ms'] : 0;
+			$dur            = isset( $hc['duration_ms'] ) ? (float) $hc['duration_ms'] : 0;
 			$http_total_ms += $dur;
 			if ( ! empty( $hc['provider'] ) ) {
 				$ai_total_ms += $dur;

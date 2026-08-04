@@ -133,7 +133,7 @@ class Sanitizer {
 							$sanitized[ $idx ] = self::sanitize( $call );
 							continue;
 						}
-						$provider = isset( $call['provider'] ) ? $call['provider'] : null;
+						$provider          = isset( $call['provider'] ) ? $call['provider'] : null;
 						$sanitized[ $idx ] = self::sanitize( $call );
 						if ( null !== $provider ) {
 							$sanitized[ $idx ]['provider'] = $provider;
