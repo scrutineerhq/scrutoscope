@@ -65,6 +65,8 @@ class AiProvider {
 		if ( function_exists( 'wp_parse_url' ) ) {
 			$parts = wp_parse_url( $url );
 		} else {
+			// Fallback for non-WP contexts (e.g. unit tests) — wp_parse_url is preferred.
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url
 			$parts = parse_url( $url );
 		}
 
