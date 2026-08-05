@@ -560,10 +560,12 @@ class Profiler {
 		// (fire-and-forget) calls, which never reach the http_response filter.
 		add_action( 'http_api_debug', array( $this, 'track_http_end' ), PHP_INT_MAX, 2 );
 
-		// Abilities API execution timing (WP 6.9+). Gracefully no-ops on older WP where these actions don't exist.
+		// Abilities API execution timing (WP 6.9+). Core fires these around WP_Ability::execute().
+		add_action( 'wp_before_execute_ability', array( $this, 'track_ability_start' ), 0, 2 );
+		add_action( 'wp_after_execute_ability', array( $this, 'track_ability_end' ), PHP_INT_MAX, 3 );
+		// Legacy/alternate names seen in pre-release implementations.
 		add_action( 'wp_ability_before_execute', array( $this, 'track_ability_start' ), 0, 2 );
 		add_action( 'wp_ability_after_execute', array( $this, 'track_ability_end' ), PHP_INT_MAX, 2 );
-		// Legacy/alternate names seen in pre-release implementations.
 		add_action( 'wp_abilities_api_before_execute_ability', array( $this, 'track_ability_start' ), 0, 2 );
 		add_action( 'wp_abilities_api_after_execute_ability', array( $this, 'track_ability_end' ), PHP_INT_MAX, 2 );
 		// Filter-based execution path.
@@ -1015,11 +1017,12 @@ class Profiler {
 	/**
 	 * Track Abilities API execution end (WP 6.9+).
 	 *
-	 * @param string $ability_name Ability name.
-	 * @param mixed  $result       Execution result.
+	 * @param string     $ability_name Ability name.
+	 * @param mixed|null $input        Input data.
+	 * @param mixed|null $result       Execution result.
 	 * @return void
 	 */
-	public function track_ability_end( $ability_name = '', $result = null ) {
+	public function track_ability_end( $ability_name = '', $input = null, $result = null ) {
 		if ( empty( $this->ability_pending ) ) {
 			return;
 		}
@@ -1034,6 +1037,7 @@ class Profiler {
 			'end_ns'      => $end_ns,
 			'is_error'    => is_wp_error( $result ),
 		);
+		unset( $input );
 	}
 
 	/**
@@ -1045,7 +1049,7 @@ class Profiler {
 	 * @return mixed
 	 */
 	public function track_ability_end_filter( $result, $ability_name, $input = null ) {
-		$this->track_ability_end( $ability_name, $result );
+		$this->track_ability_end( $ability_name, null, $result );
 		unset( $input );
 		return $result;
 	}
