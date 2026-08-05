@@ -17,7 +17,7 @@
 |-----------|--------|
 | Plugin bootstrap (`scrutoscope.php`) | ✅ Functional |
 | Profiler engine (`includes/Profiler/`) | ✅ Complete (+ lightweight capture mode) |
-| API (`includes/Api/`) | ✅ Complete — 6 REST endpoints + public manifest |
+| API (`includes/Api/`) | ✅ Complete — 7 REST endpoints (incl. `/profiles` list) + public manifest |
 | Admin UI (`includes/Admin/`) | ✅ Functional — AJAX-gated handlers, EarlyBoot helper |
 | CSS/JS (`assets/`) | ✅ Complete — shared timeline renderer, dark-mode-aware |
 | WP-CLI (`includes/Cli/`) | ✅ Complete — 7 subcommands |
