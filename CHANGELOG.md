@@ -5,6 +5,15 @@ All notable changes to Scrutoscope will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- `GET /scrutoscope/v1/profiles` REST endpoint — lists individual profile captures (newest first) with pagination, free-text search, and `kind` (pinned/session/background/on_demand), `route_key`, `tag`, and date-range filters, so external integrations never need to read the profiles table directly
+- `search` argument and `response_status` column in `Storage::search_profiles()` results
+
+### Changed
+- Public API surface documented and annotated — the names and shapes external integrations depend on (REST responses, `Storage` methods, `Diagnostics\Cron::collect()`, `Profiler::profile_cron_hook()`, `SCRUTOSCOPE_VERSION`, option names) now carry inline "Public API" notes and a stability contract in `.context/INVARIANTS.md`, prompted by Minn Admin v0.22.0's integration
+
 ## [1.4.4] - 2026-07-31
 
 ### Fixed

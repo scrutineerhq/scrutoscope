@@ -11,6 +11,12 @@ defined( 'ABSPATH' ) || exit;
 
 /**
  * Persists profile data in a custom database table.
+ *
+ * Public API — external integrations (e.g. Minn Admin) depend on
+ * table_name(), get_profile(), delete_profile(), search_profiles(), and
+ * the profiles table column names. Do not rename methods or columns
+ * without a deprecation cycle. See .context/INVARIANTS.md → Public API
+ * Surface.
  */
 class Storage {
 
@@ -506,6 +512,7 @@ class Storage {
 	 *     Optional. Search arguments.
 	 *     @type string $route_key    Filter by route key.
 	 *     @type string $tag          Filter by tag (partial match within comma-separated tags).
+	 *     @type string $search       Free-text match across route key, URL, note, and tags.
 	 *     @type bool   $pinned_only  Only return pinned profiles.
 	 *     @type string $date_from    Filter from date (Y-m-d).
 	 *     @type string $date_to      Filter to date (Y-m-d).
@@ -540,6 +547,12 @@ class Storage {
 			$vals[]  = '%' . $wpdb->esc_like( $args['tag'] ) . '%';
 		}
 
+		if ( ! empty( $args['search'] ) ) {
+			$like    = '%' . $wpdb->esc_like( $args['search'] ) . '%';
+			$where[] = '(route_key LIKE %s OR request_url LIKE %s OR note LIKE %s OR tags LIKE %s)';
+			array_push( $vals, $like, $like, $like, $like );
+		}
+
 		if ( ! empty( $args['pinned_only'] ) ) {
 			$where[] = 'is_pinned = 1';
 		}
@@ -571,7 +584,7 @@ class Storage {
 			$offset     = ( $page - 1 ) * $per_page;
 			$query_vals = array_merge( $vals, array( $per_page, $offset ) );
 
-			$sql = "SELECT id, session_id, profile_type, request_url, request_method, route_class, route_key, duration_ns, user_role, captured_at, is_pinned, note, tags
+			$sql = "SELECT id, session_id, profile_type, request_url, request_method, route_class, route_key, duration_ns, user_role, captured_at, is_pinned, note, tags, response_status
 				FROM {$table}
 				WHERE {$where_sql}
 				ORDER BY captured_at DESC
@@ -595,7 +608,7 @@ class Storage {
 		$vals[] = $limit;
 
 		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
-		$sql = "SELECT id, session_id, profile_type, request_url, request_method, route_class, route_key, duration_ns, user_role, captured_at, is_pinned, note, tags
+		$sql = "SELECT id, session_id, profile_type, request_url, request_method, route_class, route_key, duration_ns, user_role, captured_at, is_pinned, note, tags, response_status
 			FROM {$table}
 			WHERE {$where_sql}
 			ORDER BY captured_at DESC

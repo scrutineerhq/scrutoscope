@@ -89,6 +89,65 @@ class RestApi {
 
 		register_rest_route(
 			self::NAMESPACE,
+			'/profiles',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( __CLASS__, 'handle_profiles' ),
+				'permission_callback' => array( __CLASS__, 'check_permission' ),
+				'args'                => array(
+					'page'      => array(
+						'default'           => 1,
+						'validate_callback' => function ( $param ) {
+							return is_numeric( $param ) && (int) $param >= 1;
+						},
+						'sanitize_callback' => 'absint',
+					),
+					'per_page'  => array(
+						'default'           => 25,
+						'validate_callback' => function ( $param ) {
+							return is_numeric( $param ) && (int) $param >= 1 && (int) $param <= 100;
+						},
+						'sanitize_callback' => 'absint',
+					),
+					'kind'      => array(
+						'default'           => '',
+						'validate_callback' => function ( $param ) {
+							return in_array( $param, array( '', 'pinned', 'session', 'background', 'on_demand' ), true );
+						},
+						'sanitize_callback' => 'sanitize_key',
+					),
+					'search'    => array(
+						'default'           => '',
+						'sanitize_callback' => 'sanitize_text_field',
+					),
+					'route_key' => array(
+						'default'           => '',
+						'sanitize_callback' => 'sanitize_text_field',
+					),
+					'tag'       => array(
+						'default'           => '',
+						'sanitize_callback' => 'sanitize_text_field',
+					),
+					'date_from' => array(
+						'default'           => '',
+						'validate_callback' => function ( $param ) {
+							return '' === $param || (bool) preg_match( '/^\d{4}-\d{2}-\d{2}$/', (string) $param );
+						},
+						'sanitize_callback' => 'sanitize_text_field',
+					),
+					'date_to'   => array(
+						'default'           => '',
+						'validate_callback' => function ( $param ) {
+							return '' === $param || (bool) preg_match( '/^\d{4}-\d{2}-\d{2}$/', (string) $param );
+						},
+						'sanitize_callback' => 'sanitize_text_field',
+					),
+				),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
 			'/profile/(?P<id>\d+)',
 			array(
 				'methods'             => 'GET',
@@ -619,9 +678,112 @@ class RestApi {
 	}
 
 	/**
-	 * Handle GET /v1/profile/{id}.
+	 * List individual profile captures, newest first.
 	 *
-	 * @param \WP_REST_Request $request  Request object.
+	 * Public API — external integrations (e.g. Minn Admin) depend on this
+	 * route and its response shape. Do not rename fields or change types
+	 * without a deprecation cycle. See .context/INVARIANTS.md → Public API
+	 * Surface.
+	 *
+	 * Unlike GET /routes (which groups by route key), this returns one row
+	 * per capture so integrators never need to read the profiles table
+	 * directly. Column metadata only — profile_data blobs stay out of the
+	 * list path; fetch full detail from /profile/{id}.
+	 *
+	 * @param \WP_REST_Request $request Request object.
+	 * @return \WP_REST_Response
+	 */
+	public static function handle_profiles( $request ) {
+		self::log_access( '/v1/profiles' );
+
+		$args = array_merge(
+			self::map_profiles_kind_filter( (string) $request->get_param( 'kind' ) ),
+			array(
+				'search'    => (string) $request->get_param( 'search' ),
+				'route_key' => (string) $request->get_param( 'route_key' ),
+				'tag'       => (string) $request->get_param( 'tag' ),
+				'date_from' => (string) $request->get_param( 'date_from' ),
+				'date_to'   => (string) $request->get_param( 'date_to' ),
+				'page'      => (int) $request->get_param( 'page' ),
+				'per_page'  => (int) $request->get_param( 'per_page' ),
+			)
+		);
+
+		$result = Storage::search_profiles( $args );
+
+		$items = array();
+		foreach ( (array) $result['profiles'] as $row ) {
+			$items[] = self::shape_profile_list_item( $row );
+		}
+
+		return new \WP_REST_Response(
+			Sanitizer::sanitize(
+				array(
+					'items' => $items,
+					'total' => (int) $result['total'],
+					'page'  => (int) $result['page'],
+					'pages' => (int) $result['pages'],
+				)
+			),
+			200
+		);
+	}
+
+	/**
+	 * Map a `kind` filter to Storage::search_profiles() arguments.
+	 *
+	 * @param string $kind One of '', 'pinned', 'session', 'background', 'on_demand'.
+	 * @return array
+	 */
+	public static function map_profiles_kind_filter( $kind ) {
+		if ( 'pinned' === $kind ) {
+			return array( 'pinned_only' => true );
+		}
+		if ( in_array( $kind, array( 'session', 'background', 'on_demand' ), true ) ) {
+			return array( 'profile_type' => $kind );
+		}
+		return array();
+	}
+
+	/**
+	 * Shape one profiles-table row for the list response.
+	 *
+	 * Public API — field names and types are part of the integration
+	 * contract. See .context/INVARIANTS.md → Public API Surface.
+	 *
+	 * @param array $row Row from Storage::search_profiles().
+	 * @return array
+	 */
+	public static function shape_profile_list_item( $row ) {
+		$duration_ns = isset( $row['duration_ns'] ) ? (float) $row['duration_ns'] : 0.0;
+		return array(
+			'id'              => isset( $row['id'] ) ? (int) $row['id'] : 0,
+			'route'           => isset( $row['route_key'] ) ? (string) $row['route_key'] : '',
+			'route_class'     => isset( $row['route_class'] ) ? (string) $row['route_class'] : '',
+			'request_method'  => isset( $row['request_method'] ) ? (string) $row['request_method'] : '',
+			'request_url'     => isset( $row['request_url'] ) ? (string) $row['request_url'] : '',
+			'profile_type'    => isset( $row['profile_type'] ) && '' !== (string) $row['profile_type'] ? (string) $row['profile_type'] : 'session',
+			'duration_ns'     => $duration_ns,
+			'duration_ms'     => round( $duration_ns / 1e6, 1 ),
+			'user_role'       => isset( $row['user_role'] ) ? (string) $row['user_role'] : '',
+			// Site-local (current_time('mysql')), emitted raw like the admin UI.
+			'captured_at'     => isset( $row['captured_at'] ) ? (string) $row['captured_at'] : '',
+			'is_pinned'       => ! empty( $row['is_pinned'] ),
+			'note'            => isset( $row['note'] ) ? (string) $row['note'] : '',
+			'tags'            => isset( $row['tags'] ) ? (string) $row['tags'] : '',
+			'response_status' => isset( $row['response_status'] ) ? (int) $row['response_status'] : 0,
+		);
+	}
+
+	/**
+	 * Get a single profile's full detail.
+	 *
+	 * Public API — external integrations (e.g. Minn Admin) depend on this
+	 * route and its response shape. Do not rename fields or change types
+	 * without a deprecation cycle. See .context/INVARIANTS.md → Public API
+	 * Surface.
+	 *
+	 * @param \WP_REST_Request $request Request object.
 	 * @return \WP_REST_Response|\WP_Error
 	 */
 	public static function handle_profile( $request ) {

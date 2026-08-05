@@ -21,6 +21,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+// Public API: external integrations (e.g. Minn Admin) detect the plugin via
+// SCRUTOSCOPE_VERSION. Never rename. See .context/INVARIANTS.md → Public API Surface.
 define( 'SCRUTOSCOPE_VERSION', '1.4.4' );
 define( 'SCRUTOSCOPE_FILE', __FILE__ );
 define( 'SCRUTOSCOPE_DIR', plugin_dir_path( __FILE__ ) );
@@ -56,6 +58,10 @@ if ( defined( 'SAVEQUERIES' ) ) {
 
 /**
  * Get the current query profiling state for the dashboard UI.
+ *
+ * Public API — external integrations (e.g. Minn Admin) call this function.
+ * Do not rename or change the return shape without a deprecation cycle.
+ * See .context/INVARIANTS.md → Public API Surface.
  *
  * @return array{state: string, active: bool, managed: bool}
  */

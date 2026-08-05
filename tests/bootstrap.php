@@ -106,6 +106,7 @@ if ( ! defined( 'FS_CHMOD_FILE' ) ) {
 require_once __DIR__ . '/../includes/Profiler/QueryReducer.php';
 require_once __DIR__ . '/../includes/Profiler/CallStack.php';
 require_once __DIR__ . '/../includes/Api/Sanitizer.php';
+require_once __DIR__ . '/../includes/Api/RestApi.php';
 require_once __DIR__ . '/../includes/Profiler/Storage.php';
 require_once __DIR__ . '/../includes/Api/Prompt.php';
 require_once __DIR__ . '/../includes/Profiler/StorageRouteAggregates.php';

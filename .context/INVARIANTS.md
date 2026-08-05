@@ -81,6 +81,20 @@
 - [ ] **Revocation is immediate.** Revoking a shared report blocks all future retrieval from scrutoscope.dev. No cache window, no grace period.
   - _Verify:_ Revocation updates control plane and purges edge cache in same request.
 
+## Public API Surface
+
+- [ ] **External integrations depend on these names and shapes.** Changing any of them requires a deprecation cycle, not a rename. First known consumer: Minn Admin (austinginder/minn-admin) v0.22.0, shipped 2026-07-27.
+  - `SCRUTOSCOPE_VERSION` constant (plugin detection)
+  - `Scrutoscope\Profiler\Storage`: `table_name()`, `get_profile()`, `delete_profile()`, `search_profiles()`; profiles table columns (`id`, `session_id`, `profile_type`, `request_url`, `request_method`, `route_class`, `route_key`, `duration_ns`, `user_role`, `captured_at`, `is_pinned`, `note`, `tags`, `response_status`)
+  - REST `GET /scrutoscope/v1/profile/{id}` response fields (`id`, `route`, `duration_ms`, `memory_peak_mb`, `captured_at`, `pinned`, `note`, `tags`, `summary`, `sources`, `queries`, `http_calls`, `milestones`)
+  - REST `GET /scrutoscope/v1/profiles` list response (`items`/`total`/`page`/`pages`; item fields from `RestApi::shape_profile_list_item()`)
+  - `Scrutoscope\Diagnostics\Cron::collect()` event fields (`hook`, `args`, `args_hash`, `timestamp`, `schedule`, `attribution`, `overdue`)
+  - `Scrutoscope\Profiler\Profiler::instance()` and `profile_cron_hook( $hook, $args )` (integrators gate 1.4+ support via `method_exists`)
+  - `scrutoscope_query_profiling_state()` return shape (`state`, `active`, `managed`)
+  - Option names: `scrutoscope_background_profiling`, `scrutoscope_sample_rate`, `scrutoscope_lightweight_mode`
+  - Admin URL slug `tools.php?page=scrutoscope`
+  - _Verify:_ every contract point carries an inline "Public API" docblock note — `grep -rn "Public API" includes/ scrutoscope.php` lists them; `RestApiProfilesTest` guards the list response shape.
+
 ## Build & Quality
 
 - [ ] **WordPress Coding Standards enforced.** `phpcs` with WordPress-Extra ruleset passes with zero errors.

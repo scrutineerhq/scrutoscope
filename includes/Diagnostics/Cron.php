@@ -25,6 +25,12 @@ class Cron {
 	/**
 	 * Collect full cron inventory.
 	 *
+	 * Public API — external integrations (e.g. Minn Admin) consume the
+	 * `events` list and its per-event fields (hook, args, args_hash,
+	 * timestamp, schedule, attribution, overdue). Do not rename keys
+	 * without a deprecation cycle. See .context/INVARIANTS.md → Public API
+	 * Surface.
+	 *
 	 * @return array {
 	 *     @type array  $events    Flat list of scheduled events.
 	 *     @type array  $summary   Counts, overdue count, next event, etc.

@@ -144,6 +144,10 @@ class Profiler {
 	/**
 	 * Get the singleton instance.
 	 *
+	 * Public API — external integrations (e.g. Minn Admin) reach the
+	 * profiler through instance(). See .context/INVARIANTS.md → Public API
+	 * Surface.
+	 *
 	 * @return Profiler
 	 */
 	public static function instance() {
@@ -362,6 +366,11 @@ class Profiler {
 
 	/**
 	 * Profile a single cron hook on demand.
+	 *
+	 * Public API — external integrations (e.g. Minn Admin) call this method
+	 * and gate on its existence for 1.4+ detection. Do not rename or change
+	 * the signature without a deprecation cycle. See .context/INVARIANTS.md
+	 * → Public API Surface.
 	 *
 	 * Starts the profiler, fires the hook (with its scheduled args), compiles
 	 * the report, saves it, and returns the profile ID — all within the current
