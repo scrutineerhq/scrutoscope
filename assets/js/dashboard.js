@@ -3345,6 +3345,22 @@
 		return html;
 	}
 
+	function formatModuleDeps( depList ) {
+		var deps = [];
+		if ( ! depList || ! depList.length ) {
+			return deps;
+		}
+		for ( var i = 0; i < depList.length; i++ ) {
+			var dep = depList[ i ];
+			if ( typeof dep === 'string' && dep ) {
+				deps.push( dep );
+			} else if ( dep && dep.id ) {
+				deps.push( dep.id + ( dep.import ? ' (' + dep.import + ')' : '' ) );
+			}
+		}
+		return deps;
+	}
+
 	function renderModulesTableBody( moduleList ) {
 		var tableId = 'assets-modules';
 		var html = '<table class="scrutoscope-asset-table widefat" data-table-id="' + tableId + '"><thead class="scrutoscope-sortable-header"><tr>';
@@ -3374,14 +3390,22 @@
 			var sizeClass = a.size > 102400 ? ' scrutoscope-asset-large' : '';
 
 			var moduleId = a.handle || a.id || '';
+			var moduleDeps = formatModuleDeps( a.deps );
+			if ( moduleDeps.length === 0 && a.dependencies ) {
+				if ( Array.isArray( a.dependencies ) ) {
+					moduleDeps = formatModuleDeps( a.dependencies );
+				} else if ( a.dependencies.static && a.dependencies.static.length ) {
+					moduleDeps = formatModuleDeps( a.dependencies.static );
+				}
+			}
 
 			html += '<tr>';
 			html += '<td>' + sourcePill + '<code>' + esc( moduleId ) + '</code></td>';
 			html += '<td class="scrutoscope-src-cell" title="' + esc( srcUrl ) + '">' + esc( truncate( srcDisplay, 60 ) ) + '</td>';
 			html += '<td class="numeric' + sizeClass + '">' + sizeCell + '</td>';
-			html += '<td>' + esc( a.location || '' ) + '</td>';
+			html += '<td>' + ( a.location ? esc( a.location ) : '—' ) + '</td>';
 			html += '<td>' + ( a.fetchpriority ? '<code>' + esc( a.fetchpriority ) + '</code>' : '—' ) + '</td>';
-			html += '<td>' + ( a.deps && a.deps.length > 0 ? '<code>' + esc( a.deps.join( ', ' ) ) + '</code>' : ( a.dependencies && a.dependencies.static && a.dependencies.static.length > 0 ? '<code>' + esc( a.dependencies.static.join( ', ' ) ) + '</code>' : '—' ) ) + '</td>';
+			html += '<td>' + ( moduleDeps.length > 0 ? '<code>' + esc( moduleDeps.join( ', ' ) ) + '</code>' : '—' ) + '</td>';
 			html += '<td>' + ( a.version ? '<code>' + esc( a.version ) + '</code>' : '—' ) + '</td>';
 			html += '</tr>';
 		}
