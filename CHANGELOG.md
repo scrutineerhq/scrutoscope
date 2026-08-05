@@ -5,14 +5,27 @@ All notable changes to Scrutoscope will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.5.0] - 2026-08-05
 
 ### Added
+- AI provider detection for outbound HTTP calls — recognizes OpenAI, Anthropic, Google, Cohere, Mistral, Perplexity, Groq, OpenRouter, Stability, Replicate, and Nebius; provider badges and per-provider totals in the HTTP view with an All / AI-only filter
+- WP Abilities API timing (WP 6.9+/7.0) — ability executions tracked with duration and aggregated into the report
+- Script Modules / import map inventory (WP 6.5+/7.0) — modules table with dependencies, size, attribution, and fetchpriority; import map entry count; Interactivity API detection with store count
+- Environment health pill — OPCache enabled/hit rate, JIT status, and object cache detection
+- Autoloaded options "defies guidance" flag when total size exceeds the recommended maximum
 - `GET /scrutoscope/v1/profiles` REST endpoint — lists individual profile captures (newest first) with pagination, free-text search, and `kind` (pinned/session/background/on_demand), `route_key`, `tag`, and date-range filters, so external integrations never need to read the profiles table directly
 - `search` argument and `response_status` column in `Storage::search_profiles()` results
 
+### Fixed
+- WP 7.0.2 fatal on every profiled request — `WP_Script_Modules::get_marked_for_enqueue()` went private; now uses the public `get_queue()` API
+- Script module dependencies now render in the Assets tab
+- WP Abilities API execution hooks now tracked under the correct hook names
+- `parse_url` fallback allowed in non-WordPress contexts (unit tests)
+
 ### Changed
+- Accessibility — timeline spans get roving tabindex, `aria-selected`, and visible focus rings; Trace Explorer virtualized for large profiles
 - Public API surface documented and annotated — the names and shapes external integrations depend on (REST responses, `Storage` methods, `Diagnostics\Cron::collect()`, `Profiler::profile_cron_hook()`, `SCRUTOSCOPE_VERSION`, option names) now carry inline "Public API" notes and a stability contract in `.context/INVARIANTS.md`, prompted by Minn Admin v0.22.0's integration
+- Pre-commit hook runs share-format validation (plus PHPCS/syntax when available locally)
 
 ## [1.4.4] - 2026-07-31
 

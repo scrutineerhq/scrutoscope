@@ -3,7 +3,7 @@ Contributors: kurtpayne
 Tags: performance, profiler, debug, speed, slow
 Requires at least: 7.0
 Tested up to: 7.0
-Stable tag: 1.4.4
+Stable tag: 1.5.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -117,6 +117,19 @@ It is never contacted during normal profiling, page loads, or background capture
 **Data retention:** a shared report expires after the TTL you choose, can be set to burn after its first read, and can be revoked manually at any time. The relay only ever stores ciphertext.
 
 == Changelog ==
+
+= 1.5.0 =
+* New: AI provider detection for outbound HTTP calls — OpenAI, Anthropic, Google, Cohere, Mistral, Perplexity, Groq, OpenRouter, Stability, Replicate, Nebius — with provider badges, AI totals, and an All / AI-only filter
+* New: WP Abilities API timing (WP 6.9+/7.0) — ability executions tracked with duration
+* New: Script Modules / import map inventory (WP 6.5+/7.0) — modules table with dependencies, size, attribution, fetchpriority; Interactivity API detection
+* New: Environment health pill — OPCache hit rate, JIT status, object cache detection
+* New: Autoloaded options "defies guidance" flag when oversized
+* New: `GET /scrutoscope/v1/profiles` REST endpoint — list individual captures with pagination, search, and kind/route/tag/date filters, so integrations never read the database directly
+* New: Public API surface documented and annotated — stability contract for external integrations
+* Fix: WP 7.0.2 fatal — script modules now use the public get_queue() API
+* Fix: Script module dependencies render in the Assets tab
+* Fix: Abilities API execution hooks tracked under the correct hook names
+* Accessibility: timeline keyboard navigation (roving tabindex, aria-selected, focus rings); Trace Explorer virtualized
 
 = 1.4.4 =
 * Fix: PHPCS — missing file doc and interpolated IN list false positives — CI now clean
@@ -321,6 +334,9 @@ This release focuses on trust — opt-in defaults and honest disclosure — alon
 15. AI agent terminal output diagnosing a blocking HTTP call as the top performance issue
 
 == Upgrade Notice ==
+
+= 1.5.0 =
+AI provider detection, Abilities API timing, Script Modules inventory, environment health pill, and a public /v1/profiles REST endpoint. Fixes a WP 7.0.2 fatal in script module collection.
 
 = 1.4.2 =
 Branding cleanup: all remaining "Scrutineer" references renamed to "Scrutoscope". WP 7.0 minimum.

@@ -3,7 +3,7 @@
  * Plugin Name:       Scrutoscope – WordPress Performance Profiler
  * Plugin URI:        https://scrutoscope.dev
  * Description:       Find which plugins, hooks, and queries are slowing your WordPress site. From the author of P3 Profiler.
- * Version:           1.4.4
+ * Version:           1.5.0
  * Requires at least: 7.0
  * Requires PHP:      7.4
  * Author:            Kurt Payne
@@ -23,7 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // Public API: external integrations (e.g. Minn Admin) detect the plugin via
 // SCRUTOSCOPE_VERSION. Never rename. See .context/INVARIANTS.md → Public API Surface.
-define( 'SCRUTOSCOPE_VERSION', '1.4.4' );
+define( 'SCRUTOSCOPE_VERSION', '1.5.0' );
 define( 'SCRUTOSCOPE_FILE', __FILE__ );
 define( 'SCRUTOSCOPE_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SCRUTOSCOPE_URL', plugin_dir_url( __FILE__ ) );
